@@ -64,6 +64,25 @@ def _postgres_server():
         return None, None
 
 
+def _ensure_test_database():
+    """Create the Postgres test database when it does not exist yet (a fresh clone, GitHub CI). Several test modules open the app's
+    database as they are imported, before any fixture runs, so this happens here, when conftest is loaded."""
+    import sqlalchemy
+    from sqlalchemy.engine import make_url
+    server, _ = _postgres_server()
+    url = os.environ.get("DATABASE_URL", "")
+    if server is None or not url.startswith("postgresql"):
+        return
+    name = make_url(url).database
+    with server.connect() as c:
+        if not c.execute(sqlalchemy.text("SELECT 1 FROM pg_database WHERE datname = :n"), {"n": name}).first():
+            c.execute(sqlalchemy.text(f'CREATE DATABASE "{name}"'))
+    server.dispose()
+
+
+_ensure_test_database()
+
+
 @pytest.fixture(params=["sqlite", "postgres"])
 def db_url(request, tmp_path):
     """A fresh, empty database URL, once for SQLite and once for Postgres (a database created on the server in DATABASE_URL and dropped afterwards;
