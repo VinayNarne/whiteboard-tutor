@@ -1,6 +1,7 @@
 fastapi>=0.111.0
 uvicorn[standard]>=0.30.0
 sqlmodel>=0.0.19
+sqlalchemy>=2.0,<2.1   # 2.1 switched postgresql:// to the psycopg 3 driver; the app ships psycopg2 and is tested on 2.0
 alembic>=1.13
 python-dotenv>=1.0.0
 openai>=1.30.0
