@@ -1,0 +1,3 @@
+# Only if you run the app on Postgres instead of the default SQLite:  pip install -r requirements-postgres.txt
+-r requirements.txt
+psycopg2-binary>=2.9

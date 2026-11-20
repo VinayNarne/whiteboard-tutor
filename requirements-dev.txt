@@ -1,0 +1,4 @@
+-r requirements-postgres.txt     # the tests also run the migrations on a throwaway Postgres database when one is reachable
+pytest>=8.0
+pytest-asyncio>=0.23
+playwright>=1.44.0

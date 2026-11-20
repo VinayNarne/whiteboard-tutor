@@ -1,0 +1,1933 @@
+[
+ {
+  "id": "sky",
+  "notebook": "9f080f51-0ec9-4531-9486-9e050ac87f3b",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 15. Why is the sky blue and not violet?",
+    "reply": "The sky is blue because the atmosphere scatters sunlight, and blue light is scattered more than other colors. Even though violet is scattered even more, our eyes aren't very sensitive to violet, so we see the sky as blue instead of violet.\n\nIf our eyes were much more sensitive to violet light, what color do you think the sky would appear?",
+    "seconds": 12.4,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "When sunlight enters the atmosphere, blue and violet light get scattered most, but we see blue. That's because our eyes respond much better to blue than to violet.\n\nWhat do you think would happen if only red light was scattered by the atmosphere?",
+    "seconds": 9.2,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ],
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "Because blue is the strongest light from the sun?",
+    "reply": "It’s not that blue is the strongest light from the sun—sunlight contains all colors. Here’s a smaller question: If sunlight has all colors, what would you expect to see if the atmosphere scattered only red light instead of blue?",
+    "seconds": 5.4,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "um, something about the air maybe?",
+    "reply": "It's actually not about the air itself, but about how the colors of sunlight get scattered. When sunlight enters the atmosphere, the blue and violet parts scatter much more than red or yellow. If the atmosphere scattered only red, the sky would look red.\n\nNow, look back at our earlier question: if both blue and violet are scattered, why do we see a blue sky and not a violet one?",
+    "seconds": 9.2,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "Shorter wavelengths like blue and violet scatter more off air molecules.",
+    "reply": "Exactly—shorter wavelengths like blue and violet are scattered much more in the atmosphere.\n\nNow, why does eye sensitivity matter for the color we actually see in the sky?",
+    "seconds": 14.2,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "We see blue more easily than violet because our eyes aren't very sensitive to violet light. What effect do you think this has on the color of the sky?",
+    "seconds": 6.8,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Our eyes are much less sensitive to violet light than to blue, so even though both are scattered, we mostly see blue. Ozone in the atmosphere also absorbs some violet light, making the sky look even less violet.\n\nWhat effect does ozone have on the color of the sky?",
+    "seconds": 7.8,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Our eyes are more sensitive to blue than violet, and sunlight has less violet.",
+    "reply": "Ozone absorbs violet light, so less violet reaches our eyes, making the sky appear more blue.\n\nIf sunlight contains all colors, what makes the sky look blue during the day instead of other colors?",
+    "seconds": 21.2,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "4",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Why the sky looks blue",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Light scattering in the atmosphere",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Human vision and violet light",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Atmospheric absorption of violet",
+    "level": "taught",
+    "due": false,
+    "misses": 1
+   },
+   {
+    "title": "Recap card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 5,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "vaccines",
+  "notebook": "1b8537e9-bea7-4567-bfc6-6f4659f8b20b",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "How does a vaccine teach my body to fight a virus? I'm not a science person.",
+    "reply": "A vaccine gives your body a safe way to practice fighting a virus, so it learns to stop the real thing before you get sick. If you look at the diagram, what do you think would happen if your immune system didn't learn from the vaccine?",
+    "seconds": 11.9,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "A vaccine is like a safe practice run for your immune system, so it can stop a virus before it makes you sick. Why is it helpful for your body to \"practice\" fighting a virus before seeing the real thing?",
+    "seconds": 10.0,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "So the vaccine has the full live virus in it?",
+    "reply": "Not quite—vaccines do not have the full live virus. They only use harmless parts or weakened forms, so you get the benefit of training your immune system without the risk of the real infection. When your immune system finds something unfamiliar, like a virus, what does it try to do?",
+    "seconds": 12.3,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "it kind of trains it somehow?",
+    "reply": "Your immune system is always on the lookout for things that don't belong, like viruses. When it finds one, it attacks, and then remembers it for the next time. If your immune system meets a virus it has never seen before, what do you think happens?",
+    "seconds": 19.6,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "The reply does not explain how a vaccine teaches the body to fight a virus.",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "It shows the immune system a harmless piece of the virus, so it makes antibodies.",
+    "reply": "Exactly—that's the big idea! Your immune system attacks something unfamiliar and remembers it for next time. If a new virus enters your body and your immune system hasn’t seen it before, how do you think your body responds at first?",
+    "seconds": 18.1,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "Here, the highlighted part shows your immune system \"remembering\" the virus, so if it comes back, your body can react faster and stronger. If your immune system remembers a virus from before, what do you think happens when that virus tries to infect you again?",
+    "seconds": 28.3,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "If your immune system remembers a virus from before, it can react quickly and stop you from getting sick, or make the illness much milder. When your immune cells meet something new, what do they do first?",
+    "seconds": 16.6,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "4",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Memory cells remember it, so the body reacts faster next time.",
+    "reply": "Vaccines use only safe parts or weakened versions of a virus, so you don’t get the disease from them. Why don’t vaccines make you sick with the real disease?",
+    "seconds": 14.5,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "(judge failed: APITimeoutError)",
+    "records": [
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Short Answer",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Immune System Basics",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "What’s in a Vaccine?",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Memory and Fast Response",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 4,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "hash_table",
+  "notebook": "a468d2e6-fa4f-450c-ab68-78c59e00eb09",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm a junior dev. How does a hash table find a key so fast?",
+    "reply": "I couldn't reach the tutor model just now. Please try asking again in a moment.",
+    "seconds": 28.8,
+    "fails": [
+     "turn_failed"
+    ],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "A hash table finds keys quickly because the hash function lets it jump directly to where the value should be, instead of searching through everything. \n\nWhat do you think might happen if two different keys get the same hash?",
+    "seconds": 13.6,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "wrong",
+    "learner": "It searches every slot until it finds the key?",
+    "reply": "That's not quite right—normally, hash tables do not search every slot. Let me ask this: If we have a function that can turn any key into a number (an index), how could that help us know where to look in the table for that key?",
+    "seconds": 3.4,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "something with memory addresses?",
+    "reply": "I couldn't reach the tutor model just now. Please try asking again in a moment.",
+    "seconds": 65.3,
+    "fails": [
+     "turn_failed"
+    ],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "The hash function turns the key into an index, so it jumps straight to that slot.",
+    "reply": "I couldn't reach the tutor model just now. Please try asking again in a moment.",
+    "seconds": 37.0,
+    "fails": [
+     "turn_failed"
+    ],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "The hash function lets the hash table jump straight to the right slot for a key, which is why it's so fast. \n\nWhy do you think we use a hash function instead of just storing keys in order, like in a list?",
+    "seconds": 73.9,
+    "fails": [],
+    "blocks": [
+     "draw_scene",
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "(judge failed: APITimeoutError)",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "I couldn't reach the tutor model just now. Please try asking again in a moment.",
+    "seconds": 37.8,
+    "fails": [
+     "turn_failed"
+    ],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "right2",
+    "learner": "When two keys get the same index, it stores both, for example in a list at that slot.",
+    "reply": "I couldn't reach the tutor model just now. Please try asking again in a moment.",
+    "seconds": 16.2,
+    "fails": [
+     "turn_failed"
+    ],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": []
+   }
+  ],
+  "path": [
+   {
+    "title": "What is a hash table?",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "How does hashing work?",
+    "level": "taught",
+    "due": false,
+    "misses": 1
+   },
+   {
+    "title": "Handling collisions",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Lookup speed and limitations",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 5,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "compound_interest",
+  "notebook": "19f8b5bc-5972-4090-8d79-4345ed48a119",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 30 and bad with maths. Why do people say start saving early? Show me with numbers.",
+    "reply": "Compound interest means you earn interest on both the money you put in and on the interest that money has already earned. The chart below shows why starting at 20 instead of 30 makes a huge difference—by retirement at 65, the early saver has much more, even if both put away the same amount each year.\n\nWhy do you think waiting 10 years to start (from 20 to 30) makes such a big difference by the end?",
+    "seconds": 156.8,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_graph"
+    ],
+    "refused": [
+     "draw_graph"
+    ],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "I couldn't reach the tutor model just now. Please try asking again in a moment.",
+    "seconds": 24.7,
+    "fails": [
+     "turn_failed"
+    ],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "wrong",
+    "learner": "So interest is only paid on the money I put in?",
+    "reply": "I couldn't reach the tutor model just now. Please try asking again in a moment.",
+    "seconds": 28.2,
+    "fails": [
+     "turn_failed"
+    ],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "vague",
+    "learner": "because it grows more, I guess?",
+    "reply": "Exactly—the longer your money grows, the bigger the difference gets, thanks to compound interest. \n\nIf you save $1,000 at age 30, by age 60 you have about $1,669 more than if you started at 40. Why do you think the interest earned each year starts to get bigger over time?",
+    "seconds": 65.2,
+    "fails": [
+     "praised_wrong",
+     "wrong_not_recorded"
+    ],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "You earn interest on the interest too, so it grows faster the longer it stays.",
+    "reply": "Right—you earn interest on the interest too, so your money grows faster and faster. Here’s how it builds up: each year, you get interest on a bigger amount because the interest from before is now part of your savings.\n\nSuppose you left your money in for 10, 20, or 30 years—what do you think happens to the total as you leave it longer?",
+    "seconds": 22.2,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "Here are the exact numbers: after 10 years, your $1,000 grows to $1,629; after 20 years, $2,653; and after 30 years, $4,322. The longer you leave it, the faster it grows.\n\nIf you had to choose, would it be better to save early and let time work, or to wait and try to save more later? Why?",
+    "seconds": 9.8,
+    "fails": [],
+    "blocks": [
+     "draw_table"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "If you start early, time does most of the heavy lifting for you—compound interest multiplies your savings more the longer it works. Would you rather have $1,000 working for you for 30 years, or put in $2,000 but only let it grow for 10 years? Why do you think that is?",
+    "seconds": 19.2,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Starting ten years earlier gives the money ten more years of growth on growth.",
+    "reply": "Exactly—starting ten years earlier gives your money ten more years to grow on itself, making a much bigger difference than most people expect. \n\nWould you like to see how this plays out with monthly savings, or are you curious about anything else?",
+    "seconds": 8.5,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Why start early?",
+    "level": "remembered",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "How compound interest works",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Numbers in action",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 4,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "photosynthesis",
+  "notebook": "b396a096-3369-4043-bcc8-bd33a577159b",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 12. What is photosynthesis?",
+    "reply": "Photosynthesis is how plants use sunlight, carbon dioxide, and water to make their own food and release oxygen. Why do you think oxygen is important for us?",
+    "seconds": 15.0,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Photosynthesis is how plants make their own food, and they need sunlight for energy to do this. What do you think would happen if a plant didn’t get any sunlight at all?",
+    "seconds": 6.9,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "Plants eat soil to get their food?",
+    "reply": "Plants do not eat soil—they get water from it, but make their food using water, carbon dioxide, and sunlight. Can you name one thing, besides water, that plants need to make their food?",
+    "seconds": 5.7,
+    "fails": [
+     "wrong_not_corrected"
+    ],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "plants do something with light?",
+    "reply": "Not quite—plants do use light, but they also need something from the air. What is the gas that we breathe out, which plants use to help make their food?",
+    "seconds": 4.1,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "Plants use sunlight, water and carbon dioxide to make sugar.",
+    "reply": "Exactly! Plants use sunlight, water, and carbon dioxide to make sugar. Here’s a diagram showing what goes in and out during photosynthesis. What do plants release into the air during this process?",
+    "seconds": 12.3,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "Plants take in water, carbon dioxide, and sunlight, and they release oxygen into the air as a result of photosynthesis. How does this help animals and people?",
+    "seconds": 5.0,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Plants release oxygen during photosynthesis, which we need to breathe. Why do you think animals and people would have trouble surviving without plants?",
+    "seconds": 8.7,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "They give off oxygen as a by-product.",
+    "reply": "That’s right—plants release oxygen as a by-product during photosynthesis, which goes into the air for animals and people to breathe. Can you remember what three things a plant needs to start photosynthesis?",
+    "seconds": 10.5,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "What Photosynthesis Is",
+    "level": "remembered",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "The Ingredients and Products",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Why Photosynthesis Matters",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 3,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "seasons",
+  "notebook": "2685539c-9cf1-490f-aa96-db9618d086a2",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 15. Why do we have seasons on Earth?",
+    "reply": "We have seasons because Earth's axis is tilted, so as Earth orbits the Sun, different areas get more or less sunlight during the year. This causes the weather changes we call seasons.\n\nIf Earth's axis were not tilted, what do you think would happen to our seasons?",
+    "seconds": 15.7,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene",
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "The key point is Earth's tilt—without it, we would not experience real seasons. Now, what do you think would happen to winter and summer if Earth's axis were not tilted at all?",
+    "seconds": 19.6,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "Because Earth is closer to the Sun in summer?",
+    "reply": "That's a common idea, but it's not quite right. Think about this: in January, Earth is actually closest to the Sun, but it's winter in the Northern Hemisphere. What does that tell us about the cause of seasons?",
+    "seconds": 6.5,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "it's about the sun somehow?",
+    "reply": "If distance were the cause, both hemispheres would have summer and winter at the same time, but that's not what happens. Instead, the tilt changes how sunlight hits each part of Earth throughout the year. \n\nWhy does the Northern Hemisphere get more sunlight in June?",
+    "seconds": 26.8,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "Earth's axis is tilted, so each hemisphere gets more direct sunlight at different times of the year.",
+    "reply": "Exactly—that's the main idea! Now, let's look at how Earth's tilt changes the angle of sunlight in June and December. If the Northern Hemisphere is tilted toward the Sun in June, what season is it there?",
+    "seconds": 16.1,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "When it’s summer in the USA, it’s winter in Australia, because the hemispheres get opposite sunlight. What season is it in Australia when it’s summer in the USA?",
+    "seconds": 27.4,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes",
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "When it is summer in the USA, it is winter in Australia, because the hemispheres get different sunlight due to Earth's tilt. \n\nCan you explain, in your own words, why we experience seasons on Earth?",
+    "seconds": 7.1,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes",
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "When it's summer in the north, it's winter in the south.",
+    "reply": "Right, that's exactly how it works—when one hemisphere is tilted toward the Sun, it gets summer, while the other gets winter. \n\nIf Earth's axis were not tilted, how would the amount of sunlight change as Earth moves around the Sun?",
+    "seconds": 21.2,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Short answer",
+    "level": "taught",
+    "due": false,
+    "misses": 2
+   },
+   {
+    "title": "Earth's tilt and sunlight angles",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Orbit and hemisphere differences",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 4,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "dns",
+  "notebook": "0668e860-8ee6-4f55-a518-25c4635ca989",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm a beginner. What happens when I type a website name into my browser?",
+    "reply": "When you type a website name into your browser, it finds the server, asks for the web page, and then shows it to you. \n\nWhy do you think the browser has to find the server before showing you the web page?",
+    "seconds": 13.7,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "The browser needs the server’s address to know where to go—just like needing a phone number to call someone. Now: why can’t the browser just use the website name to connect?",
+    "seconds": 8.8,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "The browser already knows where every website is?",
+    "reply": "Not quite—the browser doesn’t already know where every website is. It actually needs to look up the address for each website name you type in.\n\nIf you typed a website name the browser has never seen before, what do you think it would do to find out where to go?",
+    "seconds": 7.1,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "it goes to the internet?",
+    "reply": "Not quite—it doesn't just \"go to the internet\" and instantly know where to look. Think about when you want to send a letter: if you only have the person's name, can you send it, or do you need something else?\n\nWhat does the browser need, besides the website name, to actually reach the right place?",
+    "seconds": 7.6,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "A DNS server turns the name into an IP address.",
+    "reply": "Exactly right! The DNS server's job is to turn the website name into an IP address so the browser knows where to go. \n\nIf the DNS resolver doesn't have the answer, what does it do next?",
+    "seconds": 15.5,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "Here’s how DNS resolves names: the browser checks its cache, then asks the DNS resolver, which may ask other DNS servers until it finds the answer. This process helps the browser get the IP address it needs.\n\nWhat would happen if the DNS resolver didn’t know the answer and stopped there?",
+    "seconds": 12.7,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "The browser can only load a web page after DNS gives it the right address. Why is DNS so important for using the web?",
+    "seconds": 20.9,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Then the browser asks the server at that address for the page.",
+    "reply": "You’ve got it—the browser uses the IP address from DNS to contact the server and get the web page. \n\nIf you had to visit a website without DNS, what would you need to type instead of the website’s name?",
+    "seconds": 21.3,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes",
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Short Answer",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "How DNS Resolves Names",
+    "level": "taught",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Connecting to the Website",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap Card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 4,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "supply_demand",
+  "notebook": "ee865a9e-57f1-4385-884d-58d0cf473064",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 16. How do supply and demand set a price?",
+    "reply": "Supply means how much sellers want to sell at each price, and demand means how much buyers want to buy. When supply and demand are equal, you get the market price—the price you actually see. The diagram shows how buyers and sellers influence the market, and how the market sets the price where supply equals demand.\n\nIf the price was set higher than this market price, what do you think would happen—would there be more goods available, or more buyers wanting to purchase? Why?",
+    "seconds": 12.0,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "If the price is set too high, sellers end up with extra goods because buyers aren't willing to buy as much at that price. \n\nNow, what do you think usually happens to the price when sellers have lots of unsold goods?",
+    "seconds": 10.1,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "Sellers just pick whatever price they want?",
+    "reply": "Sellers can set any price they want, but buyers decide if they're willing to pay it. So, both sides are involved in setting the actual market price.\n\nWhy might a seller lower their price if their goods aren’t selling?",
+    "seconds": 7.1,
+    "fails": [
+     "wrong_not_corrected"
+    ],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "it depends on people?",
+    "reply": "Sellers usually lower prices if buyers aren't interested, to attract more customers.\n\nWhy do you think buyers want less of something as the price goes up?",
+    "seconds": 7.1,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "If more people want it than there is, the price goes up.",
+    "reply": "When the price rises, fewer people can afford to buy the good, or they might choose to spend their money on something else. That’s why demand usually goes down as price increases. \n\nWhat would happen to the demand for a product if its price suddenly dropped a lot?",
+    "seconds": 13.4,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "As the price rises, sellers want to offer more of the product because they can earn more profit. \n\nWhy do you think sellers might not want to supply much of a product if the price is very low?",
+    "seconds": 13.9,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes",
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Sellers supply less at low prices because it’s not profitable for them to sell. \n\nIf a product is selling for very little money, what might a seller do instead of offering more of it?",
+    "seconds": 14.2,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "The price settles where the amount people want equals the amount sold.",
+    "reply": "Exactly right—the price settles where what buyers want to buy matches what sellers want to sell. Now, let's see how the price changes when demand or supply shifts, like when more people want a product but the amount for sale stays the same.\n\nIf demand rises but supply doesn't, what do you think happens to the price and the amount sold?",
+    "seconds": 10.8,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Supply and demand interact",
+    "level": "taught",
+    "due": false,
+    "misses": 2
+   },
+   {
+    "title": "Demand curve explained",
+    "level": "taught",
+    "due": false,
+    "misses": 1
+   },
+   {
+    "title": "Supply curve explained",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Equilibrium price and changes",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 5,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "llm",
+  "notebook": "0239238f-055a-48b2-9dbc-d161dbfe4025",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm a developer who uses LLMs. How does a model go from my prompt to its answer?",
+    "reply": "When you send a prompt, the model first splits it into tokens, then the neural network predicts the next tokens, and finally those tokens are combined into the text you see as the answer. The diagram shows how your input flows through each stage.\n\nIf you gave a prompt with a spelling error, at which step do you think that might affect the output most—and why?",
+    "seconds": 12.9,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "When the model tokenizes your prompt, it transforms it into pieces the network can process as numbers—if there’s a spelling error, this step determines how the mistake is represented to the rest of the model.\n\nWhy do you think the model needs to tokenize text instead of reading whole sentences at once?",
+    "seconds": 17.0,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "It looks the answer up in a database?",
+    "reply": "Not quite—the model doesn’t look up answers in a database. Think about how a computer works with language: can it do math directly on words or sentences as they are, or does it need to translate them into something else first?",
+    "seconds": 5.6,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "it's a big neural network thing?",
+    "reply": "The model can’t do math on text itself—it must turn words or sentences into numbers first, using tokenization. \n\nWhat might happen if “cat” and “kat” are tokenized differently—how could that affect the model’s understanding?",
+    "seconds": 7.2,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "It splits the prompt into tokens and predicts the next token, one at a time.",
+    "reply": "If “cat” and “kat” are tokenized into different numbers, the model treats them as entirely different things—even if a human sees them as similar. That’s why tokenization is so important: it decides what the model “sees.”\n\nWhy do you think attention mechanisms are useful once the model has all these token representations?",
+    "seconds": 14.0,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "Attention helps the model focus on which tokens in your prompt matter most when generating each new piece of the answer. The diagram shows how the model connects all tokens before making its next prediction.\n\nWhat might happen if the model ignored some tokens entirely during this process?",
+    "seconds": 12.7,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "If the model ignores some tokens, it may miss important details or context, leading to less accurate or confusing answers. Attention allows it to weigh every part of your prompt—even distant pieces—when predicting the next token.\n\nWhat would happen if you gave the model a prompt with information spread out over several sentences?",
+    "seconds": 7.8,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "taught",
+      "ok"
+     ],
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Each new token is added to the input and the prediction repeats.",
+    "reply": "Exactly—the model keeps predicting each new token and adds it to the sequence, repeating this process until the answer is done. Sometimes it will sample from several likely tokens instead of always picking the top one. \n\nWhat do you think might happen if the model always chose only the single most likely next token at every step?",
+    "seconds": 15.0,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Prompt Tokenization",
+    "level": "taught",
+    "due": false,
+    "misses": 3
+   },
+   {
+    "title": "Neural Processing and Attention",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Token Prediction and Sampling",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Output Assembly and Recap",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 4,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "quadratics",
+  "notebook": "2d882e38-40b1-4629-86a8-712769fc2794",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 16. How do I solve x^2 - 5x + 6 = 0, and what does it look like on a graph?",
+    "reply": "To solve x² - 5x + 6 = 0, we look for two numbers that multiply to 6 and add up to -5. The solutions, called roots, are where the graph crosses the x-axis—at x = 2 and x = 3.\n\nWhy do you think the graph only touches the x-axis at these two points and not anywhere else?",
+    "seconds": 9.9,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_graph"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "The equation x² - 5x + 6 = 0 factors to (x - 2)(x - 3) = 0, so the solutions are x = 2 and x = 3. \n\nWhy do we pick -2 and -3 for the factors—what do those numbers do for us?",
+    "seconds": 12.7,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "Error: The factors are (x - 2) and (x - 3), not (x + 2) and (x + 3); we do not pick -2 and -3.",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "You just divide everything by x?",
+    "reply": "Actually, we don’t divide by x—instead, we look for two numbers that multiply to 6 and add to -5, which are -2 and -3. That’s why we factor the equation as (x - 2)(x - 3) = 0.\n\nIf you multiply (x - 2)(x - 3) out, what do you get?",
+    "seconds": 13.5,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "you factor it or something?",
+    "reply": "When you expand (x - 2)(x - 3), you get back the original quadratic, x² - 5x + 6. \n\nNext, let's see what the graph of this equation looks like. Where does it cross the x-axis?",
+    "seconds": 21.0,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "It factors into (x - 2)(x - 3) = 0, so x = 2 or x = 3.",
+    "reply": "Exactly—the graph crosses the x-axis at x = 2 and x = 3. These are called the roots or solutions of the equation.\n\nWhat do you think is the lowest point (the vertex) of the parabola?",
+    "seconds": 7.2,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "The vertex is the lowest point of the parabola, and it’s found halfway between the roots. For this equation, the vertex is at x = 2.5, and plugging that in gives y = -0.25.\n\nHow does the position of the vertex relate to the roots?",
+    "seconds": 7.7,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "4",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "The vertex is always halfway between the two roots. For this equation, that's at x = 2.5, right between x = 2 and x = 3. When you plug x = 2.5 into the equation, you get the lowest point of the parabola, which is (2.5, -0.25).\n\nIf the roots were at x = 1 and x = 5 instead, where would the vertex be?",
+    "seconds": 14.5,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "4",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Those are where the parabola crosses the x-axis.",
+    "reply": "The vertex is always at the midpoint between the two roots on the x-axis. \n\nNow, what are the solutions to x² - 5x + 6 = 0?",
+    "seconds": 7.6,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "4",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Solving the Equation",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Factoring Explained",
+    "level": "taught",
+    "due": false,
+    "misses": 2
+   },
+   {
+    "title": "Graph Shape and Roots",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Vertex Location",
+    "level": "taught",
+    "due": false,
+    "misses": 1
+   },
+   {
+    "title": "Recap Card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 5,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ }
+]
