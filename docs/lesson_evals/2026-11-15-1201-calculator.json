@@ -1,0 +1,396 @@
+[
+ {
+  "id": "compound_interest",
+  "notebook": "30970cbe-9dab-4c78-b01a-92394310516c",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 30 and bad with maths. Why do people say start saving early? Show me with numbers.",
+    "reply": "If you save $1,000 at age 20 and let it grow at 7% per year, you end up with much more at age 65 than if you started at age 30—even though you saved the same amount. Why do you think the gap is so big, even though the only difference is when you started?",
+    "seconds": 9.3,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_graph"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Starting early gives your money more years to grow, which makes a huge difference thanks to compound interest. Would you like to see how compound interest works, step by step, with your numbers?",
+    "seconds": 4.9,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "So interest is only paid on the money I put in?",
+    "reply": "Interest is paid on both your original money and all the interest that builds up over time. As your total grows, you earn a bit more interest each year. What do you think happens to the interest you earn as your total keeps getting bigger?",
+    "seconds": 7.4,
+    "fails": [
+     "wrong_not_corrected"
+    ],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "because it grows more, I guess?",
+    "reply": "Each year, your interest gets bigger because it’s based on a growing total. Why do you think the interest earned in year 2 is higher than in year 1?",
+    "seconds": 7.5,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "You earn interest on the interest too, so it grows faster the longer it stays.",
+    "reply": "Exactly—that’s compound interest in action. Your interest grows faster because it’s paid on both your savings and the interest you’ve already earned. Would you like to see a real example with numbers, showing how much more you get by starting early?",
+    "seconds": 5.4,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "If you start saving $1,000 at age 30 and let it grow at 5% for 30 years, you end up with about $4,322. If you started 10 years later, at age 40, you’d only have about $2,653 by age 60. That’s a difference of about $1,669—just by starting earlier, with the same amount. Why do you think waiting those 10 years costs so much growth?",
+    "seconds": 6.0,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Starting early matters because it gives compound interest more years to work, making your money grow much more—even if you only save a small amount. If you had to explain to someone why time matters more than the amount saved, what would you say?",
+    "seconds": 7.4,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ],
+     [
+      "4",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Starting ten years earlier gives the money ten more years of growth on growth.",
+    "reply": "Right—starting earlier gives your money more years to earn interest on the interest, so your total grows much faster than if you start later.\n\nSuppose someone saves $500 at age 25 and someone else saves the same $500 at age 35, both at 5% per year. Who ends up with more at age 65, and why?",
+    "seconds": 8.3,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Why start early?",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "How compound interest works",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Numbers in action",
+    "level": "taught",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap",
+    "level": "taught",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": true,
+   "next": 3,
+   "checked": 1,
+   "of": 4,
+   "weak": [
+    3,
+    4
+   ],
+   "passed": false,
+   "asked": 1
+  }
+ },
+ {
+  "id": "quadratics",
+  "notebook": "e7f81542-4204-4adb-bfed-0e7c665a51f3",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 16. How do I solve x^2 - 5x + 6 = 0, and what does it look like on a graph?",
+    "reply": "You solve x² - 5x + 6 = 0 by factoring it into (x-2)(x-3), which gives the solutions x = 2 and x = 3. On the graph of y = x² - 5x + 6, you see a parabola crossing the x-axis at these points.\n\nWhy does the curve cross the x-axis exactly at x = 2 and x = 3?",
+    "seconds": 8.2,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_graph"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "The curve crosses the x-axis at x = 2 and x = 3 because these are the values where the equation equals zero—when you substitute x = 2 or x = 3 into x² - 5x + 6, you get zero. \n\nIf you plug x = 2 into the equation, what value do you get?",
+    "seconds": 13.9,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "You just divide everything by x?",
+    "reply": "That’s not quite right—dividing by x wouldn’t solve this equation and could even lose solutions. Let’s try something easier: if you substitute x = 2 into x² - 5x + 6, what does each part become? What is 2² - 5×2 + 6?",
+    "seconds": 7.3,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "you factor it or something?",
+    "reply": "That’s not quite the answer to my question—let’s break it down. If you substitute x = 2 into x² - 5x + 6, what is 2²? What is 5 × 2? Let’s try just 2² first: what is 2 squared?",
+    "seconds": 2.3,
+    "fails": [
+     "wrong_not_recorded"
+    ],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "right",
+    "learner": "It factors into (x - 2)(x - 3) = 0, so x = 2 or x = 3.",
+    "reply": "Substituting x = 2 into x² - 5x + 6 gives 0, showing why the graph crosses the x-axis at that point. The graph is a parabola, and it crosses the x-axis at x = 2 and x = 3.\n\nWhat do the points x = 2 and x = 3 represent on the graph?",
+    "seconds": 7.2,
+    "fails": [],
+    "blocks": [
+     "draw_scene",
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "The points x = 2 and x = 3 are called roots or x-intercepts—these are where the graph crosses the x-axis. \n\nIf a quadratic equation had no real roots, what would its graph look like with respect to the x-axis?",
+    "seconds": 7.9,
+    "fails": [],
+    "blocks": [
+     "draw_scene",
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "If a quadratic equation has no real roots, its graph will not cross the x-axis—the whole parabola sits above or below the axis. \n\nHow could you tell from the graph if a quadratic equation has one, two, or no real solutions?",
+    "seconds": 8.1,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ],
+     [
+      "4",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Those are where the parabola crosses the x-axis.",
+    "reply": "Right—those points are exactly where the parabola crosses the x-axis: the roots of the equation.\n\nIf the parabola opened downward instead, how would the graph change?",
+    "seconds": 8.3,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "2",
+      "taught",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Solving the quadratic",
+    "level": "taught",
+    "due": false,
+    "misses": 2
+   },
+   {
+    "title": "Graph shape and intercepts",
+    "level": "taught",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Connecting solutions and graph",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap card",
+    "level": "taught",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": true,
+   "next": 1,
+   "checked": 0,
+   "of": 4,
+   "weak": [
+    1,
+    2,
+    4
+   ],
+   "passed": false,
+   "asked": null
+  }
+ }
+]

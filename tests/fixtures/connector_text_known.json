@@ -1,0 +1,1067 @@
+{
+ "source": "browser-measured investigation docs/benchmark_runs/2026-10-15-controlled/connector_text_qa (real Chromium, saved z-order); connectors are identified by their end points, labels by their text",
+ "known_true": [
+  {
+   "board": "DXMV",
+   "connector": {
+    "start": [
+     880,
+     640
+    ],
+    "end": [
+     520,
+     680
+    ]
+   },
+   "labels": [
+    "Precipitation"
+   ],
+   "expect": "body",
+   "severity": "strong",
+   "category": "A",
+   "note": "curve ends inside the box under its label"
+  },
+  {
+   "board": "FXXJ",
+   "connector": {
+    "start": [
+     510,
+     320
+    ],
+    "end": [
+     510,
+     235
+    ]
+   },
+   "labels": [
+    "Authentication",
+    "Service"
+   ],
+   "expect": "body",
+   "severity": "strong",
+   "category": "A",
+   "note": "line drawn through the whole target box"
+  },
+  {
+   "board": "KQQT",
+   "connector": {
+    "start": [
+     750,
+     280
+    ],
+    "end": [
+     870,
+     480
+    ]
+   },
+   "labels": [
+    "1. Cache Read"
+   ],
+   "expect": "body",
+   "severity": "strong",
+   "category": "A",
+   "note": "dashed fallback crosses another connector's chip"
+  },
+  {
+   "board": "KQQT",
+   "connector": {
+    "start": [
+     750,
+     280
+    ],
+    "end": [
+     870,
+     480
+    ]
+   },
+   "labels": [
+    "1. Cache Read"
+   ],
+   "expect": "body",
+   "severity": "strong",
+   "category": "A",
+   "note": "dashed fallback crosses another connector's chip"
+  },
+  {
+   "board": "PZTX",
+   "connector": {
+    "start": [
+     980,
+     220
+    ],
+    "end": [
+     520,
+     320
+    ]
+   },
+   "labels": [
+    "Fail"
+   ],
+   "expect": "body",
+   "severity": "strong",
+   "category": "A",
+   "note": "free label on the curve"
+  },
+  {
+   "board": "XCVJ",
+   "connector": {
+    "start": [
+     650,
+     300
+    ],
+    "end": [
+     850,
+     220
+    ]
+   },
+   "labels": [
+    "Current"
+   ],
+   "expect": "body",
+   "severity": "strong",
+   "category": "A",
+   "note": "free label on the arc"
+  },
+  {
+   "board": "WLGR",
+   "connector": {
+    "start": [
+     240,
+     260
+    ],
+    "end": [
+     420,
+     260
+    ]
+   },
+   "labels": [
+    "Server checks"
+   ],
+   "expect": "body",
+   "severity": "strong",
+   "category": "A",
+   "note": "curve starts inside the diamond at its label"
+  },
+  {
+   "board": "WLGR",
+   "connector": {
+    "start": [
+     200,
+     400
+    ],
+    "end": [
+     200,
+     175
+    ]
+   },
+   "labels": [
+    "User submits",
+    "username & password",
+    "Server checks",
+    "credentials?",
+    "Error: Wrong",
+    "Try again"
+   ],
+   "expect": "body",
+   "severity": "strong",
+   "category": "A",
+   "note": "red return curve through three labels"
+  },
+  {
+   "board": "WLGR",
+   "connector": {
+    "start": [
+     200,
+     400
+    ],
+    "end": [
+     200,
+     175
+    ]
+   },
+   "labels": [
+    "username & password"
+   ],
+   "expect": "head",
+   "severity": "strong",
+   "category": "A",
+   "note": "its head sits on the label"
+  },
+  {
+   "board": "PFWD",
+   "connector": {
+    "start": [
+     990,
+     230
+    ],
+    "end": [
+     1040,
+     220
+    ]
+   },
+   "labels": [
+    "Database"
+   ],
+   "expect": "head",
+   "severity": "strong",
+   "category": "A",
+   "note": "line ends inside the oval, head on the label"
+  },
+  {
+   "board": "DXMV",
+   "connector": {
+    "start": [
+     540,
+     280
+    ],
+    "end": [
+     670,
+     250
+    ]
+   },
+   "labels": [
+    "Condensation"
+   ],
+   "expect": "head",
+   "severity": "strong",
+   "category": "B",
+   "note": "control points overshoot: head points backwards onto the label"
+  },
+  {
+   "board": "CJMG",
+   "connector": {
+    "start": [
+     715,
+     370
+    ],
+    "end": [
+     1060,
+     370
+    ]
+   },
+   "labels": [
+    "Released into the air"
+   ],
+   "expect": "covered",
+   "severity": "strong",
+   "category": "B",
+   "note": "a label box drawn later hides the head"
+  },
+  {
+   "board": "QKGD",
+   "connector": {
+    "start": [
+     235,
+     290
+    ],
+    "end": [
+     285,
+     290
+    ]
+   },
+   "labels": [
+    "Energy"
+   ],
+   "expect": "head",
+   "severity": "minor",
+   "category": "B",
+   "note": "28 px head touches the caption above"
+  },
+  {
+   "board": "QKGD",
+   "connector": {
+    "start": [
+     470,
+     290
+    ],
+    "end": [
+     520,
+     290
+    ]
+   },
+   "labels": [
+    "Energy"
+   ],
+   "expect": "head",
+   "severity": "minor",
+   "category": "B",
+   "note": "28 px head touches the caption above"
+  },
+  {
+   "board": "QKGD",
+   "connector": {
+    "start": [
+     705,
+     290
+    ],
+    "end": [
+     755,
+     290
+    ]
+   },
+   "labels": [
+    "Energy"
+   ],
+   "expect": "head",
+   "severity": "minor",
+   "category": "B",
+   "note": "28 px head touches the caption above"
+  },
+  {
+   "board": "QKGD",
+   "connector": {
+    "start": [
+     940,
+     290
+    ],
+    "end": [
+     990,
+     290
+    ]
+   },
+   "labels": [
+    "Energy"
+   ],
+   "expect": "head",
+   "severity": "minor",
+   "category": "B",
+   "note": "28 px head touches the caption above"
+  },
+  {
+   "board": "QKGD",
+   "connector": {
+    "start": [
+     205,
+     618
+    ],
+    "end": [
+     285,
+     618
+    ]
+   },
+   "labels": [
+    "Energy flows into"
+   ],
+   "expect": "head",
+   "severity": "minor",
+   "category": "B",
+   "note": "same, in the rules panel"
+  },
+  {
+   "board": "PFWD",
+   "connector": {
+    "start": [
+     710,
+     210
+    ],
+    "end": [
+     870,
+     230
+    ]
+   },
+   "labels": [
+    "Message Queue"
+   ],
+   "expect": "any",
+   "severity": "minor",
+   "category": "C",
+   "note": "label flush with the node edge"
+  },
+  {
+   "board": "WLRP",
+   "connector": {
+    "start": [
+     480,
+     350
+    ],
+    "end": [
+     600,
+     270
+    ]
+   },
+   "labels": [
+    "Load Balancer"
+   ],
+   "expect": "any",
+   "severity": "minor",
+   "category": "C",
+   "note": "label flush with the box"
+  },
+  {
+   "board": "WLRP",
+   "connector": {
+    "start": [
+     480,
+     350
+    ],
+    "end": [
+     600,
+     420
+    ]
+   },
+   "labels": [
+    "Load Balancer"
+   ],
+   "expect": "any",
+   "severity": "minor",
+   "category": "C",
+   "note": "label flush with the box"
+  },
+  {
+   "board": "XMWH",
+   "connector": {
+    "start": [
+     430,
+     238
+    ],
+    "end": [
+     490,
+     238
+    ]
+   },
+   "labels": [
+    "2. Browser checks DNS cache"
+   ],
+   "expect": "any",
+   "severity": "minor",
+   "category": "C",
+   "note": "label flush with the box"
+  },
+  {
+   "board": "CJMG",
+   "connector": {
+    "start": [
+     220,
+     600
+    ],
+    "end": [
+     560,
+     390
+    ]
+   },
+   "labels": [
+    "Absorbed by the roots"
+   ],
+   "expect": "any",
+   "severity": "minor",
+   "category": "C",
+   "note": "connector meets the first letter"
+  },
+  {
+   "board": "DXMV",
+   "connector": {
+    "start": [
+     540,
+     280
+    ],
+    "end": [
+     670,
+     250
+    ]
+   },
+   "labels": [
+    "Evaporation"
+   ],
+   "expect": "any",
+   "severity": "minor",
+   "category": "C",
+   "note": "curve leaves next to the last letter"
+  },
+  {
+   "board": "HZFT",
+   "connector": {
+    "start": [
+     530,
+     371
+    ],
+    "end": [
+     460,
+     287
+    ]
+   },
+   "labels": [
+    "Run the tests"
+   ],
+   "expect": "any",
+   "severity": "minor",
+   "category": "C",
+   "note": "label wider than the diamond"
+  }
+ ],
+ "known_hidden_under_chip": [
+  {
+   "board": "CJMG",
+   "connector": {
+    "start": [
+     260,
+     110
+    ],
+    "end": [
+     570,
+     300
+    ]
+   },
+   "label": "Light energy"
+  },
+  {
+   "board": "CJMG",
+   "connector": {
+    "start": [
+     990,
+     600
+    ],
+    "end": [
+     650,
+     400
+    ]
+   },
+   "label": "Taken in through tiny pores"
+  },
+  {
+   "board": "NGQC",
+   "connector": {
+    "start": [
+     660,
+     390
+    ],
+    "end": [
+     674,
+     390
+    ]
+   },
+   "label": "LIGHT BULB"
+  },
+  {
+   "board": "KXCX",
+   "connector": {
+    "start": [
+     560,
+     324
+    ],
+    "end": [
+     560,
+     438
+    ]
+   },
+   "label": "YES (Cached)"
+  },
+  {
+   "board": "KXCX",
+   "connector": {
+    "start": [
+     560,
+     324
+    ],
+    "end": [
+     560,
+     438
+    ]
+   },
+   "label": "Fast direct route"
+  },
+  {
+   "board": "KXCX",
+   "connector": {
+    "start": [
+     990,
+     335
+    ],
+    "end": [
+     765,
+     438
+    ]
+   },
+   "label": "IP Resolved (Uncached)"
+  },
+  {
+   "board": "KXCX",
+   "connector": {
+    "start": [
+     720,
+     542
+    ],
+    "end": [
+     720,
+     578
+    ]
+   },
+   "label": "Server processes request"
+  },
+  {
+   "board": "TWRN",
+   "connector": {
+    "start": [
+     685,
+     330
+    ],
+    "end": [
+     755,
+     197
+    ]
+   },
+   "label": "3. Take Job"
+  },
+  {
+   "board": "TWRN",
+   "connector": {
+    "start": [
+     915,
+     197
+    ],
+    "end": [
+     985,
+     330
+    ]
+   },
+   "label": "4. Save"
+  },
+  {
+   "board": "XCZJ",
+   "connector": {
+    "start": [
+     420,
+     650
+    ],
+    "end": [
+     235,
+     500
+    ]
+   },
+   "label": "Solar Heating ↑"
+  },
+  {
+   "board": "XCZJ",
+   "connector": {
+    "start": [
+     235,
+     315
+    ],
+    "end": [
+     420,
+     185
+    ]
+   },
+   "label": "Cooling Air ↑"
+  },
+  {
+   "board": "XCZJ",
+   "connector": {
+    "start": [
+     770,
+     185
+    ],
+    "end": [
+     965,
+     305
+    ]
+   },
+   "label": "Heavy Droplets ↓"
+  },
+  {
+   "board": "XCZJ",
+   "connector": {
+    "start": [
+     965,
+     490
+    ],
+    "end": [
+     790,
+     650
+    ]
+   },
+   "label": "Runoff & Flow ↓"
+  },
+  {
+   "board": "ZDFV",
+   "connector": {
+    "start": [
+     770,
+     245
+    ],
+    "end": [
+     562,
+     365
+    ]
+   },
+   "label": "✗ Fail"
+  },
+  {
+   "board": "ZDFV",
+   "connector": {
+    "start": [
+     370,
+     365
+    ],
+    "end": [
+     125,
+     257
+    ]
+   },
+   "label": "↩ Fix bug and re-push"
+  },
+  {
+   "board": "ZDFV",
+   "connector": {
+    "start": [
+     1025,
+     245
+    ],
+    "end": [
+     1025,
+     318
+    ]
+   },
+   "label": "QA verified"
+  },
+  {
+   "board": "ZDFV",
+   "connector": {
+    "start": [
+     1025,
+     425
+    ],
+    "end": [
+     1025,
+     498
+    ]
+   },
+   "label": "Approved ✓"
+  },
+  {
+   "board": "TDCM",
+   "connector": {
+    "start": [
+     340,
+     182
+    ],
+    "end": [
+     465,
+     275
+    ]
+   },
+   "label": "Light energy"
+  },
+  {
+   "board": "KQQT",
+   "connector": {
+    "start": [
+     490,
+     360
+    ],
+    "end": [
+     560,
+     250
+    ]
+   },
+   "label": "Share 50%"
+  },
+  {
+   "board": "KQQT",
+   "connector": {
+    "start": [
+     490,
+     420
+    ],
+    "end": [
+     560,
+     530
+    ]
+   },
+   "label": "Share 50%"
+  },
+  {
+   "board": "KQQT",
+   "connector": {
+    "start": [
+     750,
+     490
+    ],
+    "end": [
+     870,
+     260
+    ]
+   },
+   "label": "1. Cache Read"
+  },
+  {
+   "board": "KQQT",
+   "connector": {
+    "start": [
+     750,
+     490
+    ],
+    "end": [
+     870,
+     260
+    ]
+   },
+   "label": "2. Fallback (Miss)"
+  },
+  {
+   "board": "KQQT",
+   "connector": {
+    "start": [
+     750,
+     280
+    ],
+    "end": [
+     870,
+     480
+    ]
+   },
+   "label": "2. Fallback (Miss)"
+  },
+  {
+   "board": "KQQT",
+   "connector": {
+    "start": [
+     750,
+     280
+    ],
+    "end": [
+     870,
+     480
+    ]
+   },
+   "label": "2. Fallback (Miss)"
+  },
+  {
+   "board": "HGKK",
+   "connector": {
+    "start": [
+     570,
+     355
+    ],
+    "end": [
+     570,
+     448
+    ]
+   },
+   "label": "✗ Wrong"
+  },
+  {
+   "board": "HGKK",
+   "connector": {
+    "start": [
+     430,
+     528
+    ],
+    "end": [
+     220,
+     380
+    ]
+   },
+   "label": "↺ Send back to login form"
+  },
+  {
+   "board": "DKDW",
+   "connector": {
+    "start": [
+     840,
+     590
+    ],
+    "end": [
+     854,
+     155
+    ]
+   },
+   "label": "Repeat with a better question"
+  },
+  {
+   "board": "MKHK",
+   "connector": {
+    "start": [
+     660,
+     300
+    ],
+    "end": [
+     762,
+     180
+    ]
+   },
+   "label": "Take Job"
+  },
+  {
+   "board": "MKHK",
+   "connector": {
+    "start": [
+     660,
+     380
+    ],
+    "end": [
+     762,
+     500
+    ]
+   },
+   "label": "Take Job"
+  },
+  {
+   "board": "MKHK",
+   "connector": {
+    "start": [
+     905,
+     180
+    ],
+    "end": [
+     1017,
+     300
+    ]
+   },
+   "label": "Save Result"
+  },
+  {
+   "board": "MKHK",
+   "connector": {
+    "start": [
+     905,
+     500
+    ],
+    "end": [
+     1017,
+     380
+    ]
+   },
+   "label": "Save Result"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     490,
+     365
+    ],
+    "end": [
+     562,
+     200
+    ]
+   },
+   "label": "Shares Requests"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     490,
+     365
+    ],
+    "end": [
+     562,
+     200
+    ]
+   },
+   "label": "(50% Traffic)"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     490,
+     435
+    ],
+    "end": [
+     562,
+     600
+    ]
+   },
+   "label": "Shares Requests"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     490,
+     435
+    ],
+    "end": [
+     562,
+     600
+    ]
+   },
+   "label": "(50% Traffic)"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     750,
+     225
+    ],
+    "end": [
+     845,
+     332
+    ]
+   },
+   "label": "1. Read from Cache"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     750,
+     225
+    ],
+    "end": [
+     845,
+     332
+    ]
+   },
+   "label": "(Fast Check First)"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     750,
+     575
+    ],
+    "end": [
+     845,
+     468
+    ]
+   },
+   "label": "1. Read from Cache"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     750,
+     575
+    ],
+    "end": [
+     845,
+     468
+    ]
+   },
+   "label": "(Fast Check First)"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     753,
+     175
+    ],
+    "end": [
+     1065,
+     220
+    ]
+   },
+   "label": "(On Cache Miss)"
+  },
+  {
+   "board": "DHSQ",
+   "connector": {
+    "start": [
+     753,
+     625
+    ],
+    "end": [
+     1065,
+     580
+    ]
+   },
+   "label": "2. Fall Back to Database"
+  }
+ ]
+}

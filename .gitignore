@@ -1,0 +1,28 @@
+# secrets
+.env
+# generated / runtime
+generated_notebooks/
+logs/
+static/notebooks/
+*.db
+__pycache__/
+.pytest_cache/
+*.pyc
+test_audio.mp3
+test_align.json
+# frontend
+frontend/node_modules/
+frontend/dist/
+tests/eval_report.json
+tests/scratch/
+.claude/_*.txt
+tests/evidence_notebook_export.png
+
+# local overrides
+frontend/.env.local
+
+# cloned repos for research (kept locally, not part of the project)
+research_repos/
+
+# personal notes, never published
+notes.txt

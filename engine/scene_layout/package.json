@@ -1,0 +1,11 @@
+{
+  "name": "scene-layout",
+  "private": true,
+  "description": "ELK.js runner for engine/scene.py (scene mode). Install: npm install (in this folder).",
+  "type": "module",
+  "dependencies": {
+    "@fontsource/caveat": "5.2.8",
+    "elkjs": "0.9.3",
+    "mathjax-full": "3.2.2"
+  }
+}
