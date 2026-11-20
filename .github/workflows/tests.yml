@@ -34,7 +34,15 @@ jobs:
       - name: Install the browser for the browser tests
         run: python -m playwright install --with-deps chromium
       - name: Run the tests
-        run: python -m pytest -q
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m pytest -q -rfE 2>&1 | tee pytest.out || {
+            status=$?
+            # the first errors as annotations, so the cause shows on the run's summary page
+            grep -E "^(ERROR|FAILED)|^E   |Error:" pytest.out | head -15 | while IFS= read -r line; do echo "::error::$line"; done
+            exit $status
+          }
 
   frontend:
     runs-on: ubuntu-latest
