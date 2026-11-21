@@ -18,7 +18,6 @@ import html
 import io
 import json
 import os
-import zlib
 import math
 import re
 import shutil
@@ -739,34 +738,10 @@ def texture_on() -> bool:
     return os.getenv("LP_PAINT") == "svg"
 
 
-def paint_on() -> bool:
-    """LP_PAINT=1: shapes get a paint recipe, painted in the browser with p5.brush under the SVG (proof, off by default)."""
-    return os.getenv("LP_PAINT") == "1"
-
-
-def paint(kind: str, points, color: str, key: str, **extra) -> str:
-    """A paint recipe in board coordinates, kept in the SVG so the browser can repaint it sharp at any zoom and identically on every
-    replay (the seed comes from the element's id). Painted by frontend/src/components/whiteboard/PaintLayer.tsx with p5.brush; the
-    SVG keeps the outline, the text and the ids (pointing, screen readers, the repeat checks)."""
-    recipe = {"kind": kind, "points": [[round(px, 1), round(py, 1)] for px, py in points], "color": color,
-              "seed": zlib.crc32(key.encode()) % 100000, **extra}
-    return f'<desc class="paint">{escape(json.dumps(recipe))}</desc>'
-
-
-def outline(shape: str, x: float, y: float, w: float, h: float, k: int = 28) -> list:
-    """A shape's outline as points, for a paint recipe."""
-    if shape == "diamond":
-        return [(x + w / 2, y), (x + w, y + h / 2), (x + w / 2, y + h), (x, y + h / 2)]
-    if shape == "circle":
-        return [(x + w / 2 + w / 2 * math.cos(2 * math.pi * i / k), y + h / 2 + h / 2 * math.sin(2 * math.pi * i / k)) for i in range(k)]
-    return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
-
-
 def _node_svg(n, b, s, fill, stroke) -> str:
     sw = "3.6" if n.get("tone") == "accent" else "2"
     x, y, w, h = b["x"], b["y"], b["w"], b["h"]
-    wash = paint_on() and n["shape"] in ("box", "diamond", "circle", "pill")   # painted as watercolour under the SVG outline
-    st = f'fill="{fill}" stroke="{stroke}" stroke-width="{sw}"' + (' class="paint-fill"' if wash else "")   # fill hidden only once it is painted
+    st = f'fill="{fill}" stroke="{stroke}" stroke-width="{sw}"'
     if texture_on() and n["shape"] in ("box", "diamond", "circle", "pill"):   # the palette's pale fill as it is: any darker and the grey
         st += ' class="wash"'                                                    # detail text drops under 4.5:1 (checked per colour)
     if n["shape"] == "diamond":
@@ -786,7 +761,7 @@ def _node_svg(n, b, s, fill, stroke) -> str:
                  f'<rect x="{_n(x)}" y="{_n(y)}" width="{_n(w)}" height="{_n((n["head_h"] + 18) * s)}" {st}/>')
     else:
         shape = f'<rect x="{_n(x)}" y="{_n(y)}" width="{_n(w)}" height="{_n(h)}" {st}/>'
-    parts = ([paint("wash", outline(n["shape"], x, y, w, h), stroke, n["id"])] if wash else []) + [shape]
+    parts = [shape]
     cy = y + 9 * s if n["shape"] == "card" else y + (h - n["th"] * s) / 2 + (9 * s if n["shape"] == "cylinder" else 0)
     for r in n["rows"]:
         if "icon" in r:   # a nested <svg> scales the 24x24 icon without a transform attribute (the board forbids those)
@@ -1213,8 +1188,8 @@ def build_diagram(scene: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[s
         b = board["gbox"].get(g["id"])
         if b:
             layers[when[g["id"]]]["groups"].append(
-                f'<g id="{g["id"]}">{paint("wash", outline("box", b["x"], b["y"], b["w"], b["h"]), "#B8A98A", g["id"]) if paint_on() else ""}'
-                f'<rect x="{_n(b["x"])}" y="{_n(b["y"])}" width="{_n(b["w"])}" height="{_n(b["h"])}" fill="#F7F4EC"{' class="paint-fill"' if paint_on() else ' class="wash"' if texture_on() else ""} stroke="#CFC8B8" '
+                f'<g id="{g["id"]}">'
+                f'<rect x="{_n(b["x"])}" y="{_n(b["y"])}" width="{_n(b["w"])}" height="{_n(b["h"])}" fill="#F7F4EC"{' class="wash"' if texture_on() else ""} stroke="#CFC8B8" '
                 f'stroke-width="1.5" stroke-dasharray="7 6"/>{_text(b["x"] + 14, b["y"] + 10 * min(1, s), g["label"], (15, 700, 19), s, INK2, "start")}</g>')
     for e in scene["edges"]:
         if e["id"] in board["routes"]:

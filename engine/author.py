@@ -80,7 +80,7 @@ MODEL_TIMEOUT_S = 60.0
 MODEL_CONNECT_TIMEOUT_S = 5.0
 MODEL_MAX_RETRIES = 1
 # The httpx timeout above limits the SILENCE between bytes, not the whole call: a response that trickles in with gaps under 60 s could take much longer (measured in
-# tests/measure_timeout_semantics.py). This is a wall-clock ceiling for one model call, the SDK's own retry included: 2.6x the slowest healthy call (34 s), above the
+# tests/measure_timeout_semantics.py, archived). This is a wall-clock ceiling for one model call, the SDK's own retry included: 2.6x the slowest healthy call (34 s), above the
 # slowest call that ran to the token cap (81 s). The worker thread cannot be killed; it is abandoned and its late answer ignored.
 MODEL_CEILING_S = 90.0
 

@@ -235,7 +235,7 @@ two calls each. With the old instruction 2 of the 3 fixtures fail with exactly t
 - **Tests** `tests/test_empty_reply.py` (28, SQLite and Postgres): the four empty forms with nothing drawn are a failed turn and a typed 503 with the event logged; Try again gives a normal answer and one learner turn; a rejected drawing is not a success; the four empty forms after a successful draw store no turn, make no extra model call and log `tool_call_succeeded: true`; the same after an annotation;
   a normal reply is unchanged and logs nothing; an old empty tutor turn is neither sent nor counted in the 15-turn window; the export leaves it out. Checked in the browser: an old empty tutor turn is not drawn; a new empty reply gives one error bubble with Try again (also after a reload and a second failure).
 
-## Step 4: what `MODEL_TIMEOUT_S = 60` bounds (checked with a local server; `python tests/measure_timeout_semantics.py`)
+## Step 4: what `MODEL_TIMEOUT_S = 60` bounds (checked with a local server; script archived 2026-11-21)
 
 The value is an httpx **read** timeout (connect 5 s). It is **not a wall-clock limit on the whole call**; it limits the silence between bytes.
 - A server that accepts the request and then says nothing (what a non-streaming completion looks like while the model generates; Azure sends nothing until the reply is complete) is cut at the timeout: 3.0 s timeout -> cut after 3.0 s, 2.0 -> 2.0 (the very first call of a process is about a second slower).
@@ -326,7 +326,7 @@ By topic (history, maths, biology, code, economics, physics, language, dense): J
 - **What it covers.** The wait_for wraps the whole `create` call, so it is a ceiling for one *model call including the SDK's own retry*, not for each HTTP attempt. A silent stall is still cut by the 60 s read timeout, the SDK retries, and the retry has whatever is left of the 90 s (about 30 s). A true per-attempt ceiling would mean `max_retries=0` and our own retry loop; not done.
 - **Tests** `tests/test_model_ceiling.py` (the real SDK client against a local server, scaled to a 3 s ceiling; the 30 s healthy call of the real setting is 1 s): a body that trickles in is cut at the ceiling (3.0 s, not when the 9 s body would end) and becomes `ModelUnreachable`; the same trickle without the ceiling runs to its end (that is what the ceiling is for); a normal call and a slow healthy call (a third of the ceiling) are untouched.
   The tests time the call inside the coroutine: `asyncio.run` joins the abandoned thread when it closes its loop, which a running server never does per request.
-- **At the real setting** (`python tests/measure_model_ceiling.py`, in parallel): normal call 0.0 s, **slow healthy call (30 s) returned after 30.0 s, untouched**, **trickling body (150 s) cut after 90.0 s**.
+- **At the real setting** (`measure_model_ceiling.py`, archived, in parallel): normal call 0.0 s, **slow healthy call (30 s) returned after 30.0 s, untouched**, **trickling body (150 s) cut after 90.0 s**.
 
 
 # After the M report (decisions of the next round)
@@ -385,7 +385,7 @@ Among the samples where the model did redraw (A 15, B 20, C 20), a clean redraw 
 **1. The summary eval beyond eval M (a stricter judge, a third turn that depends on a detail of page 1, or a long notebook).** Parked.
 - *Why:* eval M (`docs/BASELINE.md`, "M results") found no benefit and no harm from the page summaries in either history window, at no measurable cost, and showed the scenario cannot detect a benefit: the neutral third message is answered by continuing the live request, which does not need page 1, and the cheap judge was too lenient (23 of 24 "correct and specific"). A test that could show value needs a third turn that depends on page-1 detail (which breaks the no-hint rule)
   or a notebook long enough that page 1 has left the 15-turn history, plus a stricter rubric ("a detail that appears only on page 1"). That is real work for a feature that is correct as text (8 of 8 summaries accurate, the boundary rule and the instruction fixed) and costs nothing.
-- *What is kept:* `tests/eval_multipage.py` (the harness, the run-to-run rule, the report), the two test-only switches `LP_TEST_SUMMARIES_OFF` and `LP_TEST_HISTORY_TURNS`, the `context_built` log event, `tests/measure_page1_terms.py`.
+- *What is kept:* `tests/eval_multipage.py` (the harness, the run-to-run rule, the report), the two test-only switches `LP_TEST_SUMMARIES_OFF` and `LP_TEST_HISTORY_TURNS`, the `context_built` log event, `tests/measure_page1_terms.py` (archived 2026-11-21).
 - *Trigger to pick it up again:* a real notebook where the tutor visibly forgets an earlier page, or the first time notebooks routinely run past the 15-turn window.
 
 **2. A true per-attempt ceiling (our own retry loop with `max_retries=0`).** Parked.

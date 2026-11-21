@@ -12,7 +12,7 @@ import operator
 from typing import List, Tuple
 from xml.sax.saxutils import escape
 
-from engine.scene import (DIAGRAM_LANE, demath, paint, paint_on, texture_on, INK, INK2, INTER, MAX_SAY, MAX_TEXT, PALETTE, _cut, SceneError, _cam, _lst, _n, _txt, place_block)
+from engine.scene import (DIAGRAM_LANE, demath, texture_on, INK, INK2, INTER, MAX_SAY, MAX_TEXT, PALETTE, _cut, SceneError, _cam, _lst, _n, _txt, place_block)
 
 MAX_SERIES, MAX_POINTS, MAX_MARKS, SAMPLES = 4, 60, 6, 240
 PLOT_W, PLOT_H = 580, 420
@@ -227,8 +227,7 @@ def build_graph(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
     cam = _cam(bx, by, w, h)
     colours = [PALETTE[i % len(PALETTE)][1] for i in range(len(lines))]
 
-    card = ' class="paint-fill"' if paint_on() and shade else ""   # an opaque card would hide the hatching painted under the SVG
-    axes = [f'<rect x="{_n(bx)}" y="{_n(by)}" width="{w}" height="{_n(h)}" rx="10" fill="#FFFFFF" stroke="#E5E1D6" stroke-width="1.5"{card}/>']
+    axes = [f'<rect x="{_n(bx)}" y="{_n(by)}" width="{w}" height="{_n(h)}" rx="10" fill="#FFFFFF" stroke="#E5E1D6" stroke-width="1.5"/>']
     if title:
         axes.append(txt(bx + 20, by + 30, title, 18, "start", INK, 700))
     for i, (label, _, _, _) in enumerate(lines if legend_h else []):
@@ -266,15 +265,14 @@ def build_graph(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
         body = "".join(f'<polyline points="{" ".join(r)}" fill="none" stroke="{colours[i]}" stroke-width="3" stroke-linejoin="round"/>' for r in runs)
         if is_points:
             body += "".join(f'<circle cx="{_n(sx(x))}" cy="{_n(sy(y))}" r="4" fill="{colours[i]}"/>' for x, y in data if clip(y) is not None)
-        if i == 0 and shade:   # the area between the curve and the axis: hatched by the paint layer, or a light fill without it
+        if i == 0 and shade:   # the area between the curve and the axis: a light fill, hatched as pencil lines with LP_PAINT=svg
             a, z = shade
             base = min(max(0.0, y0), y1)
             top = [(x, min(max(y, y0), y1)) for x, y in data if a <= x <= z and y is not None]
             if len(top) >= 2:
                 pts = [(sx(x), sy(y)) for x, y in top] + [(sx(top[-1][0]), sy(base)), (sx(top[0][0]), sy(base))]
-                body = ((paint("hatch", pts, colours[0], f"b{n}_shade") if paint_on() else "")   # the light fill stays until it is painted
-                        + f'<polygon points="{" ".join(f"{_n(px)},{_n(py)}" for px, py in pts)}" fill="{colours[0]}" fill-opacity="0.18" stroke="none"'
-                        + (' class="paint-fill"' if paint_on() else ' class="hatch"' if texture_on() else "") + "/>" + body)
+                body = (f'<polygon points="{" ".join(f"{_n(px)},{_n(py)}" for px, py in pts)}" fill="{colours[0]}" fill-opacity="0.18" stroke="none"'
+                        + (' class="hatch"' if texture_on() else "") + "/>" + body)
         steps.append((body, say))
     if marks:
         parts, placed = [], []   # label boxes already placed: a label that would overlap one moves up (live: x = 2 and x = 3 collided)

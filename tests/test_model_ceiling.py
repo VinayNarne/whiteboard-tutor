@@ -2,7 +2,7 @@
 A hard wall-clock ceiling for one model call (engine/author.py MODEL_CEILING_S = 90 s).
 
 The httpx timeout (60 s) limits the silence between bytes. A server that sends the headers and then trickles the body, one piece at a time with gaps under that timeout,
-is never cut by it (tests/measure_timeout_semantics.py: a 5 s call with a 2 s timeout). So the call is wrapped in asyncio.wait_for. Both ways, with the REAL SDK client
+is never cut by it (measure_timeout_semantics.py, archived: a 5 s call with a 2 s timeout). So the call is wrapped in asyncio.wait_for. Both ways, with the REAL SDK client
 against a local server, scaled to a 3 s ceiling (the 30 s healthy call of the real setting is 1 s here): a trickling body is cut at the ceiling and becomes
 ModelUnreachable (a failed turn, typed 503); a normal call and a slow healthy call are untouched.
 """

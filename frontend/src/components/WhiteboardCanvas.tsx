@@ -10,7 +10,6 @@ import { WhiteboardToolbar } from './whiteboard/WhiteboardToolbar';
 import { ZoomControls } from './whiteboard/ZoomControls';
 import { ReplayBar } from './whiteboard/ReplayBar';
 import { NarrationCaption } from './whiteboard/NarrationCaption';
-import { PaintLayer } from './whiteboard/PaintLayer';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, THEME_STYLES, type CanvasTheme } from './whiteboard/themes';
 import type {
   WsElementDrawn,
@@ -1045,8 +1044,6 @@ export function WhiteboardCanvas({
         overflow: 'hidden',
         position: 'relative',
       }}>
-        {/* Natural-media paint under the dot grid and the SVG, from the blocks' paint recipes (none unless the server sets LP_PAINT=1) */}
-        {isLessonBoard && <PaintLayer svgRef={svgRef} view={view} version={composedSvgContent} paper={themeStyles.canvasBg} />}
 
         {/* Background Dot Grid */}
         {showGrid && (

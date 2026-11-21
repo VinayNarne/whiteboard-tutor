@@ -227,10 +227,6 @@ textarea:focus-visible {
 .wb-item-actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .wb-item-actions .wb-item-close { background: transparent; color: var(--ink-2); padding: 6px 8px; }
 
-/* The paint layer (PaintLayer): a canvas under the board's SVG; painted shapes' SVG fills give way once the paint is on screen */
-.wb-paint { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.wb-paint canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-svg.painting .paint-fill, svg.painting .paint-fill path { fill: none; }   /* hand-drawn mode turns the shape into a <g> of paths */
 
 /* Texture proof (LP_PAINT=svg): watercolour on shapes marked wash (filter in WhiteboardCanvas <defs>); hatching is drawn by Rough.js */
 #whiteboard-elements .wash { filter: url(#wb-watercolour); }
