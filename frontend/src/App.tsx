@@ -640,8 +640,10 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
     setIsEditingNotebook(false);
   };
 
-  const handleReplay = async () => {
-    if (!activePageId || isReplaying) return;
+  const [replayFrom, setReplayFrom] = useState<string | null>(null);
+  const handleReplay = async (fromId?: string) => {
+    if (!activePageId || (isReplaying && !fromId)) return;
+    if (fromId) window.dispatchEvent(new CustomEvent('tutor_barge_in'));   // stop live narration / a running replay's clip first
     const res = await fetch(
       `/api/notebooks/${notebook.id}/pages/${activePageId}/events`
     );
@@ -651,6 +653,7 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
       e.kind === 'draw' || e.kind === 'modify' || e.kind === 'annotate' || e.kind === 'remove_annotation'
     );
     if (replayableEvents.length === 0) return;
+    setReplayFrom(fromId ?? null);
     setReplayEvents(replayableEvents);
     setIsReplaying(true);
   };
@@ -814,6 +817,8 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
           replayEvents={replayEvents}
           isReplaying={isReplaying}
           onReplayDone={handleReplayDone}
+          replayFrom={replayFrom}
+          onReplayFrom={id => handleReplay(id)}
           isMuted={isAudioMuted}
           playbackSpeed={audioSpeed}
           onPlaybackSpeedChange={setAudioSpeed}

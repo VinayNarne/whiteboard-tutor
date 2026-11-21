@@ -58,6 +58,9 @@ interface Props {
   replayEvents?: DrawItem[];
   isReplaying?: boolean;
   onReplayDone?: () => void;
+  /** Replay from this step id (omitted: from the start). */
+  replayFrom?: string | null;
+  onReplayFrom?: (stepId: string) => void;
   isMuted?: boolean;
   playbackSpeed?: number;
   onPlaybackSpeedChange?: (speed: number) => void;
@@ -78,6 +81,8 @@ export function WhiteboardCanvas({
   replayEvents,
   isReplaying = false,
   onReplayDone,
+  replayFrom = null,
+  onReplayFrom,
   isMuted = false,
   playbackSpeed: propSpeed = 1.0,
   onPlaybackSpeedChange,
@@ -352,8 +357,18 @@ export function WhiteboardCanvas({
       }
       await sleep(60);
 
-      let step = 0;
-      for (const item of replayEvents) {
+      // "Replay from here": steps before the chosen one appear at once, silent
+      const start = replayFrom ? replayEvents.findIndex(e => e.element_id === replayFrom && e.kind === 'draw') : -1;
+      if (start > 0) {
+        const before = new Map<string, string>();
+        for (const e of replayEvents.slice(0, start)) {
+          if (e.kind === 'draw' || e.kind === 'modify') before.set(e.element_id, e.svg_fragment);
+        }
+        setElements(before);
+      }
+
+      let step = Math.max(start, 0);
+      for (const item of replayEvents.slice(Math.max(start, 0))) {
         if (cancelledRef.current) break;
         step++;
         setReplayStep(step);
@@ -426,7 +441,7 @@ export function WhiteboardCanvas({
       setActiveElementId(null);
       setReplayStep(0);
     };
-  }, [isReplaying, replayEvents, drawAnnotation, removeAnnotationDom, followFragment, focusStep]);
+  }, [isReplaying, replayEvents, replayFrom, drawAnnotation, removeAnnotationDom, followFragment, focusStep]);
 
   // ---------------------------------------------------------------------------
   // Live draw & annotate events from WS: enqueue into FIFO live queue
@@ -804,6 +819,13 @@ export function WhiteboardCanvas({
     window.dispatchEvent(new CustomEvent('send_chat_query', { detail: { message: prompt(label), intent: activeIntent } }));
     closeItemActions();
   };
+  /** Replay from here: the step group that holds the clicked item (a node inside a diagram belongs to its step). */
+  const replayFromItem = () => {
+    const id = activeIntent?.selectedElementIds[0];
+    let n: Element | null = id && svgRef.current ? svgRef.current.querySelector(`[id="${CSS.escape(id)}"]`) : null;
+    while (n && !elements.has(n.id)) n = n.parentElement;
+    if (n) { onReplayFrom?.(n.id); closeItemActions(); }
+  };
   /** Ask…: the item stays selected and the learner types their own question about it. */
   const askTyped = () => window.dispatchEvent(new CustomEvent('focus_chat_input'));
 
@@ -1166,6 +1188,7 @@ export function WhiteboardCanvas({
               {!pair && <button type="button" onClick={() => askAboutItem(l => `Explain ${l} more simply, with an everyday analogy.`)}>Simpler</button>}
               {!pair && <button type="button" onClick={() => askAboutItem(l => `Give me a concrete real-world example of ${l}.`)}>Example</button>}
               <button type="button" onClick={askTyped}>Ask…</button>
+              {!pair && onReplayFrom && <button type="button" onClick={replayFromItem}>Replay from here</button>}
               <button type="button" className="wb-item-close" aria-label="Close" onClick={closeItemActions}>✕</button>
             </div>
           );
