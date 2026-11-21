@@ -33,7 +33,41 @@ from fontTools.ttLib import TTFont
 from engine._font_data import INTER_BOLD_WOFF2_B64, INTER_REGULAR_WOFF2_B64
 
 LAYOUT_DIR = Path(__file__).parent / "scene_layout"
-ICONS: Dict[str, str] = json.loads((LAYOUT_DIR / "icons.json").read_text(encoding="utf-8"))   # Lucide (ISC), see scene_layout/
+
+
+def _load_icons() -> Tuple[Dict[str, str], Dict[str, str]]:
+    """Lucide (ISC): name -> inner SVG markup, and tag -> name, from the pinned lucide-static package (npm install in scene_layout);
+    without it, the small committed icons.json (95 icons, names only)."""
+    pkg = LAYOUT_DIR / "node_modules" / "lucide-static"
+    if not (pkg / "icon-nodes.json").exists():
+        return json.loads((LAYOUT_DIR / "icons.json").read_text(encoding="utf-8")), {}
+    nodes = json.loads((pkg / "icon-nodes.json").read_text(encoding="utf-8"))
+    tags = json.loads((pkg / "tags.json").read_text(encoding="utf-8"))
+    icons = {k: "".join("<%s %s/>" % (t, " ".join('%s="%s"' % a for a in at.items())) for t, at in v) for k, v in nodes.items()}
+    by_tag: Dict[str, str] = {}
+    for name in sorted(tags):
+        for t in tags[name]:
+            by_tag.setdefault(t.lower(), name)
+    return icons, by_tag
+
+
+ICONS, ICON_TAGS = _load_icons()
+ICON_ALIASES = {"person": "user", "people": "users", "learner": "user", "student": "user", "customer": "user", "client": "monitor",
+                "computer": "monitor", "internet": "globe", "web": "globe", "website": "globe", "money": "banknote",
+                "plant": "sprout", "data": "database", "storage": "hard-drive", "memory": "memory-stick",
+                "cache": "zap", "email": "mail", "message": "message-square", "document": "file-text", "file": "file-text",
+                "idea": "lightbulb", "energy": "zap", "water": "droplet", "time": "clock", "security": "shield"}
+
+
+def match_icon(word) -> str | None:
+    """A Lucide icon name for a plain word: exact name, a short alias, then Lucide's own tags. No guessing beyond that."""
+    w = re.sub(r"[\s_]+", "-", str(word or "").strip().lower())
+    cands = list(dict.fromkeys([w, w[:-1] if w.endswith("s") else w]))
+    for look in (lambda c: c, ICON_ALIASES.get, ICON_TAGS.get):   # exact name, then alias, then tag, for the word and its singular
+        for c in cands:
+            if look(c) in ICONS:
+                return look(c)
+    return None
 
 W, H = 1200, 800   # the board width and the camera view shape
 MAX_NODES = 16          # more than this is two ideas: the tutor is asked to split it
@@ -126,7 +160,7 @@ SCENE_TOOL = {"type": "function", "function": {
             "detail": {"type": "string", "description": "Optional: one short supporting line under the label."},
             "shape": {"type": "string", "enum": SHAPES, "description": "box: step or component; diamond: yes/no decision; cylinder: stored data; circle: natural thing or state; pill: start, end or person."},
             "category": {"type": "string", "description": "One short word for what kind of thing it is (for example input, process, output). Nodes of the same kind share a colour: use two to five categories."},
-            "icon": {"type": "string", "enum": sorted(ICONS), "description": "Optional, only when it makes the thing instantly recognisable."},
+            "icon": {"type": "string", "description": "A plain word for a small picture above the label: give one to each node that is a concrete thing (e.g. \"server\", \"database\", \"user\", \"cell\", \"sun\", \"money\"); leave it out for abstract ideas (a process step, a rule, a number)."},
             "tone": {"type": "string", "enum": ["default", "accent", "muted"], "description": "accent on the one or two things to emphasise; muted for background things."},
             "group": {"type": "string", "description": "Id of the group this node sits in."},
             "sections": {"type": "array", "description": "For a card that summarises or compares: a few headed lines (for example Pros and Cons). Use sections instead of cramming several facts into the label.",
@@ -176,7 +210,7 @@ def normalise(scene: dict) -> dict:
     edges = [{**e, "label": demath(_txt(e.get("label"))), "dashed": e.get("dashed") is True} for e in _lst(scene.get("edges")) if isinstance(e, dict)]
     groups = [{**g, "label": _txt(g.get("label"))} for g in _lst(scene.get("groups")) if isinstance(g, dict)]
     steps = [{"say": _txt(st.get("say")), "show": _lst(st.get("show"))} for st in _lst(scene.get("steps")) if isinstance(st, dict)]
-    problems = []
+    problems, misses = [], []
     if not nodes:
         problems.append("The scene has no nodes.")
     if len(nodes) > MAX_NODES:
@@ -215,8 +249,11 @@ def normalise(scene: dict) -> dict:
                 problems.append(f"Node '{n['id']}' is in group '{n['group']}', which is not in groups.")
         if n.get("shape") not in SHAPES:
             n["shape"] = "box"
-        if n.get("icon") not in ICONS:
-            n.pop("icon", None)
+        word = n.pop("icon", "")
+        if word and (name := match_icon(word)):
+            n["icon"] = name
+        elif word:
+            misses.append(word)
         n["sections"] = [{"heading": _txt(s.get("heading"))[:MAX_TEXT], "text": _txt(s.get("text"))[:MAX_TEXT]}
                          for s in n["sections"][:6] if isinstance(s, dict) and _txt(s.get("text")).strip()]
     if problems:
@@ -237,7 +274,7 @@ def normalise(scene: dict) -> dict:
         when[e["id"]] = max(when.get(e["id"], 0), when[e["from"]], when[e["to"]])
     groups = [g for g in groups if any(n.get("group") == g["id"] for n in nodes)]
     return {"title": demath(_txt(scene.get("title"))).strip()[:MAX_TEXT], "layout": _txt(scene.get("layout")), "direction": _txt(scene.get("direction")),
-            "nodes": nodes, "edges": edges, "groups": groups, "steps": [{"say": str(s["say"]).strip()[:MAX_SAY]} for s in steps], "when": when}
+            "nodes": nodes, "edges": edges, "groups": groups, "steps": [{"say": str(s["say"]).strip()[:MAX_SAY]} for s in steps], "when": when, "icon_misses": misses}
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------
@@ -1072,6 +1109,11 @@ def build_notes(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
     return out, {"x": x0, "y": y0, "w": lane_w, "h": h}, {"kind": "recap" if recap else "notes", "lines": len(laid)}
 
 
+def icon_note(report: dict) -> str:
+    words = ", ".join(f'"{w}"' for w in report.get("icon_misses", [])[:3])
+    return f" No icon matched: {words} (the label is shown without it)." if words else ""
+
+
 def layout_note(report: dict) -> str:
     """One factual sentence when a drawn diagram came out worse than intended (labels shrunk small, or things overlapping); else ''.
     Only said to the tutor, never a refusal."""
@@ -1139,5 +1181,6 @@ def build_diagram(scene: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[s
         out.append((sid, f'<g id="{sid}">{cam}{head}{body}</g>', f"[[MARK:{sid}]] {demath(st['say'])}"))
     return out, box, {"kind": "diagram", "lane": "wide" if lane == WIDE_LANE else "diagram", "scale": round(s, 3), "label_px": round(LABEL[0] * s, 1),
                       "label_px_framed": round(LABEL[0] * eff, 1), "nodes": len(nodes), "edges": len(scene["edges"]), "steps": len(out),
+                      "icons": sum("icon" in n for n in nodes), "icon_misses": scene.get("icon_misses", []),
                       "long_labels": sum(sum(r.get("f") == LABEL for r in n["rows"]) > 3 for n in nodes),
                       "issues": geometry_issues(scene, board)}

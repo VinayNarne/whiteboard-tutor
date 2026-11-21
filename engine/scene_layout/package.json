@@ -6,6 +6,7 @@
   "dependencies": {
     "@fontsource/caveat": "5.2.8",
     "elkjs": "0.9.3",
+    "lucide-static": "1.47.0",
     "mathjax-full": "3.2.2"
   }
 }

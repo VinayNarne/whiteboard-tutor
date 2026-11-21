@@ -170,3 +170,4 @@ Two separate controls: the **mic button** (next to the chat box, Alt+M) is you s
 ## Licence
 
 MIT, see `LICENSE`. Bundled third-party code and fonts keep their own licences (elkjs: EPL-2.0; MathJax: Apache-2.0; the Caveat font: SIL Open Font License).
+Lucide icons: ISC.

@@ -1,0 +1,464 @@
+[
+ {
+  "id": "hash_table",
+  "notebook": "5c96185f-bf56-4411-ba74-bacab93a1fa6",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm a junior dev. How does a hash table find a key so fast?",
+    "reply": "The hash function converts the key into an index that points directly to where the value is stored, allowing the hash table to find the key very fast. What do you think would happen if two different keys produce the same index?",
+    "seconds": 7.7,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Let's clarify: a hash function transforms keys into numeric indices within the array size, pointing to where values are stored. When two keys produce the same index, that's called a collision. What do you think happens inside the hash table when a collision occurs?",
+    "seconds": 4.6,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "error"
+     ],
+     [
+      "2",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "It searches every slot until it finds the key?",
+    "reply": "Why do you think special handling of collisions is important for keeping lookup fast?",
+    "seconds": 5.9,
+    "fails": [
+     "wrong_not_corrected"
+    ],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "ok"
+     ],
+     [
+      "3",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "something with memory addresses?",
+    "reply": "Now, a hash table looks up a key by hashing it, going to the index found, checking if the key is there, and if not, searching the chain of collided keys. What would happen if the key is not found at the hashed index or in its chain?",
+    "seconds": 9.4,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "ok"
+     ],
+     [
+      "4",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "The hash function turns the key into an index, so it jumps straight to that slot.",
+    "reply": "Hash table performance depends on the quality of the hash function and the load factor, which is how full the table is. A high load factor causes more collisions, slowing lookups, while a good hash function spreads keys evenly to keep lookups fast. How do you think increasing the load factor affects the number of collisions?",
+    "seconds": 4.1,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "3",
+      "answered_wrong",
+      "ok"
+     ],
+     [
+      "4",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "The load factor means how full the hash table's array is with keys, as shown here. If the load factor increases, more keys fill the array, causing more collisions. More collisions mean the lookup process slows down. How do you think a good hash function helps keep the lookup process fast despite collisions?",
+    "seconds": 5.4,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "A good hash function spreads keys evenly across the array, so fewer keys share the same index when collisions happen. This reduces the work to find the right key and keeps lookups fast. What might happen if the hash function clustered many keys at just a few indices?",
+    "seconds": 3.4,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "When two keys get the same index, it stores both, for example in a list at that slot.",
+    "reply": "Right, hashing speeds up lookup because it converts the key to an index, letting the table jump directly to the value's location without scanning all keys. Would you like to explore how different hash functions affect the distribution of keys?",
+    "seconds": 3.8,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "4",
+      "taught",
+      "ok"
+     ],
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Hash table fast lookup",
+    "level": "remembered",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Hash function role",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Collision handling",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Lookup process",
+    "level": "taught",
+    "due": false,
+    "misses": 1
+   },
+   {
+    "title": "Performance factors",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 6,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "dns",
+  "notebook": "ddef0361-aa75-42da-9918-1c619915dced",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm a beginner. What happens when I type a website name into my browser?",
+    "reply": "When you type a website name into your browser, it goes through a series of steps to show you the page. It first asks a DNS server to find the website's IP address, then contacts the website's server with that address, gets the page data back, and finally displays it for you.\n\nWhat do you think would happen if the DNS server could not find the IP address for the website name you typed?",
+    "seconds": 6.4,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "When the DNS server cannot find the IP address, the website will not load because the browser cannot find the server to connect to.\n\nNow, let's look at what happens right after you type the website name: your browser asks the operating system to resolve that domain name. The OS first checks if it already knows the IP address (its cache). What do you think happens if the OS already has the IP address in its cache?",
+    "seconds": 3.4,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "error"
+     ],
+     [
+      "2",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "The browser already knows where every website is?",
+    "reply": "The browser does not already know the IP address of every website because there are billions of websites. Instead, the operating system keeps a cache of IP addresses it recently looked up. If the OS has the IP address in this cache, it returns the IP immediately without asking DNS servers again.\n\nNow let's move on to the next step: when the OS needs to find an IP address, the DNS resolver contacts a series of DNS servers in a specific order to find the IP. Can you guess which servers might be contacted in this process?",
+    "seconds": 4.5,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "it goes to the internet?",
+    "reply": "The DNS resolver asks different DNS servers in a specific order to find the IP address. This hierarchy is already noted here.\n\nNow, can you explain why the DNS resolver asks multiple servers instead of just one?",
+    "seconds": 14.9,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "A DNS server turns the name into an IP address.",
+    "reply": "No single DNS server knows every IP address, so the resolver asks multiple servers in a hierarchy: root servers first, then top-level domain (TLD) servers, and finally authoritative servers. This hierarchy helps find the correct IP address efficiently.\n\nWhy do you think the DNS system uses this hierarchical approach instead of having one big list of all websites?",
+    "seconds": 3.4,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "The hierarchical DNS system efficiently locates IP addresses by dividing the workload among different servers: root servers, then TLD servers, and finally authoritative servers, each responsible for a part of the address space.\n\nLet's focus now on what happens after the DNS resolver gets the IP address. What do you think your browser does next with that IP address?",
+    "seconds": 3.1,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "After the operating system finds the IP address, the browser uses it to connect to the website's server. It sends a request using protocols like HTTP or HTTPS to load the website content.\n\nNow, why do you think the authoritative DNS server is important in this DNS query process?",
+    "seconds": 3.2,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ],
+     [
+      "3",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Then the browser asks the server at that address for the page.",
+    "reply": "The authoritative DNS server is important because it holds the definitive IP address for the website you want.\n\nNow let's move on. After the browser gets the IP address, it sends a request to that server to load the website. What protocol do you think the browser uses to communicate with the server?",
+    "seconds": 3.0,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "DNS translates website names",
+    "level": "taught",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Browser asks OS for IP",
+    "level": "taught",
+    "due": false,
+    "misses": 3
+   },
+   {
+    "title": "DNS resolver queries servers",
+    "level": "taught",
+    "due": false,
+    "misses": 1
+   },
+   {
+    "title": "Browser sends HTTP request",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Website loads in browser",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 5,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ }
+]

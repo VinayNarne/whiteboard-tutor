@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from backend.models import Page, PageEvent
 from engine.sanitiser import sanitize_svg
-from engine.scene import (LAYOUT_DIR, LABEL, NOTE_LANE, WIDE_LANE, SceneError, board_blocks, build_diagram, build_notes, measure, normalise,
+from engine.scene import (LAYOUT_DIR, LABEL, NOTE_LANE, WIDE_LANE, SceneError, board_blocks, build_diagram, build_notes, icon_note, match_icon, measure, normalise,
                           page_view, place_block, prefix_ids)
 
 needs_elk = pytest.mark.skipif(not shutil.which("node") or not (LAYOUT_DIR / "node_modules" / "elkjs").exists()
@@ -433,3 +433,26 @@ def test_layout_note_only_for_a_diagram_that_came_out_worse():
     assert layout_note({"kind": "notes"}) == ""
     assert layout_note(diagram(SCENE)[2]) == ""                      # a normal diagram: no note
     assert "wrapped over many lines" in layout_note(diagram(big)[2])  # an over-long label gets the note
+
+
+def test_match_icon_exact_alias_plural_and_unknown():
+    assert match_icon("server") == "server" and match_icon("  Database ") == "database"
+    assert match_icon("student") == "user" and match_icon("internet") == "globe" and match_icon("data") == "database"
+    assert match_icon("servers") == "server" and match_icon("suns") == "sun"
+    assert match_icon("zzqx") is None and match_icon("") is None and match_icon(None) is None
+
+
+def test_icon_is_drawn_in_its_node_and_survives_the_sanitiser_and_unknown_words_are_noted():
+    sc = {**SCENE, "nodes": [{**SCENE["nodes"][0], "icon": "person"}, {**SCENE["nodes"][1], "icon": "zzqx"}, *SCENE["nodes"][2:]]}
+    nodes = normalise(sc)["nodes"]
+    assert nodes[0]["icon"] == "user" and "icon" not in nodes[1]
+    steps, box, report = diagram(sc)
+    assert report["icons"] >= 1 and report["icon_misses"] == ["zzqx"]
+    assert icon_note(report) == ' No icon matched: "zzqx" (the label is shown without it).'
+    board = "".join(f for _, f, _ in steps)
+    g = re.search(r'<g id="b1_browser">(.*?)</g>', board).group(1)
+    assert "<svg" in g and "<circle" in g and 'stroke-linecap="round"' in g
+    assert "<circle" in sanitize_svg(f'<svg xmlns="http://www.w3.org/2000/svg">{g}</svg>') and "stroke-linejoin" in sanitize_svg(f'<svg xmlns="http://www.w3.org/2000/svg">{g}</svg>')
+    from engine.scene import size_node
+    n = size_node({**normalise(sc)["nodes"][0]})
+    assert n["height"] >= 34 + LABEL[2] and n["width"] >= 60
