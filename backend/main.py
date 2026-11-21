@@ -957,6 +957,13 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     past = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id)).all() if planned else []
     plan_now, records = current_lesson(nb, session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), past) if planned else ("", [])
 
+    async def _load_board(page_id: str):
+        """replace_block: every step of the page as it is stored now, and the latest record of each block (a replacement stores a newer one)."""
+        with Session(engine) as db:
+            events = db.exec(select(PageEvent).where(PageEvent.page_id == page_id).order_by(PageEvent.seq)).all()
+        frags = {e.element_id: e.svg_fragment for e in events if e.kind == "modify" or is_drawing(e)}
+        return frags, {e.block["n"]: e.block for e in events if e.block}
+
     async def _run_agent_wrapper():
         return await run_whiteboard_author(
             notebook_id=notebook_id,
@@ -977,6 +984,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
             new_page_fn=_new_page,
             plan_page_fn=_plan_next_lesson,
             tool_log=tool_log,
+            load_board_fn=_load_board,
         )
 
     def keep_records():

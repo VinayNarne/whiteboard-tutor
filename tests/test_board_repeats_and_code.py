@@ -30,7 +30,7 @@ def test_a_diagram_that_repeats_one_on_the_board_is_refused():
     svg = _board(("diagram", SCENE))
     again = {**SCENE, "title": "The same, renamed"}
     why = repeats("draw_scene", again, svg)
-    assert "repeats block 1" in why and "annotate_element" in why
+    assert "repeats block 1" in why and "annotate_element" in why and "replace_block" in why and "\"b1\"" in why
     other = {**SCENE, "nodes": [{**n, "label": f"Thing {i}"} for i, n in enumerate(SCENE["nodes"])]}
     assert repeats("draw_scene", other, svg) == ""                               # a different diagram is fine
     listed = _board(("notes", {"lines": [{"text": f"{n['label']} step"} for n in SCENE["nodes"]]}))

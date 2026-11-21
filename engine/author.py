@@ -10,6 +10,7 @@ record a step of its lesson plan and calculate.
 import os
 import re
 import json
+import math
 import asyncio
 import threading
 import hashlib
@@ -28,7 +29,7 @@ from engine.markers import normalise_marker, strip_markers
 from engine.blocks import BAR_TOOL, TABLE_TOOL, VENN_TOOL, build_bar_chart, build_table, build_venn
 from engine.graph import CALC_TOOL, GRAPH_TOOL, build_graph, calculate
 from engine.lesson_plan import COURSE_GUIDE, PLAN_GUIDE, STEP_TOOL, may_start_next_lesson, path_titles
-from engine.scene import (ID_RE, MAX_BLOCKS_PER_TURN, NOTES_TOOL, SCENE_SYSTEM_PROMPT, SCENE_TOOL, SceneError, board_blocks, board_font_css, build_diagram, CUTS, cut_note, icon_note, layout_note, long_page_note, build_notes,
+from engine.scene import (ID_RE, MAX_BLOCKS_PER_TURN, NOTES_TOOL, SCENE_SYSTEM_PROMPT, SCENE_TOOL, REPLACE_TOOL, CAM_RE, FIXED_Y, SceneError, board_blocks, board_font_css, build_diagram, CUTS, cut_note, icon_note, layout_note, long_page_note, build_notes,
                           normalise as normalise_scene, page_view, prefix_ids, repeats, demath)
 from engine.validator import summarize_spatial_layout
 from engine.voice import generate_narration_audio
@@ -103,7 +104,7 @@ EMPTY_REPLY_MESSAGE = "The tutor didn't send an answer this time. Please try aga
 
 # A successful call of one of these changed the board: an empty final text after it is not an error (the board is the answer).
 BOARD_TOOLS = {"annotate_element", "remove_annotation", "draw_scene", "write_notes",
-               "draw_graph", "draw_table", "draw_bar_chart", "draw_venn"}   # draw_graph was missing: a graph-only turn read as an empty reply
+               "draw_graph", "draw_table", "draw_bar_chart", "draw_venn", "replace_block"}   # draw_graph was missing: a graph-only turn read as an empty reply
 
 
 # "yes", "yeah", "right", "sure" are left out: they answer a yes/no question, and a skip is never graded (architecture review, 2026-11-16)
@@ -272,7 +273,7 @@ TOOLS = [
 
 # The lesson-board blocks
 BUILDERS = {"draw_graph": build_graph, "draw_table": build_table, "draw_bar_chart": build_bar_chart, "draw_venn": build_venn}   # blocks drawn whole by code
-SCENE_TOOLS = TOOLS + [NOTES_TOOL, SCENE_TOOL, GRAPH_TOOL, TABLE_TOOL, BAR_TOOL, VENN_TOOL, CALC_TOOL]
+SCENE_TOOLS = TOOLS + [NOTES_TOOL, SCENE_TOOL, GRAPH_TOOL, TABLE_TOOL, BAR_TOOL, VENN_TOOL, CALC_TOOL, REPLACE_TOOL]
 
 
 # ---------------------------------------------------------------------------
@@ -665,6 +666,8 @@ class Turn:
     new_lesson: Optional[tuple] = None   # (page id, blocks drawn before it) once start_new_page brought the next lesson's plan
     answered_wrong: bool = False     # the tutor recorded a wrong answer in this turn (its reply then opens without praise)
     recaps_this_turn: int = 0
+    records: Dict[int, dict] = field(default_factory=dict)   # the block records made in this turn, by block number
+    load_board_fn: Any = None        # async callable(page_id) -> ({step id: its fragment as stored}, {block number: its latest record}) for the saved board
 
     async def persist_and_remember(self, **fields):
         await self.persist_fn(**fields)
@@ -676,6 +679,7 @@ async def switch_page(turn: Turn, title: Optional[str]) -> None:
     """A fresh blank page becomes the active one (start_new_page, and a scene-mode block on a page that cannot take it)."""
     turn.page_id = await turn.new_page_fn((title or "").strip()[:100] or None)
     turn.page_status, turn.current_svg, turn.existing_element_ids = "active", None, set()
+    turn.records, turn.stored = {}, {}
     turn.page_state = {
         "current_svg": None, "element_count": 0, "notebook_id": turn.notebook_id,
         "page_id": turn.page_id, "summary": "Blank page — nothing drawn yet.",
@@ -758,12 +762,127 @@ async def add_block(turn: Turn, tool: str, args: dict) -> dict:
     turn.recaps_this_turn += tool == "write_notes" and args.get("style") == "recap"
     # the board as data: stored with the block's first step (page_events.block); the SVG is only its picture (GenSVG and tldraw study, 2026-11-20)
     record = {"n": n, "tool": tool, "args": what, "box": box, "steps": [sid for sid, _, _ in steps], "ids": ids}
+    turn.records[n] = record
     await publish_steps(turn, steps, fonts, record)
     turn.existing_element_ids.update(ID_RE.findall(turn.current_svg or ""))
     turn.page_state["element_count"] = turn.page_state.get("element_count", 0) + len(steps)
     logger.info(EngineEvent.SCENE_DRAWN, f"Block {n} ({report['kind']}) added in {len(steps)} steps", data={"page_id": turn.page_id, "box": box, **report})
     return {"status": "ok", "page_id": turn.page_id,
             "detail": f"Block {n} added to the board in {len(steps)} narrated steps. These ids can be annotated: " + ", ".join(ids) + icon_note(report) + layout_note(report) + cut_note(report) + long_page_note(blocks, box)}
+
+
+STEP_ID = re.compile(r"^b(\d+)_s(\d+)$")
+TRANSLATE = re.compile(r'(<g id="[^"]+")(?: transform="translate\(0,(-?[\d.]+)\)")?')
+
+
+def shifted(fragment: str, dy: float) -> str:
+    """A step fragment `dy` lower: the outer group is translated (ids and shapes stay as they are) and the camera box follows."""
+    m = TRANSLATE.match(fragment)
+    total = float(m.group(2) or 0) + dy
+    fragment = f'{m.group(1)} transform="translate(0,{total:g})"' + fragment[m.end():]
+    return CAM_RE.sub(lambda c: f'class="cam cam-{c[1]}-{int(c[2]) + int(dy)}-{c[3]}-{c[4]}"', fragment)
+
+
+def overlaps_x(a: dict, b: dict) -> bool:
+    return a["x"] < b["x"] + b["w"] and b["x"] < a["x"] + a["w"]
+
+
+async def modify_step(turn: Turn, sid: str, old: str, new: str, narration: Optional[str] = None, record: Optional[dict] = None) -> None:
+    """One step of the board changed in place (persisted as a modify event, sent as element_modified). With a narration the learner hears it
+    as the new picture appears (the frontend plays a modify that carries audio like a draw)."""
+    audio = alignment = None
+    if narration:
+        narration = replace_control_chars(narration)[0]
+        audio, alignment, _ = await synthesise_voice(turn.notebook_id, turn.page_id, f"{sid}_r{len(turn.stored)}", narration)
+    await turn.persist_fn(kind="modify", element_id=sid, svg_fragment=new, old_svg_fragment=old, narration=narration, audio_path=audio,
+                          alignment_path=alignment, **({"block": record} if record else {}))
+    await turn.emit_fn(SessionEvent.ELEMENT_MODIFIED, {"page_id": turn.page_id, "element_id": sid, "new_svg_fragment": new,
+                                                      "narration": narration, "audio_url": audio, "alignment_url": alignment})
+    turn.current_svg = (turn.current_svg or "").replace(old, new, 1)
+
+
+async def replace_block(turn: Turn, args: dict) -> dict:
+    """Scene mode: a block already on the page is rebuilt where it is. Steps that did not change stay as they are, a changed step is
+    modified in place (the first one carries the tutor's `say`), new steps are drawn and narrated, steps that went are emptied. When the
+    block got taller everything below it moves down by the difference (a block that got shorter leaves its gap)."""
+    m = re.fullmatch(r"b?(\d+)", str(args.get("block", "")).strip())
+    tool, new_args = args.get("tool"), args.get("args")
+    if not m or not isinstance(new_args, dict):
+        return {"status": "error", "detail": 'Give the block id (e.g. "b3"), the tool that drew it and its complete new content in args.'}
+    n = int(m[1])
+    frags, records = {}, {}
+    if turn.load_board_fn:
+        frags, records = await turn.load_board_fn(turn.page_id)
+    frags, records = {**frags, **turn.stored}, {**records, **turn.records}
+    board: Dict[int, Dict[str, str]] = {}
+    for sid, frag in frags.items():
+        if (sm := STEP_ID.match(sid)) and frag in (turn.current_svg or "") and CAM_RE.search(frag):
+            board.setdefault(int(sm[1]), {})[sid] = frag
+    if n not in board:
+        return {"status": "error", "detail": f"There is no block b{n} on this page; the board has: " + (", ".join(f"b{b}" for b in sorted(board)) or "nothing") + "."}
+    rec = records.get(n) or {}
+    if rec.get("tool") and rec["tool"] != tool:
+        return {"status": "error", "detail": f"Block b{n} was drawn by {rec['tool']}: replace it with {rec['tool']} (same tool), or draw a new block."}
+    if tool not in BUILDERS and tool not in ("draw_scene", "write_notes"):
+        return {"status": "error", "detail": f"{tool} is not a block tool."}
+    boards = {b: dict(sorted(steps.items(), key=lambda kv: int(STEP_ID.match(kv[0])[2]))) for b, steps in board.items()}
+    olds = boards[n]
+    box_of = lambda steps: {k: int(v) for k, v in zip("xywh", CAM_RE.search(next(iter(steps.values()))).groups())}
+    old_box = box_of(olds)
+    others = {b: box_of(steps) for b, steps in boards.items() if b != n}
+    rest = turn.current_svg or ""
+    for f in olds.values():
+        rest = rest.replace(f, "")
+    if why := repeats(tool, new_args, rest):
+        return {"status": "error", "detail": why}
+    FIXED_Y.set(old_box["y"])   # ponytail: x comes from the lane the builder picks; a block that changes lane moves sideways
+    try:
+        what, steps, box, report, ids, fonts = await build_block(turn, tool, new_args, n, list(others.values()))
+    except SceneError as e:
+        return {"status": "error", "detail": str(e)}
+    finally:
+        FIXED_Y.set(None)
+    font_css = board_font_css() if any("@font-face" in f for f in olds.values()) else None   # the first step of the page carries the board's faces
+    new = {}
+    for sid, fragment, narration in steps:
+        clean = sanitize_svg(fragment, {"transform"})
+        new[sid] = (inject_trusted_font(clean, font_css) if font_css and sid == next(iter(olds)) else clean, narration)
+    changed = [s for s in olds if s in new and new[s][0] != olds[s]]
+    added = [(s, f, nar) for s, (f, nar) in new.items() if s not in olds]
+    gone = [s for s in olds if s not in new]
+    if not (changed or added or gone):
+        return {"status": "error", "detail": f"Nothing changed in block b{n}: the content you gave is what is already on the board."}
+    # ponytail: a block that got shorter leaves a gap; one that got taller pushes down (transitively) everything that sits below it
+    dy = max(0, math.ceil(box["h"]) - old_box["h"])
+    moved, family = [], [{**box, "y": old_box["y"], "h": old_box["h"]}]
+    for b, bb in sorted(others.items(), key=lambda kv: kv[1]["y"]):
+        if dy and any(bb["y"] >= f["y"] + f["h"] and overlaps_x(bb, f) for f in family):
+            moved.append(b)
+            family.append(bb)
+    for b in moved:
+        first = next(iter(boards[b]))
+        for sid, frag in boards[b].items():
+            r = records.get(b)
+            moved_record = {**r, "box": {**r["box"], "y": r["box"]["y"] + dy}} if r and sid == first else None
+            await modify_step(turn, sid, frag, shifted(frag, dy), record=moved_record)
+            if moved_record:
+                turn.records[b] = moved_record
+    record = {"n": n, "tool": tool, "args": what, "box": box, "steps": list(new), "ids": ids}
+    turn.records[n] = record
+    say = str(args.get("say") or "").strip()
+    for sid in changed:
+        first = sid == changed[0]
+        await modify_step(turn, sid, olds[sid], new[sid][0], f"[[MARK:{sid}]] {say}" if first and say else None, record if first else None)
+    for sid in gone:   # an empty group: the step's id stays known, nothing is drawn (a modify with no SVG would not replay)
+        await modify_step(turn, sid, olds[sid], f'<g id="{sid}"></g>', None, record if not changed and sid == gone[0] else None)
+    if added:
+        await publish_steps(turn, added, None, {} if changed or gone else record)
+    turn.existing_element_ids.update(ids)
+    turn.page_state["element_count"] = turn.page_state.get("element_count", 0) + len(added)
+    logger.info(EngineEvent.SCENE_DRAWN, f"Block {n} ({report['kind']}) replaced: {len(changed)} changed, {len(added)} new, {len(gone)} removed, {len(moved)} below moved by {dy}",
+                data={"page_id": turn.page_id, "box": box, **report})
+    return {"status": "ok", "page_id": turn.page_id,
+            "detail": f"Block b{n} redrawn in place: {len(changed)} steps changed, {len(added)} added. These ids can be annotated: " + ", ".join(ids) + icon_note(report) + cut_note(report)}
 
 
 async def tool_start_new_page(turn: Turn, args: dict) -> str:
@@ -849,6 +968,8 @@ async def run_tool(turn: Turn, fn_name: str, args: dict) -> str:
         return await tool_start_new_page(turn, args)
     if fn_name in ("draw_scene", "write_notes") or fn_name in BUILDERS:
         return json.dumps(await add_block(turn, fn_name, args), ensure_ascii=False)
+    if fn_name == "replace_block":
+        return json.dumps(await replace_block(turn, args), ensure_ascii=False)
     if fn_name == "calculate":
         return json.dumps(calculate(args.get("expressions")), ensure_ascii=False)
     if fn_name == "record_step" and turn.path:
@@ -871,7 +992,7 @@ def record_tool_call(turn: Turn, fn_name: str, args: dict, result: str, iteratio
         turn.board_changed = True
     if turn.tool_log is not None:
         turn.tool_log.append({"tool": fn_name, "status": status, "iteration": iteration,
-                              "element_id": args.get("element_id") or args.get("annotation_id") or args.get("target_element_id")
+                              "element_id": args.get("element_id") or args.get("annotation_id") or args.get("block") or args.get("target_element_id")
                               or (str(args.get("step")) if fn_name == "record_step" else None),
                               **({"event": args.get("event") if args.get("event") in ("taught", "answered_right", "answered_wrong") else None,
                                   "page_id": turn.page_id}    # the lesson it belongs to (backend current_lesson)
@@ -978,6 +1099,7 @@ async def run_whiteboard_author(
     lesson_final: Optional[dict] = None,  # scene mode: the end-of-lesson check (backend lesson_final), None for none
     course: str = "",                  # scene mode: the learner's goal and roadmap (engine/lesson_plan.split_course), "" for none
     plan_page_fn=None,  # scene mode: async callable() -> the next lesson's plan for the page start_new_page just made, "" for none
+    load_board_fn=None,  # scene mode: async callable(page_id) -> ({step id: stored fragment}, {block n: latest record}), for replace_block
 ) -> str:
     """
     Main entry point. Runs the LLM tool-use loop and returns the assistant's
@@ -1004,7 +1126,7 @@ async def run_whiteboard_author(
         notebook_id=notebook_id, page_id=page_id, page_status=page_status, page_state=page_state, learner_message=learner_message,
         existing_element_ids=set(existing_element_ids) | set(ID_RE.findall(current_svg or "")),
         emit_fn=emit_fn, persist_fn=persist_fn, new_page_fn=new_page_fn, plan_page_fn=plan_page_fn, tool_log=tool_log,
-        lesson_plan=lesson_plan, lesson_path=lesson_path, lesson_final=lesson_final, path=path, tools=tools, current_svg=current_svg)
+        lesson_plan=lesson_plan, lesson_path=lesson_path, lesson_final=lesson_final, path=path, tools=tools, current_svg=current_svg, load_board_fn=load_board_fn)
 
     # Tool loop (max 20 iterations to prevent runaway)
     for iteration in range(20):

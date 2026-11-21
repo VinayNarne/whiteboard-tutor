@@ -1,0 +1,436 @@
+[
+ {
+  "id": "sky",
+  "notebook": "35d8119a-3716-4630-98a1-26e10d2ce498",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 15. Why is the sky blue and not violet?",
+    "reply": "The sky looks blue because sunlight is scattered by the atmosphere, and blue light scatters more than violet light. Can you think why violet light, even though scattered, doesn't make the sky look violet?",
+    "seconds": 7.3,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Violet light scatters more, but the sky doesn't look violet because our eyes are less sensitive to violet light, the sun emits less violet light, and some violet light is absorbed by the atmosphere. Next, let's look at how sunlight contains all visible colors including violet and blue, which is important for understanding scattering. Why do you think sunlight having all colors matters for the sky's color?",
+    "seconds": 8.0,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "wrong",
+    "learner": "Because blue is the strongest light from the sun?",
+    "reply": "Not quite—sunlight actually contains all colors fairly evenly, not just blue strongly. Let me ask, what do you think happens to red light compared to blue light when sunlight passes through the atmosphere?",
+    "seconds": 1.8,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "um, something about the air maybe?",
+    "reply": "Our eyes are more sensitive to blue light than violet light, which is why the sky appears blue despite violet light scattering more. What might happen to the sky's color if our eyes were more sensitive to violet light instead?",
+    "seconds": 10.8,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes",
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ],
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ],
+     [
+      "3",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "Shorter wavelengths like blue and violet scatter more off air molecules.",
+    "reply": "That note about violet light absorption is already on the board here. Now, let's try a different question: How does absorbing some violet light in the atmosphere affect the amount of violet light reaching us?",
+    "seconds": 3.4,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "3",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "Some violet light is absorbed in the upper atmosphere, which reduces the amount of violet light that reaches us. This makes blue light more dominant in the sky's color. If violet light were not absorbed, how do you think the sky's color might change?",
+    "seconds": 3.2,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "4",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "The sky looks blue because blue light scatters and reaches our eyes more. Violet scatters more but is less seen due to eye sensitivity and absorption. The sun emits less violet light compared to blue. All these facts combine to make the sky appear blue. \n\nWhat do you think would happen if our eyes were equally sensitive to violet and blue light?",
+    "seconds": 3.2,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "4",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Our eyes are more sensitive to blue than violet, and sunlight has less violet.",
+    "reply": "Sunlight already contains all visible colors including violet and blue, as shown here. Now, what happens to red light compared to blue light when sunlight passes through the atmosphere?",
+    "seconds": 5.1,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "4",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Why the sky looks blue, not",
+    "level": "taught",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Sunlight and scattering",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Human eye sensitivity",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Atmospheric absorption",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 5,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "dns",
+  "notebook": "9ea5cdb6-24dd-4524-b0b6-4522a7a22615",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm a beginner. What happens when I type a website name into my browser?",
+    "reply": "I showed you the main steps in the process of loading a website from typing a URL to seeing the webpage. What do you think would happen if the DNS server cannot find the IP address for the website you typed?",
+    "seconds": 6.7,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Now let's look at what happens after you type the website name. The browser doesn't find the IP address itself; it asks your computer's operating system for help. This service is called the DNS resolver, and it's part of your operating system. If the resolver already knows the IP address from before, it can give it back immediately, making the website load faster. What do you think would happen if the resolver does not have the IP address cached?",
+    "seconds": 3.7,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "error"
+     ],
+     [
+      "2",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "The browser already knows where every website is?",
+    "reply": "Right, the browser itself does not know every website's IP address. It relies on the operating system's DNS resolver to find it. If the resolver does not have the IP cached, it starts a DNS query by asking multiple DNS servers in a specific order to find the IP address. What do you think happens if one DNS server does not know the IP address you need?",
+    "seconds": 6.5,
+    "fails": [
+     "praised_wrong",
+     "wrong_not_recorded"
+    ],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "it goes to the internet?",
+    "reply": "Not quite, but let's clarify. If a DNS server doesn't know the IP address, it doesn't just send the query out to the internet randomly. The resolver is told where to ask next, like a guide pointing to the right server. This process continues until the authoritative server with the IP is found.\n\nWhat do you think would happen if the authoritative DNS server is very busy and slow to respond?",
+    "seconds": 3.9,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "A DNS server turns the name into an IP address.",
+    "reply": "If a DNS server is busy or slow to respond, the resolver will wait or try again later. It can also try asking another DNS server if available. Now, once the IP address is found, the browser uses it to connect to the website's server using protocols like HTTP or HTTPS. What do you think happens if the server does not respond after the browser connects?",
+    "seconds": 5.5,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes",
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "If the server does not respond, the browser shows an error message to the user.\n\nNow, what does the browser ask from the operating system after you type a website name?",
+    "seconds": 2.7,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "4",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "The browser asks the operating system's DNS resolver for the IP address of the website you typed. Now, what does the DNS resolver do if it doesn't already have the IP cached?",
+    "seconds": 4.2,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Then the browser asks the server at that address for the page.",
+    "reply": "That line shows the key idea: the DNS resolver follows a chain of servers to find the IP address. Now, which part of the system asks the DNS resolver for the IP address when you type a website name?",
+    "seconds": 4.6,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "DNS translates website name",
+    "level": "taught",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Browser asks OS resolver",
+    "level": "remembered",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Resolver queries DNS servers",
+    "level": "taught",
+    "due": false,
+    "misses": 2
+   },
+   {
+    "title": "Browser connects to IP",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Website loads in browser",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 5,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ }
+]

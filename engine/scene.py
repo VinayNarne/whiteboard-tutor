@@ -113,6 +113,7 @@ BLOCKS
 - draw_graph: an exact chart, when a number changes with another (a curve, growth over time, supply and demand, a measured trend). Give the formula or the data; the app computes every value, so never work out coordinates yourself. Mark the points you will talk about.
 - calculate: before you say or write any number you worked out (money, growth, a total, a worked example), get it from calculate and quote that value. Never do arithmetic in your head.
 - draw_table: a small table, to compare a few things across a few properties. draw_bar_chart: amounts across categories, to scale. draw_venn: what 2 or 3 groups share and do not share. Give the content; the app lays it out.
+- replace_block: change a block already on the board (id "b3" as in blocks_on_board): fix a mistake, or add to it after a follow-up, instead of drawing it again.
 - write_notes with style "code": real code the learner can type, a chunk per step while you explain what it does. When the learner asks for code or an example program, show code, not a diagram of it.
 - A clear explanation usually goes: a few notes that name the idea, the diagram that shows it, then a recap. The blocks split the work and never repeat each other: notes give definitions, key terms and why it matters; the diagram shows how the parts connect; do not list in the notes the same steps the diagram is about to show. Not every answer needs all three; a short follow-up may need one block or none (answer in text when words alone are clearer).
 - When the learner moves on to a different topic, call start_new_page first. A follow-up on the same topic stays on this board.
@@ -145,6 +146,17 @@ NOTES_TOOL = {"type": "function", "function": {
             "text": {"type": "string", "description": "What is written: short (about 12 words). **term** for the key term; ==phrase== at most once per block, for the one thing to remember. Start with '1.' to number steps. A whole line in $...$ is a formula in TeX (for example $E = mc^2$ or $\\frac{1}{\\lambda^4}$), typeset properly; give it a `say`. For style code: a chunk of code, one to six lines separated by \\n, indented as it should be."},
             "say": {"type": "string", "description": "What you say aloud while this line appears (one to three sentences). Defaults to the line itself. For style code it is required: explain what the chunk does, never read the code out."}}}},
     }}}}
+
+REPLACE_TOOL = {"type": "function", "function": {
+    "name": "replace_block",
+    "description": ("Change a block already on this page: correct it (a wrong label, a mistake) or add to it after a follow-up question (new nodes, lines, rows or steps). "
+                    "Give its id (e.g. \"b3\"), the same tool and the complete new content. It is redrawn in the same place, and only what changed is shown and narrated; "
+                    "use it instead of drawing the block again."),
+    "parameters": {"type": "object", "required": ["block", "tool", "args", "say"], "properties": {
+        "block": {"type": "string", "description": "The block's id, e.g. \"b3\"."},
+        "tool": {"type": "string", "description": "The tool that drew it (write_notes, draw_scene, draw_graph, draw_table, draw_bar_chart or draw_venn)."},
+        "args": {"type": "object", "description": "Exactly the fields that tool takes, with the complete new content."},
+        "say": {"type": "string", "description": "One sentence about the change (e.g. what was corrected, or what you are adding)."}}}}}
 
 SCENE_TOOL = {"type": "function", "function": {
     "name": "draw_scene",
@@ -813,10 +825,15 @@ def board_blocks(current_svg) -> List[dict]:
     return [{"x": int(x), "y": int(y), "w": int(w), "h": int(h)} for x, y, w, h in boxes]
 
 
+FIXED_Y: ContextVar = ContextVar("fixed_y", default=None)   # replace_block: the block is rebuilt where it already is (code still decides; the lane gives x)
+
+
 def place_block(lane, h: float, blocks: List[dict]) -> Tuple[float, float]:
     """Top-left of a new block in `lane`: below what is already in that lane, and never above the latest block, so the board reads
     top to bottom in teaching order and a diagram sits beside the notes it follows. A wide block goes below everything."""
     x, w = lane
+    if FIXED_Y.get() is not None:
+        return x, FIXED_Y.get()
     if lane == WIDE_LANE:
         return x, max([TOP] + [b["y"] + b["h"] + GAP for b in blocks])
     in_lane = [b for b in blocks if b["x"] < x + w and x < b["x"] + b["w"]]
@@ -876,8 +893,12 @@ def repeats(tool: str, args: dict, current_svg) -> str:
         board = " " + _norm(" ".join(steps.values())) + " "
         chunks = [c for c in (_norm(_txt(l.get("text"))) for l in _lst(args.get("lines")) if isinstance(l, dict)) if len(c) >= 8]
         same = [c for c in chunks if f" {c} " in board]
-        return ("This code is already on the board. Point at it with annotate_element and explain, or show only the new lines."
-                if chunks and len(same) >= 0.6 * len(chunks) else "")
+        if not (chunks and len(same) >= 0.6 * len(chunks)):
+            return ""
+        at = next((b for (b, _), t in steps.items() if f" {same[0]} " in " " + _norm(t) + " "), None)
+        fix = f'replace_block with block "b{at}"' if at else "replace_block with its id"
+        return (f"This code is already on the board{f' (block {at})' if at else ''}. Point at it with annotate_element and explain, or show only the new lines. "
+                f"To correct or extend it, use {fix}.")
     if tool == "draw_scene":
         labels = [_norm(_txt(n.get("label"))) for n in _lst(args.get("nodes")) if isinstance(n, dict)]
         labels = [l for l in labels if len(l) >= 4]
@@ -887,7 +908,7 @@ def repeats(tool: str, args: dict, current_svg) -> str:
             same = [l for l in labels if f" {l} " in text]
             if len(same) >= 3 and len(same) >= 0.6 * len(labels):
                 return (f"This diagram repeats block {b}, already on the board ({len(same)} of its {len(labels)} parts: {', '.join(same[:4])}). "
-                        "Point at that diagram with annotate_element instead, or draw only what is new.")
+                        f'To correct it or add to it, call replace_block with block "b{b}", tool "draw_scene" and the complete new content; to point at it, use annotate_element.')
         return ""
     old = [(f"b{b}_s{k}", _stems(t)) for (b, k), t in steps.items()]
     dup = [(plain(_txt(l.get("text"))), hit) for l in _lst(args.get("lines")) if isinstance(l, dict)
@@ -895,7 +916,8 @@ def repeats(tool: str, args: dict, current_svg) -> str:
            and (hit := next((sid for sid, o in old if len(s & o) >= (len(s) * 2 / 3 if len(s) >= 3 else len(s))), None))]   # two thirds of it is already there (a two-word line: all of it); live: 2 of 3 slipped past 70%
     # where it is: the tutor sees only the newest blocks' words, and the board may hold older ones (architecture review, 2026-11-16)
     return (f"These lines repeat what is already on the board: {'; '.join(f'{t} (already in {sid})' for t, sid in dup[:4])}. Leave them out "
-            "and write only what is new (point at the old line with annotate_element and that id if you need it)." if dup else "")
+            "and write only what is new (point at the old line with annotate_element and that id if you need it). "
+            "To correct or extend that block, use replace_block with its id." if dup else "")
 
 
 def page_view(current_svg) -> dict:

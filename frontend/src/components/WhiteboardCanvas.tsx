@@ -529,6 +529,12 @@ export function WhiteboardCanvas({
   useEffect(() => {
     if (!pendingModifyEvent || pendingModifyEvent.page_id !== pageId) return;
     const { element_id, new_svg_fragment } = pendingModifyEvent;
+    if (pendingModifyEvent.audio_url) {   // a spoken correction: queued and played like a draw (the picture changes as the voice starts)
+      liveQueueRef.current.push({ type: 'draw', payload: { page_id: pageId, element_id, svg_fragment: new_svg_fragment, narration: pendingModifyEvent.narration ?? '',
+        audio_url: pendingModifyEvent.audio_url, alignment_url: pendingModifyEvent.alignment_url ?? null } });
+      processLiveQueueRef.current();
+      return;
+    }
     setElements(prev => {
       const next = new Map(prev);
       next.set(element_id, new_svg_fragment);

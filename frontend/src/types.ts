@@ -76,6 +76,9 @@ export interface WsElementModified {
     page_id: string;
     element_id: string;
     new_svg_fragment: string;
+    narration?: string | null;   // a modify that carries audio is played like a draw (replace_block's spoken correction)
+    audio_url?: string | null;
+    alignment_url?: string | null;
   };
 }
 
