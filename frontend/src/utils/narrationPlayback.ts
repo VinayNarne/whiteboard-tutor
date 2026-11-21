@@ -10,6 +10,18 @@ export function setActiveAudioRate(rate: number): void {
   if (activeAudio) activeAudio.playbackRate = rate;
 }
 
+/** Pause the clip that is playing, or resume it. The drawing follows the audio clock, so it holds and continues with it. */
+export function toggleNarrationPause(): void {
+  if (!activeAudio) return;
+  if (activeAudio.paused) void activeAudio.play().catch(() => { /* blocked: stay paused */ });
+  else activeAudio.pause();
+}
+
+/** The pause button follows this: `narration_state` says whether a clip is loaded and whether it is paused. */
+function announceState(active: boolean, paused: boolean): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('narration_state', { detail: { active, paused } }));
+}
+
 /** Mute or unmute the clip that is playing right now. */
 export function setActiveAudioMuted(muted: boolean): void {
   if (activeAudio) {
@@ -115,14 +127,17 @@ export async function playAudioWithTiming(
     };
 
     let watchdog: ReturnType<typeof setTimeout> | null = null;
+    announceState(true, false);
 
     if (words.length) announceCaption({ words, audio });
 
     const cleanup = () => {
       if (words.length) announceCaption(null);
       if (watchdog) clearTimeout(watchdog);
+      audio.onpause = null;
       if (activeAudio === audio) {
         activeAudio = null;
+        announceState(false, false);
       }
       if (interruptActive === finish) interruptActive = null;
       audio.onplay = null;
@@ -148,7 +163,17 @@ export async function playAudioWithTiming(
     };
     if (interruptible) interruptActive = finish;
     // A clip that never plays, ends or errors (stalled network, odd codec) must not freeze the board.
-    watchdog = setTimeout(finish, ((audioSeconds || 60) + 15) * 1000);
+    const armWatchdog = () => {
+      if (watchdog) clearTimeout(watchdog);
+      watchdog = setTimeout(finish, ((audioSeconds || 60) + 15) * 1000);
+    };
+    armWatchdog();
+    // While the learner has paused, the watchdog must not fire; it starts again on resume.
+    audio.onpause = () => {
+      if (audio.ended) return;
+      if (watchdog) clearTimeout(watchdog);
+      announceState(true, true);
+    };
 
     const checkTiming = () => {
       if (cancelledRef?.current) {
@@ -169,6 +194,8 @@ export async function playAudioWithTiming(
     }
 
     audio.onplay = () => {
+      armWatchdog();
+      announceState(true, false);
       if (!revealed) {
         animFrameId = requestAnimationFrame(checkTiming);
       }

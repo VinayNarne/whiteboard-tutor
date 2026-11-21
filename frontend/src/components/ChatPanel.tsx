@@ -314,7 +314,7 @@ export function ChatPanel({
           { heading: 'What you hear' },
           { label: 'Speak aloud', kind: 'toggle', checked: !isAudioMuted, onSelect: () => onToggleMute?.() },
           { heading: 'Speaking speed' },
-          ...[1.0, 1.25, 1.5].map(spd => ({
+          ...[0.75, 1.0, 1.25, 1.5].map(spd => ({
             label: `${spd}x`, kind: 'radio' as const, checked: audioSpeed === spd, onSelect: () => onSpeedChange?.(spd),
           })),
         ]} />

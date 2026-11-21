@@ -1,0 +1,438 @@
+[
+ {
+  "id": "sky",
+  "notebook": "844d759e-3262-4732-80af-ed1cb1d1484b",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm 15. Why is the sky blue and not violet?",
+    "reply": "The sky is blue rather than violet mainly because our atmosphere scatters shorter wavelengths of light more, including violet, but our eyes are more sensitive to blue. Also, the sun emits less violet light and some of it gets absorbed before reaching us. Which factor do you think has the biggest impact on what color we see in the sky?",
+    "seconds": 9.5,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Rayleigh scattering occurs when light hits particles smaller than its wavelength, causing the light to scatter. This scattering affects shorter wavelengths like violet and blue more strongly than longer wavelengths. How do you think this scattering difference affects what colors we see in the sky?",
+    "seconds": 4.3,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "taught",
+      "ok"
+     ],
+     [
+      "2",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "wrong",
+    "learner": "Because blue is the strongest light from the sun?",
+    "reply": "That’s not quite right yet. Think about this: if violet light scatters even more than blue light, what color would you expect to see more of in the sky just based on scattering?",
+    "seconds": 2.2,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "um, something about the air maybe?",
+    "reply": "That’s not quite the right idea yet. Let’s try a smaller question: if violet light scatters more than blue light, would you expect to see more violet or more blue light scattered around the sky?",
+    "seconds": 2.1,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "Shorter wavelengths like blue and violet scatter more off air molecules.",
+    "reply": "Our eyes have three types of cones for color vision. These cones respond differently to colors, with less sensitivity to violet. Because of this, human eye sensitivity to blue is higher than to violet, which affects what sky color we perceive.\n\nWhy do you think the difference in cone sensitivity influences the color we see in the sky?",
+    "seconds": 5.8,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "Human eyes have less sensitivity to violet light and more to blue light, so even though violet scatters more, we see the sky as blue. What would happen to the sky's color if our eyes were equally sensitive to violet and blue light?",
+    "seconds": 4.0,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Look here at the line about seeing more blue than violet because of cone sensitivity. If our eyes were equally sensitive to violet and blue, the sky might have more violet hues. Now, let's explore how sunlight's spectrum and the atmosphere affect violet light reaching us. What do you think happens to violet light before it reaches our eyes?",
+    "seconds": 4.4,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Our eyes are more sensitive to blue than violet, and sunlight has less violet.",
+    "reply": "Exactly, those are key reasons the sky appears blue. Now, how does red light behave differently compared to blue light in the atmosphere?",
+    "seconds": 2.0,
+    "fails": [],
+    "blocks": [],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "Why the sky looks blue, not",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Rayleigh scattering basics",
+    "level": "remembered",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Human eye sensitivity",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Sunlight spectrum and atmospheric absorption",
+    "level": "",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 5,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ },
+ {
+  "id": "dns",
+  "notebook": "6332c8da-77fd-4969-ac98-0b653a0c8687",
+  "turns": [
+   {
+    "kind": "question",
+    "learner": "I'm a beginner. What happens when I type a website name into my browser?",
+    "reply": "The flowchart shows the main steps when you type a website name and press enter. Can you explain why the browser needs to convert the website name to an IP address?",
+    "seconds": 8.0,
+    "fails": [],
+    "blocks": [
+     "write_notes",
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "Com are easier for us to remember than numeric IP addresses. This is why the browser needs to convert the domain name into an IP address to find the website's server. What do you think happens if the operating system does not already know the IP address for the domain name?",
+    "seconds": 3.8,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": []
+   },
+   {
+    "kind": "wrong",
+    "learner": "The browser already knows where every website is?",
+    "reply": "Domain names are easy for humans to remember, unlike the numeric IP addresses computers use. This is why we use domain names instead of just IP addresses. Can you think of an example of a domain name you might use?",
+    "seconds": 9.1,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes",
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ],
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ],
+     [
+      "1",
+      "answered_wrong",
+      "ok"
+     ],
+     [
+      "2",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "vague",
+    "learner": "it goes to the internet?",
+    "reply": "The browser itself does not know every website's address. Instead, when you type a website name, the operating system first checks if it already knows the IP address. If it doesn't, it asks a DNS server, which looks up and returns the IP address. What do you think the browser does once it has the IP address?",
+    "seconds": 5.8,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "2",
+      "answered_wrong",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "right",
+    "learner": "A DNS server turns the name into an IP address.",
+    "reply": "The operating system first checks if it already knows the IP address from its cache. If it doesn't, it sends a query to a DNS server to find the IP address. The DNS server looks up the IP address for the domain name and returns it to the operating system. What do you think happens next after the operating system gets the IP address?",
+    "seconds": 4.0,
+    "fails": [],
+    "blocks": [
+     "draw_scene"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "1",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "2",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "3",
+      "taught",
+      "ok"
+     ]
+    ]
+   },
+   {
+    "kind": "continue",
+    "learner": "continue",
+    "reply": "Once the browser has the IP address from the operating system, it uses it to connect to the website's server to get the webpage content. What do you think might happen if the browser tried to connect to the website without knowing the IP address first?",
+    "seconds": 3.6,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_right",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "ok",
+    "learner": "ok",
+    "reply": "The browser cannot connect without the IP address because the internet routes connections using IPs, not names. Without an IP address, the browser simply does not know where to send the request. That's why the DNS lookup process is necessary before connecting. What do you think might happen if the DNS lookup is slow or fails?",
+    "seconds": 3.4,
+    "fails": [],
+    "blocks": [
+     "write_notes"
+    ],
+    "refused": [],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_wrong",
+      "error"
+     ]
+    ]
+   },
+   {
+    "kind": "right2",
+    "learner": "Then the browser asks the server at that address for the page.",
+    "reply": "That line already explains the browser's connection to the server using the IP address. Now, thinking back: what is the first thing the browser does after you type a website name?",
+    "seconds": 4.9,
+    "fails": [],
+    "blocks": [],
+    "refused": [
+     "write_notes"
+    ],
+    "judge": "",
+    "records": [
+     [
+      "3",
+      "answered_right",
+      "ok"
+     ],
+     [
+      "4",
+      "taught",
+      "ok"
+     ]
+    ]
+   }
+  ],
+  "path": [
+   {
+    "title": "What happens when you type a",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Domain names and IP addresses",
+    "level": "understood",
+    "due": true,
+    "misses": 0
+   },
+   {
+    "title": "Role of DNS servers",
+    "level": "understood",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Browser connects to the website",
+    "level": "taught",
+    "due": false,
+    "misses": 0
+   },
+   {
+    "title": "Recap card",
+    "level": "",
+    "due": false,
+    "misses": 0
+   }
+  ],
+  "final": {
+   "active": false,
+   "next": null,
+   "checked": 0,
+   "of": 5,
+   "weak": [],
+   "passed": false,
+   "asked": null
+  }
+ }
+]

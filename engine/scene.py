@@ -1072,6 +1072,21 @@ def build_notes(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
     return out, {"x": x0, "y": y0, "w": lane_w, "h": h}, {"kind": "recap" if recap else "notes", "lines": len(laid)}
 
 
+def layout_note(report: dict) -> str:
+    """One factual sentence when a drawn diagram came out worse than intended (labels shrunk small, or things overlapping); else ''.
+    Only said to the tutor, never a refusal."""
+    if report.get("kind") != "diagram":
+        return ""
+    bad = [i for i in report.get("issues", []) if i[0] in ("node_overlap", "label_on_node", "line_through_node", "off_canvas")]
+    if report.get("long_labels"):
+        return " Note: some node labels in this diagram were long and wrapped over many lines; shorter labels (3-4 words, details in the detail field) would read better next time."
+    if report.get("label_px_framed", 99) < 11:   # ponytail: 11 of 18 px; tune from lesson-eval reports
+        return " Note: this diagram had to be shrunk to fit, so its labels read small; fewer nodes or shorter labels (3-4 words) would read better next time."
+    if bad:
+        return " Note: some items in this diagram overlap or sit on each other; fewer nodes or shorter labels would lay out cleaner next time."
+    return ""
+
+
 def build_diagram(scene: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str, str, str]], dict, dict]:
     """A diagram block (ids already prefixed), one step per teaching step: in the diagram lane, or full width when that reads clearly
     bigger. Natural size at most; the camera zooms in on it, so a small scale here is not small on screen."""
@@ -1124,4 +1139,5 @@ def build_diagram(scene: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[s
         out.append((sid, f'<g id="{sid}">{cam}{head}{body}</g>', f"[[MARK:{sid}]] {demath(st['say'])}"))
     return out, box, {"kind": "diagram", "lane": "wide" if lane == WIDE_LANE else "diagram", "scale": round(s, 3), "label_px": round(LABEL[0] * s, 1),
                       "label_px_framed": round(LABEL[0] * eff, 1), "nodes": len(nodes), "edges": len(scene["edges"]), "steps": len(out),
+                      "long_labels": sum(sum(r.get("f") == LABEL for r in n["rows"]) > 3 for n in nodes),
                       "issues": geometry_issues(scene, board)}

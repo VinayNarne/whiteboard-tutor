@@ -28,7 +28,7 @@ from engine.markers import normalise_marker, strip_markers
 from engine.blocks import BAR_TOOL, TABLE_TOOL, VENN_TOOL, build_bar_chart, build_table, build_venn
 from engine.graph import CALC_TOOL, GRAPH_TOOL, build_graph, calculate
 from engine.lesson_plan import COURSE_GUIDE, PLAN_GUIDE, STEP_TOOL, may_start_next_lesson, path_titles
-from engine.scene import (ID_RE, MAX_BLOCKS_PER_TURN, NOTES_TOOL, SCENE_SYSTEM_PROMPT, SCENE_TOOL, SceneError, board_blocks, board_font_css, build_diagram, build_notes,
+from engine.scene import (ID_RE, MAX_BLOCKS_PER_TURN, NOTES_TOOL, SCENE_SYSTEM_PROMPT, SCENE_TOOL, SceneError, board_blocks, board_font_css, build_diagram, layout_note, build_notes,
                           normalise as normalise_scene, page_view, prefix_ids, repeats, demath)
 from engine.validator import summarize_spatial_layout
 from engine.voice import generate_narration_audio
@@ -761,7 +761,7 @@ async def add_block(turn: Turn, tool: str, args: dict) -> dict:
     turn.page_state["element_count"] = turn.page_state.get("element_count", 0) + len(steps)
     logger.info(EngineEvent.SCENE_DRAWN, f"Block {n} ({report['kind']}) added in {len(steps)} steps", data={"page_id": turn.page_id, "box": box, **report})
     return {"status": "ok", "page_id": turn.page_id,
-            "detail": f"Block {n} added to the board in {len(steps)} narrated steps. These ids can be annotated: " + ", ".join(ids)}
+            "detail": f"Block {n} added to the board in {len(steps)} narrated steps. These ids can be annotated: " + ", ".join(ids) + layout_note(report)}
 
 
 async def tool_start_new_page(turn: Turn, args: dict) -> str:

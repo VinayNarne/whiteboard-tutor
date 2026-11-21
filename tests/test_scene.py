@@ -420,3 +420,16 @@ def test_a_formula_line_is_part_of_the_boards_text():
     from engine.scene import build_notes, page_view
     steps, _, _ = build_notes({"title": "Energy", "lines": [{"text": "Mass is energy"}, {"text": "$E = mc^2$", "say": "E equals m c squared"}]}, 1, [])
     assert page_view("\n".join(f for _, f, _ in steps))["already_written"]["b1"].endswith("E = mc^2")
+
+
+def test_layout_note_only_for_a_diagram_that_came_out_worse():
+    from engine.scene import layout_note
+    nodes = [{"id": f"n{i}", "label": "word " * 40 if i == 0 else f"Step {i}"} for i in range(8)]
+    big = {"title": "", "layout": "flow", "direction": "right", "nodes": nodes,
+           "edges": [{"id": f"e{i}", "from": f"n{i}", "to": f"n{i + 1}"} for i in range(7)], "steps": [{"say": "All of it.", "show": [n["id"] for n in nodes]}]}
+    assert "shrunk" in layout_note({"kind": "diagram", "label_px_framed": 8.0, "issues": []})
+    assert "overlap" in layout_note({"kind": "diagram", "label_px_framed": 15, "issues": [["node_overlap", "a", "b"]]})
+    assert layout_note({"kind": "diagram", "label_px_framed": 15, "issues": [["line_crosses_line", "a", "b"]]}) == ""
+    assert layout_note({"kind": "notes"}) == ""
+    assert layout_note(diagram(SCENE)[2]) == ""                      # a normal diagram: no note
+    assert "wrapped over many lines" in layout_note(diagram(big)[2])  # an over-long label gets the note

@@ -14,6 +14,10 @@ interface Props {
   setLearnerColor: Dispatch<SetStateAction<string>>;
   hasMarks: boolean;
   onClearMarks: () => void;
+  canUndoStroke: boolean;
+  canRedoStroke: boolean;
+  onUndoStroke: () => void;
+  onRedoStroke: () => void;
   theme: CanvasTheme;
   setTheme: Dispatch<SetStateAction<CanvasTheme>>;
   showGrid: boolean;
@@ -23,6 +27,9 @@ interface Props {
   handleExportSvg: () => void;
   handleExportPng: () => void;
   handleCopySvg: () => void;
+  narrationActive: boolean;
+  narrationPaused: boolean;
+  onTogglePause: () => void;
   canUndo: boolean;
   handleUndo: () => void;
 }
@@ -30,8 +37,10 @@ interface Props {
 export function WhiteboardToolbar({
   isPlaying, activeElementId, hoveredElementId,
   learnerTool, setLearnerTool, learnerColor, setLearnerColor, hasMarks, onClearMarks,
+  canUndoStroke, canRedoStroke, onUndoStroke, onRedoStroke,
   theme, setTheme, showGrid, setShowGrid, isHandDrawn, setIsHandDrawn,
   handleExportSvg, handleExportPng, handleCopySvg, canUndo, handleUndo,
+  narrationActive, narrationPaused, onTogglePause,
 }: Props) {
   return (
     <>
@@ -43,6 +52,20 @@ export function WhiteboardToolbar({
             {activeElementId && !/^b\d+_s\d+$/.test(activeElementId) ? `Explaining ${activeElementId.replace(/_/g, ' ')}` : 'Speaking…'}
           </span>
         )}
+        <button
+          id="narration-pause-btn"
+          onClick={onTogglePause}
+          disabled={!narrationActive}
+          title={narrationPaused ? 'Resume the explanation (Space)' : 'Pause the explanation (Space)'}
+          aria-label={narrationPaused ? 'Resume the explanation' : 'Pause the explanation'}
+          style={{
+            padding: '3px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--panel)',
+            color: 'var(--ink-2)', fontSize: '12px', fontWeight: 500,
+            cursor: narrationActive ? 'pointer' : 'default', opacity: narrationActive ? 1 : 0.4,
+          }}
+        >
+          {narrationPaused ? 'Resume' : 'Pause'}
+        </button>
         {hoveredElementId && (
           <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>{hoveredElementId.replace(/_/g, ' ')}</span>
         )}
@@ -109,6 +132,28 @@ export function WhiteboardToolbar({
             ))}
           </div>
         )}
+
+        {[
+          { id: 'undo-stroke', label: 'Undo', title: 'Undo your last pen or highlighter stroke (Ctrl+Z)', on: onUndoStroke, ok: canUndoStroke },
+          { id: 'redo-stroke', label: 'Redo', title: 'Redo the stroke you undid (Ctrl+Shift+Z)', on: onRedoStroke, ok: canRedoStroke },
+        ].map((b, i) => (
+          <button
+            key={b.id}
+            id={b.id}
+            onClick={b.on}
+            disabled={!b.ok}
+            title={b.title}
+            aria-label={b.title}
+            style={{
+              borderLeft: i === 0 ? '1px solid var(--border)' : 'none', borderTop: 'none', borderRight: 'none', borderBottom: 'none',
+              marginLeft: i === 0 ? '4px' : 0, padding: '4px 10px', background: 'transparent',
+              color: 'var(--ink-2)', fontSize: '13px', fontWeight: 500,
+              cursor: b.ok ? 'pointer' : 'default', opacity: b.ok ? 1 : 0.4,
+            }}
+          >
+            {b.label}
+          </button>
+        ))}
 
         {hasMarks && (
           <button

@@ -412,7 +412,7 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
   const [isAudioMuted, setIsAudioMuted] = useState(() => storedSetting('voiceMuted') === '1');
   const [audioSpeed, setAudioSpeed] = useState(() => {
     const v = Number(storedSetting('voiceSpeed'));
-    return [1, 1.25, 1.5].includes(v) ? v : 1.0;
+    return [0.75, 1, 1.25, 1.5].includes(v) ? v : 1.0;
   });
   useEffect(() => { storeSetting('voiceMuted', isAudioMuted ? '1' : '0'); }, [isAudioMuted]);
   useEffect(() => { storeSetting('voiceSpeed', String(audioSpeed)); }, [audioSpeed]);

@@ -31,7 +31,7 @@ import {
   computeStrokeBBox,
 } from '../utils/learnerGrounding';
 import { debug } from '../utils/debug';
-import { sleep, playAudioWithTiming, setActiveAudioRate, setActiveAudioMuted } from '../utils/narrationPlayback';
+import { sleep, playAudioWithTiming, setActiveAudioRate, setActiveAudioMuted, toggleNarrationPause } from '../utils/narrationPlayback';
 import { serializeSvg, downloadSvg, downloadPng, copyText } from '../utils/whiteboardExport';
 import { CLOSE_ENOUGH, DEFAULT_VIEW, between, blockFrame, camBox, frame, openingView, overview, panBy, pointableParts, stepView, zoomAt, zoomOf, type Box } from '../utils/boardCamera';
 
@@ -193,6 +193,13 @@ export function WhiteboardCanvas({
   const [learnerTool, setLearnerTool] = useState<LearnerTool>('select');
   const [learnerColor, setLearnerColor] = useState<string>('#facc15');
   const [learnerStrokes, setLearnerStrokes] = useState<LearnerStroke[]>([]);
+  const [narration, setNarration] = useState({ active: false, paused: false });
+  useEffect(() => {
+    const on = (e: Event) => setNarration((e as CustomEvent<{ active: boolean; paused: boolean }>).detail);
+    window.addEventListener('narration_state', on);
+    return () => window.removeEventListener('narration_state', on);
+  }, []);
+  const [redoStrokes, setRedoStrokes] = useState<LearnerStroke[]>([]);   // strokes taken back by undo; a new stroke or clear empties it
   const [activeIntent, setActiveIntent] = useState<LearnerIntent | null>(activeLearnerIntent || null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPoints, setCurrentPoints] = useState<Array<{ x: number; y: number }>>([]);
@@ -205,6 +212,7 @@ export function WhiteboardCanvas({
 
   useEffect(() => {
     setLearnerStrokes([]);
+    setRedoStrokes([]);   // each page starts with no stroke history (the strokes themselves are per page and not kept)
     setActiveIntent(null);
     onLearnerIntentChange?.(null);
   }, [pageId]);
@@ -758,6 +766,7 @@ export function WhiteboardCanvas({
       bbox: strokeBBox,
     };
     setLearnerStrokes(prev => [...prev, newStroke]);
+    setRedoStrokes([]);
 
     // Perform spatial hit-testing against active diagram elements
     if (svgRef.current) {
@@ -831,18 +840,45 @@ export function WhiteboardCanvas({
     }
   }, [notebookId, pageId]);
 
+  // The learner's own strokes are client-side only: undo/redo just moves the last stroke between two lists.
+  const undoStroke = useCallback(() => {
+    const last = learnerStrokes[learnerStrokes.length - 1];
+    if (!last) return;
+    setLearnerStrokes(learnerStrokes.slice(0, -1));
+    setRedoStrokes(r => [...r, last]);
+    setActiveIntent(null);
+    onLearnerIntentChange?.(null);
+  }, [learnerStrokes, onLearnerIntentChange]);
+  const redoStroke = useCallback(() => {
+    const last = redoStrokes[redoStrokes.length - 1];
+    if (!last) return;
+    setRedoStrokes(redoStrokes.slice(0, -1));
+    setLearnerStrokes(s => [...s, last]);
+  }, [redoStrokes]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       const typing = !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !typing && canUndo) {
+      if (e.key === ' ' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey && narration.active
+          && !['BUTTON', 'SELECT', 'A'].includes(el?.tagName ?? '')) {
         e.preventDefault();
-        handleUndo();
+        toggleNarrationPause();
+        return;
+      }
+      if (typing || !(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && e.shiftKey || k === 'y') {
+        if (redoStrokes.length) { e.preventDefault(); redoStroke(); }
+      } else if (k === 'z') {
+        // Ctrl+Z takes back the learner's own last stroke first; with none left it undoes the tutor's last drawing as before.
+        if (learnerStrokes.length) { e.preventDefault(); undoStroke(); }
+        else if (canUndo) { e.preventDefault(); handleUndo(); }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [canUndo, handleUndo]);
+  }, [canUndo, handleUndo, learnerStrokes.length, redoStrokes.length, undoStroke, redoStroke, narration.active]);
 
   // The server removed an element (undo from any tab): drop it and any annotations drawn on it
   useEffect(() => {
@@ -929,9 +965,17 @@ export function WhiteboardCanvas({
         hasMarks={learnerStrokes.length > 0}
         onClearMarks={() => {
           setLearnerStrokes([]);
+          setRedoStrokes([]);
           setActiveIntent(null);
           onLearnerIntentChange?.(null);
         }}
+        narrationActive={narration.active}
+        narrationPaused={narration.paused}
+        onTogglePause={toggleNarrationPause}
+        canUndoStroke={learnerStrokes.length > 0}
+        canRedoStroke={redoStrokes.length > 0}
+        onUndoStroke={undoStroke}
+        onRedoStroke={redoStroke}
         theme={theme}
         setTheme={setTheme}
         showGrid={showGrid}
