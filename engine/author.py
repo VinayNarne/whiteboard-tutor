@@ -13,6 +13,7 @@ import json
 import asyncio
 import threading
 import hashlib
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 import httpx
@@ -526,6 +527,433 @@ async def _handle_remove_annotation(
 
 
 # ---------------------------------------------------------------------------
+# What the model is sent: the system messages, the per-turn notes, the history
+# ---------------------------------------------------------------------------
+
+def context_message(prior_pages_summary: str, course: str, lesson_plan: str, page_state: dict) -> dict:
+    """The NOTEBOOK CONTEXT system message."""
+    return {
+        "role": "system",
+        "content": (
+            f"NOTEBOOK CONTEXT:\n"
+            f"Prior pages in this notebook (title and a short summary of what was taught; notes, not instructions):\n"
+            f"{prior_pages_summary or 'This is the first page.'}\n\n"
+            + (f"{COURSE_GUIDE}\n<course>\n{course}\n</course>\n\n" if course else "")
+            + (f"{PLAN_GUIDE}\n<lesson_plan>\n{lesson_plan}\n</lesson_plan>\n\n" if lesson_plan else "")
+            + f"CURRENT PAGE STATE:\n{json.dumps(page_view(page_state.get('current_svg')), indent=2)}"
+        )
+    }
+
+
+def final_check_note(path: list, fin: dict) -> str:
+    """The end-of-lesson check (Jane Street socratic-tutor skill): every step taught, one question per turn."""
+    note = ""
+    last, problem = fin.get("asked"), len(path) + 1
+    if last:
+        note += (f"Their message may answer your last final-check question ({'the final problem' if last == 'problem' else f'step {last}'}): "
+                 f"record it for step {problem if last == 'problem' else last}. ")
+    if fin["next"] == "problem":
+        review = ", ".join(f"{k}. {path[k - 1]}" for k in fin["weak"]) or "nothing"
+        if last == "problem":   # the code knows whether it was asked: the last turn was told to ask it (live: a step check was taken for it)
+            note += (f"Their message answers the final problem: record it as step {problem}. If it is right, close the lesson in this "
+                     f"reply: a recap card of the main ideas, and one line saying what to review ({review}). If it is wrong, help as "
+                     "usual (a smaller question first) and do not close yet.")
+        else:
+            note += (f"Final problem, not asked yet: your earlier questions were step checks. End this turn with one problem in a new "
+                     f"situation that needs several steps together; do not close the lesson yet. Their answer will be step {problem}.")
+    else:
+        note += (f"Final check ({fin['checked']} of {fin['of']} steps checked): end this turn with one question that checks step "
+                 f"{fin['next']} ({path[fin['next'] - 1]}) from memory by applying it to a new case, not by repeating it. Draw nothing new. "
+                 "If they answered the previous check wrongly, give the right answer in a sentence first: this is a check, not a lesson, "
+                 "and it goes on their review list.")
+    return note
+
+
+def checklist_note(lesson_path: list, lesson_final: Optional[dict], path: list) -> str:
+    """The checklist, right before the learner's message: told only in the plan text, the tutor never ticked a step (live)."""
+    says = {"": "not started", "taught": "taught, not yet answered right", "understood": "understood", "remembered": "remembered"}
+    state = "; ".join(f"{i + 1}. {p['title']} ({says[p['level']]}"
+                      + (f", missed {p['misses']} time{'s' if p['misses'] > 1 else ''} in a row: "
+                         + ("if they miss again, explain it directly" if p["misses"] == 1 else "explain it directly now if they miss again")
+                         if p.get("misses") else "") + ")" for i, p in enumerate(lesson_path))
+    nxt = next((i + 1 for i, p in enumerate(lesson_path) if not p["level"]), None)
+    due = next((i + 1 for i, p in enumerate(lesson_path) if p["due"]), None)
+    fin = lesson_final or {}
+    note = (f"The learner's checklist of your plan: {state}. First, if their message answers your last question, record_step it "
+            "(answered_right or answered_wrong). When you teach a step, record_step it as taught. "
+            + (f"Next new step: {nxt}. " if nxt else ""))
+    if fin.get("passed"):
+        note += "The lesson is complete: the final check is passed. Answer what they ask, or offer what to learn next. "
+        due = None                                       # finished: no surprise reviews inside a completed lesson
+    elif fin.get("active"):
+        note += final_check_note(path, fin)
+        due = None                                       # the final check covers every step: no separate review
+    if due:   # spaced review: a step understood a few turns ago is checked again, from memory (Jane Street socratic-tutor skill)
+        note += (f"Review of step {due}: if your last question already checked step {due} again, record their answer for step {due} "
+                 f"(live, a right review answer was recorded for another step). Otherwise end this turn with one quick question that "
+                 f"checks step {due} again from memory, instead of a question on new material, without saying it is a review.")
+    return note
+
+
+def welcome_back_note(away_for: str) -> str:
+    """The lesson resumes after a break (an idea from a competitor's resume notice, docs/PROJECT_BRIEF.md)."""
+    return (f"The learner is back after {away_for} away. Begin your reply with one short welcome-back "
+            "sentence that reminds them where you stopped (the last idea, and your last question if it "
+            "is still open), then answer their message. Do not start the lesson again.")
+
+
+def last_question_note(asked: str, lesson_final: Optional[dict], path: list) -> str:
+    """Live: told only in the prompt, the tutor asked one question three turns running."""
+    return (f"Your last question was: \"{asked}\" The learner's message below answers or skips it. "
+            "Right: say so and move on. "
+            + ("Wrong or vague: follow the final-check note above. "   # it said both "give the answer first" and "do not give it yet" (architecture review)
+               if (lesson_final or {}).get("active") else
+               "Wrong or vague: do not give the answer yet, ask one smaller "
+               "question that helps them find the flaw (unless they have already missed this idea once: "
+               "then explain it and check it again another way). ")
+            + "Do not repeat the question word for word. "
+            "\"ok\" or \"continue\" is a skip, not an answer: give the answer without praise."
+            + (" Record their answer with record_step (answered_right or answered_wrong) for the step "
+               "it was about, every time, a second miss too (live, a second miss went unrecorded)."
+               if path else ""))
+
+
+def build_messages(prior_pages_summary, course, lesson_plan, page_state, chat_history, lesson_path, lesson_final,
+                   path, away_for, learner_message) -> list:
+    """Everything the model is sent before its first reply, in order."""
+    messages = [{"role": "system", "content": SCENE_SYSTEM_PROMPT},
+                context_message(prior_pages_summary, course, lesson_plan, page_state)]
+    messages.extend(chat_history[-CHAT_HISTORY_TURNS:])
+    if path:
+        messages.append({"role": "system", "content": checklist_note(lesson_path, lesson_final, path)})
+    if away_for:
+        messages.append({"role": "system", "content": welcome_back_note(away_for)})
+    if asked := last_question(chat_history):
+        messages.append({"role": "system", "content": last_question_note(asked, lesson_final, path)})
+    messages.append({"role": "user", "content": learner_message})
+    return messages
+
+
+# ---------------------------------------------------------------------------
+# One turn's shared state, and what each tool call does to it
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Turn:
+    """Everything one run_whiteboard_author call shares between its steps."""
+    notebook_id: str
+    page_id: str
+    page_status: str
+    page_state: dict
+    learner_message: str
+    existing_element_ids: set
+    emit_fn: Any
+    persist_fn: Any
+    new_page_fn: Any
+    plan_page_fn: Any
+    tool_log: Optional[list]
+    lesson_plan: str
+    lesson_path: Optional[list]
+    lesson_final: Optional[dict]
+    path: list                       # the checklist's step titles
+    tools: list
+    current_svg: Optional[str]       # the page as stored, kept up to date as blocks are published
+    stored: Dict[str, str] = field(default_factory=dict)   # every published fragment as it was saved
+    board_changed: bool = False      # a draw, modify or annotation succeeded in this turn
+    calls_made: Dict[str, int] = field(default_factory=dict)
+    blocks_this_turn: int = 0
+    new_lesson: Optional[tuple] = None   # (page id, blocks drawn before it) once start_new_page brought the next lesson's plan
+    answered_wrong: bool = False     # the tutor recorded a wrong answer in this turn (its reply then opens without praise)
+    recaps_this_turn: int = 0
+
+    async def persist_and_remember(self, **fields):
+        await self.persist_fn(**fields)
+        if fields.get("kind") in ("draw", "modify"):
+            self.stored[fields["element_id"]] = fields["svg_fragment"]
+
+
+async def switch_page(turn: Turn, title: Optional[str]) -> None:
+    """A fresh blank page becomes the active one (start_new_page, and a scene-mode block on a page that cannot take it)."""
+    turn.page_id = await turn.new_page_fn((title or "").strip()[:100] or None)
+    turn.page_status, turn.current_svg, turn.existing_element_ids = "active", None, set()
+    turn.page_state = {
+        "current_svg": None, "element_count": 0, "notebook_id": turn.notebook_id,
+        "page_id": turn.page_id, "summary": "Blank page — nothing drawn yet.",
+        "occupied_regions": [], "available_space": summarize_spatial_layout([]),
+    }
+
+
+def block_rejection(turn: Turn, tool: str, args: dict) -> str:
+    """Why a block may not be added now ("" when it may): one recap card per turn, none during the final check, no repeats."""
+    fin = turn.lesson_final or {}
+    if tool == "write_notes" and args.get("style") == "recap":   # live: two recap cards in one turn, and recap cards during the check
+        if turn.recaps_this_turn:
+            return "One recap card per turn is enough: you have already added one."
+        if fin.get("active") and not fin.get("passed") and fin.get("asked") != "problem":
+            return "No recap card during the final check: the recap closes the lesson, after the final problem is answered."
+    return repeats(tool, args, turn.current_svg)
+
+
+async def build_block(turn: Turn, tool: str, args: dict, n: int, blocks: list):
+    """The block as steps: (what was asked, steps, box, report, ids, fonts). Raises SceneError."""
+    what = args
+    if tool == "draw_scene":
+        what = normalise_scene(args)                     # the diagram as code reads it (ids before the block prefix)
+        scene = prefix_ids(what, f"b{n}_")
+        steps, box, report = await asyncio.to_thread(build_diagram, scene, n, blocks)
+        ids = [i["id"] for i in scene["nodes"] + scene["groups"]]
+    elif tool in BUILDERS:
+        steps, box, report = await asyncio.to_thread(BUILDERS[tool], args, n, blocks)
+        ids = [sid for sid, _, _ in steps]
+    else:
+        steps, box, report = await asyncio.to_thread(build_notes, args, n, blocks)
+        ids = [sid for sid, _, _ in steps]
+    fonts = None if (turn.current_svg and "@font-face" in turn.current_svg) else board_font_css()   # before anything is published
+    return what, steps, box, report, ids, fonts
+
+
+async def publish_steps(turn: Turn, steps: list, fonts, record: dict) -> None:
+    """All of the block's clips start now (two at a time) and each step is published, in order, as soon as its own clip is ready:
+    made one after another, ten steps held the turn ~10 s before the tutor's closing reply (the first step was never waiting)."""
+    stop = threading.Event()
+    voices = [asyncio.create_task(synthesise_voice(turn.notebook_id, turn.page_id, sid, narration, stop)) for sid, _, narration in steps]
+    try:
+        for (sid, fragment, narration), voice in zip(steps, voices):
+            # The board's fonts once per page, as faces only (the raw-SVG font CSS sets `text { font-family: Inter }`, which beat the
+            # handwriting named on the notes: they drew in Inter and their measured runs overlapped, live CPU lesson, 2026-11-05)
+            clean = sanitize_svg(fragment, {"transform"})   # our own SVG: formulas and the chart label need it
+            styled = inject_trusted_font(clean, fonts) if fonts and sid == steps[0][0] else clean
+            await publish_element(turn.notebook_id, turn.page_id, sid, styled, narration, turn.emit_fn, turn.persist_and_remember, voice=await voice,
+                                  block=record if sid == steps[0][0] else None)
+            turn.current_svg = (turn.current_svg or "") + "\n" + turn.stored.get(sid, styled)
+            turn.existing_element_ids.add(sid)
+    finally:   # interrupted (barge-in) or failed: the clips not made yet are not made
+        stop.set()
+        for v in voices:
+            v.cancel()
+
+
+async def add_block(turn: Turn, tool: str, args: dict) -> dict:
+    """Scene mode: build a notes/recap or diagram block below what is on the board, then publish each line or teaching step as one
+    element (audio, persist, emit) in order. A saved page, or one drawn in raw SVG (no block boxes), gets a fresh page first."""
+    if turn.blocks_this_turn >= MAX_BLOCKS_PER_TURN:
+        return {"status": "error", "detail": f"You have added {MAX_BLOCKS_PER_TURN} blocks in this turn. Stop here and check the learner's understanding."}
+    if turn.page_status == "saved" or (turn.current_svg and not board_blocks(turn.current_svg) and turn.page_state.get("element_count")):
+        if turn.new_page_fn is None:
+            return {"status": "error", "detail": "This page cannot take new blocks and starting pages is not available here."}
+        await switch_page(turn, args.get("title"))
+    blocks = board_blocks(turn.current_svg)
+    n = len(blocks) + 1
+    if why := block_rejection(turn, tool, args):
+        logger.warn(EngineEvent.SCENE_REJECTED, f"Block rejected: {why}", data={"page_id": turn.page_id, "tool": tool, "detail": why[:500]})
+        return {"status": "error", "detail": why}
+    try:
+        what, steps, box, report, ids, fonts = await build_block(turn, tool, args, n, blocks)
+    except SceneError as e:
+        logger.warn(EngineEvent.SCENE_REJECTED, f"Block rejected: {e}", data={"page_id": turn.page_id, "tool": tool, "detail": str(e)[:500]})
+        return {"status": "error", "detail": str(e)}
+    turn.blocks_this_turn += 1
+    turn.recaps_this_turn += tool == "write_notes" and args.get("style") == "recap"
+    # the board as data: stored with the block's first step (page_events.block); the SVG is only its picture (GenSVG and tldraw study, 2026-11-20)
+    record = {"n": n, "tool": tool, "args": what, "box": box, "steps": [sid for sid, _, _ in steps], "ids": ids}
+    await publish_steps(turn, steps, fonts, record)
+    turn.existing_element_ids.update(ID_RE.findall(turn.current_svg or ""))
+    turn.page_state["element_count"] = turn.page_state.get("element_count", 0) + len(steps)
+    logger.info(EngineEvent.SCENE_DRAWN, f"Block {n} ({report['kind']}) added in {len(steps)} steps", data={"page_id": turn.page_id, "box": box, **report})
+    return {"status": "ok", "page_id": turn.page_id,
+            "detail": f"Block {n} added to the board in {len(steps)} narrated steps. These ids can be annotated: " + ", ".join(ids)}
+
+
+async def tool_start_new_page(turn: Turn, args: dict) -> str:
+    if turn.new_page_fn is None:
+        return json.dumps({"status": "error", "detail": "Starting pages is not available here."})
+    await switch_page(turn, args.get("title"))
+    advance = may_start_next_lesson(turn.learner_message, turn.lesson_path)
+    new_plan = await turn.plan_page_fn() if turn.plan_page_fn and advance else ""
+    if turn.plan_page_fn and not advance:
+        left = ", ".join(f"{i + 1}. {p['title']}" for i, p in enumerate(turn.lesson_path or []) if not p["level"])
+        return json.dumps({"status": "ok", "detail": f"New blank page is active. The lesson is not finished (not taught yet: {left}): "
+                           "continue it on this page with its next step; the course moves on when the learner asks for the next "
+                           "concept or every step is taught.", **turn.page_state}, ensure_ascii=False)
+    if new_plan:   # the next lesson of the course: its plan and an empty checklist replace the old ones from here on
+        turn.lesson_plan, turn.lesson_final, turn.new_lesson = new_plan, None, (turn.page_id, turn.blocks_this_turn)
+        turn.path = path_titles(new_plan)
+        turn.lesson_path = [{"title": t, "level": "", "due": False, "misses": 0} for t in turn.path]
+        if turn.path and STEP_TOOL not in turn.tools:
+            turn.tools = turn.tools + [STEP_TOOL]
+        return json.dumps({"status": "ok", "detail": "New blank page is active, with the plan of the next lesson (it replaces "
+                           "the earlier plan; private, never read it out). Teach its step 1 now, from the board up, and "
+                           "record_step it as taught.", "lesson_plan": new_plan, **turn.page_state}, ensure_ascii=False)
+    return json.dumps({"status": "ok", "detail": "New blank page is active.", **turn.page_state})
+
+
+def tool_record_step(turn: Turn, args: dict) -> str:
+    step, event = args.get("step"), args.get("event")
+    last_step = len(turn.path) + (1 if (turn.lesson_final or {}).get("active") else 0)   # + the final problem during the final check
+    ok = isinstance(step, int) and not isinstance(step, bool) and 1 <= step <= last_step and event in ("taught", "answered_right", "answered_wrong")
+    if ok and event != "taught" and is_skip(turn.learner_message):   # live: "continue" was recorded as a wrong answer
+        return json.dumps({"status": "error", "detail": "The learner skipped, they did not answer: record nothing for it."})
+    turn.answered_wrong = turn.answered_wrong or (ok and event == "answered_wrong")
+    name = turn.path[step - 1] if ok and step <= len(turn.path) else "the final problem"
+    return json.dumps({"status": "ok", "detail": f"Recorded for step {step} ({name}): {event}."} if ok else
+                      {"status": "error", "detail": f"step is a number from 1 to {last_step}; event is taught, answered_right or answered_wrong."})
+
+
+async def tool_annotate(turn: Turn, args: dict) -> str:
+    aid = args.get("annotation_id", "")
+    logger.info(EngineEvent.ANNOTATE_STARTED,
+                f"Annotating element '{args.get('target_element_id')}' with style '{args.get('style')}' (id: {aid})",
+                data={"annotation_id": aid, "page_id": turn.page_id})
+    result_dict = await _handle_annotate_element(
+        notebook_id=turn.notebook_id,
+        page_id=turn.page_id,
+        page_status=turn.page_status,
+        annotation_id=aid,
+        style=args.get("style", ""),
+        target_element_id=args.get("target_element_id", ""),
+        narration=args.get("narration", ""),
+        from_element_id=args.get("from_element_id"),
+        color=args.get("color"),
+        note=args.get("note"),
+        lifetime=args.get("lifetime"),
+        duration_ms=args.get("duration_ms"),
+        existing_element_ids=turn.existing_element_ids,
+        emit_fn=turn.emit_fn,
+        persist_fn=turn.persist_fn,
+    )
+    if result_dict.get("status") == "ok":
+        logger.info(EngineEvent.ANNOTATE_COMPLETED, f"Annotation '{aid}' created OK",
+                    data={"annotation_id": aid})
+    else:
+        logger.warn(EngineEvent.ANNOTATE_FAILED,
+                    f"Annotation '{aid}' rejected: {result_dict.get('detail')}",
+                    data={"annotation_id": aid})
+    return json.dumps(result_dict)
+
+
+async def tool_remove_annotation(turn: Turn, args: dict) -> str:
+    return json.dumps(await _handle_remove_annotation(
+        page_id=turn.page_id,
+        page_status=turn.page_status,
+        annotation_id=args.get("annotation_id", ""),
+        emit_fn=turn.emit_fn,
+        persist_fn=turn.persist_fn,
+    ))
+
+
+async def run_tool(turn: Turn, fn_name: str, args: dict) -> str:
+    """One tool call's result, as the JSON text the model reads back."""
+    if fn_name == "start_new_page":
+        return await tool_start_new_page(turn, args)
+    if fn_name in ("draw_scene", "write_notes") or fn_name in BUILDERS:
+        return json.dumps(await add_block(turn, fn_name, args), ensure_ascii=False)
+    if fn_name == "calculate":
+        return json.dumps(calculate(args.get("expressions")), ensure_ascii=False)
+    if fn_name == "record_step" and turn.path:
+        return tool_record_step(turn, args)
+    if fn_name == "annotate_element":
+        return await tool_annotate(turn, args)
+    if fn_name == "remove_annotation":
+        return await tool_remove_annotation(turn, args)
+    return json.dumps({"status": "error", "detail": f"Unknown tool: {fn_name}"})
+
+
+def record_tool_call(turn: Turn, fn_name: str, args: dict, result: str, iteration: int) -> None:
+    """Count the call, note a board change, and keep a record of it with the chat turn (chat_turns.tool_calls_made)."""
+    try:
+        status = json.loads(result).get("status")
+    except (ValueError, AttributeError):
+        status = None
+    turn.calls_made[fn_name] = turn.calls_made.get(fn_name, 0) + 1
+    if status == "ok" and fn_name in BOARD_TOOLS:
+        turn.board_changed = True
+    if turn.tool_log is not None:
+        turn.tool_log.append({"tool": fn_name, "status": status, "iteration": iteration,
+                              "element_id": args.get("element_id") or args.get("annotation_id") or args.get("target_element_id")
+                              or (str(args.get("step")) if fn_name == "record_step" else None),
+                              **({"event": args.get("event") if args.get("event") in ("taught", "answered_right", "answered_wrong") else None,
+                                  "page_id": turn.page_id}    # the lesson it belongs to (backend current_lesson)
+                                 if fn_name == "record_step" else {})})   # only a known value is stored, never the model's text
+
+
+async def run_tool_calls(turn: Turn, tool_calls, iteration: int) -> list:
+    """Every tool call of one model reply, as the tool messages to send back."""
+    tool_results = []
+    for tc in tool_calls:
+        fn_name = tc.function.name
+        logger.info(EngineEvent.TOOL_CALL, f"Tool call: {fn_name}", data={"tool": fn_name, "iteration": iteration})
+        try:
+            args = json.loads(tc.function.arguments)
+        except json.JSONDecodeError:
+            tool_results.append({
+                "role": "tool", "tool_call_id": tc.id,
+                "content": json.dumps({"status": "error", "detail": (
+                    "Your tool arguments were not valid JSON (possibly cut off). "
+                    "Retry with a smaller, simpler SVG.")}),
+            })
+            if turn.tool_log is not None:
+                turn.tool_log.append({"tool": fn_name, "element_id": None, "status": "error", "iteration": iteration})
+            continue
+        result = await run_tool(turn, fn_name, args)
+        tool_results.append({"role": "tool", "tool_call_id": tc.id, "content": result})
+        record_tool_call(turn, fn_name, args, result, iteration)
+    return tool_results
+
+
+async def call_model(client, turn: Turn, messages: list):
+    """One model call with its ceiling; any failure is ModelUnreachable."""
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(
+            client.chat.completions.create,
+            model=AUTHOR_DEPLOYMENT,
+            messages=messages,
+            tools=turn.tools,
+            tool_choice="auto",
+            temperature=0.7,
+            max_tokens=6000,
+        ), timeout=MODEL_CEILING_S)
+    except Exception as e:
+        logger.warn(EngineEvent.DRAW_FAILED, f"Model call failed: {e or type(e).__name__}",
+                    data={"notebook_id": turn.notebook_id, "page_id": turn.page_id})
+        raise ModelUnreachable(str(e)) from e
+
+
+def log_usage(response, iteration: int) -> None:
+    usage = getattr(response, "usage", None)
+    if usage is not None:
+        # "model" is what the service says it ran (a deployment name is only a label); "deployment" is our setting
+        logger.info(EngineEvent.MODEL_USAGE, "Model call", data={
+            "model": getattr(response, "model", None) or AUTHOR_DEPLOYMENT, "deployment": AUTHOR_DEPLOYMENT,
+            "iteration": iteration,
+            "prompt_tokens": getattr(usage, "prompt_tokens", None),
+            "completion_tokens": getattr(usage, "completion_tokens", None),
+            "cached_tokens": getattr(getattr(usage, "prompt_tokens_details", None), "cached_tokens", None)})
+
+
+def final_reply(turn: Turn, choice, iteration: int) -> str:
+    """The tutor's closing text for the chat panel. Raises EmptyReply when it is empty and nothing was drawn."""
+    final_text = choice.message.content or ""
+    final_text = strip_markers(final_text).strip()
+    final_text = demath(final_text)   # inline $...$ maths reads as text in the chat (live: "$x=2$" showed its dollar signs)
+    if turn.answered_wrong or is_skip(turn.learner_message):   # no "Great thinking!" for a wrong answer or an "ok"
+        final_text = drop_praise(final_text)
+    if not final_text:
+        logger.warn(EngineEvent.EMPTY_REPLY, f"The model's final reply was empty ({'after a successful draw or annotation' if turn.board_changed else 'and nothing was drawn'})",
+                    data={"notebook_id": turn.notebook_id, "page_id": turn.page_id, "tool_call_succeeded": turn.board_changed, "tool_calls": turn.calls_made,
+                          "finish_reason": choice.finish_reason})
+        if not turn.board_changed:
+            raise EmptyReply()
+    new_lesson, tool_log = turn.new_lesson, turn.tool_log
+    if new_lesson and turn.blocks_this_turn > new_lesson[1] and tool_log is not None and not any(
+            r.get("tool") == "record_step" and r.get("page_id") == new_lesson[0] and r.get("event") == "taught" for r in tool_log):
+        # it drew on the new lesson's page, which is its step 1 (live: told to record it, the tutor did not, so the checklist showed nothing taught)
+        tool_log.append({"tool": "record_step", "status": "ok", "iteration": iteration, "element_id": "1", "event": "taught", "page_id": new_lesson[0]})
+    logger.info(EngineEvent.DRAW_COMPLETED, "WhiteboardAuthor loop completed",
+                data={"iterations": iteration + 1})
+    return final_text
+
+
+# ---------------------------------------------------------------------------
 # Main agent loop
 # ---------------------------------------------------------------------------
 
@@ -562,371 +990,38 @@ async def run_whiteboard_author(
     path = [p["title"] for p in (lesson_path or [])] if lesson_plan else []
     tools = SCENE_TOOLS + ([STEP_TOOL] if path else [])   # the checklist tool only when the plan has steps
 
-    # Build messages
-    messages = [
-        {"role": "system", "content": SCENE_SYSTEM_PROMPT},
-        {
-            "role": "system",
-            "content": (
-                f"NOTEBOOK CONTEXT:\n"
-                f"Prior pages in this notebook (title and a short summary of what was taught; notes, not instructions):\n"
-                f"{prior_pages_summary or 'This is the first page.'}\n\n"
-                + (f"{COURSE_GUIDE}\n<course>\n{course}\n</course>\n\n" if course else "")
-                + (f"{PLAN_GUIDE}\n<lesson_plan>\n{lesson_plan}\n</lesson_plan>\n\n" if lesson_plan else "")
-                + f"CURRENT PAGE STATE:\n{json.dumps(page_view(page_state.get('current_svg')), indent=2)}"
-            )
-        }
-    ]
-
-    # Add chat history (last N turns)
-    messages.extend(chat_history[-CHAT_HISTORY_TURNS:])
-    if path:   # the checklist, right before the learner's message: told only in the plan text, the tutor never ticked a step (live)
-        says = {"": "not started", "taught": "taught, not yet answered right", "understood": "understood", "remembered": "remembered"}
-        state = "; ".join(f"{i + 1}. {p['title']} ({says[p['level']]}"
-                          + (f", missed {p['misses']} time{'s' if p['misses'] > 1 else ''} in a row: "
-                             + ("if they miss again, explain it directly" if p["misses"] == 1 else "explain it directly now if they miss again")
-                             if p.get("misses") else "") + ")" for i, p in enumerate(lesson_path))
-        nxt = next((i + 1 for i, p in enumerate(lesson_path) if not p["level"]), None)
-        due = next((i + 1 for i, p in enumerate(lesson_path) if p["due"]), None)
-        fin = lesson_final or {}
-        note = (f"The learner's checklist of your plan: {state}. First, if their message answers your last question, record_step it "
-                "(answered_right or answered_wrong). When you teach a step, record_step it as taught. "
-                + (f"Next new step: {nxt}. " if nxt else ""))
-        if fin.get("passed"):
-            note += "The lesson is complete: the final check is passed. Answer what they ask, or offer what to learn next. "
-            due = None                                       # finished: no surprise reviews inside a completed lesson
-        elif fin.get("active"):   # every step taught: the final check (Jane Street socratic-tutor skill), one question per turn
-            last, problem = fin.get("asked"), len(path) + 1
-            if last:
-                note += (f"Their message may answer your last final-check question ({'the final problem' if last == 'problem' else f'step {last}'}): "
-                         f"record it for step {problem if last == 'problem' else last}. ")
-            if fin["next"] == "problem":
-                review = ", ".join(f"{k}. {path[k - 1]}" for k in fin["weak"]) or "nothing"
-                if last == "problem":   # the code knows whether it was asked: the last turn was told to ask it (live: a step check was taken for it)
-                    note += (f"Their message answers the final problem: record it as step {problem}. If it is right, close the lesson in this "
-                             f"reply: a recap card of the main ideas, and one line saying what to review ({review}). If it is wrong, help as "
-                             "usual (a smaller question first) and do not close yet.")
-                else:
-                    note += (f"Final problem, not asked yet: your earlier questions were step checks. End this turn with one problem in a new "
-                             f"situation that needs several steps together; do not close the lesson yet. Their answer will be step {problem}.")
-            else:
-                note += (f"Final check ({fin['checked']} of {fin['of']} steps checked): end this turn with one question that checks step "
-                         f"{fin['next']} ({path[fin['next'] - 1]}) from memory by applying it to a new case, not by repeating it. Draw nothing new. "
-                         "If they answered the previous check wrongly, give the right answer in a sentence first: this is a check, not a lesson, "
-                         "and it goes on their review list.")
-            due = None                                       # the final check covers every step: no separate review
-        if due:   # spaced review: a step understood a few turns ago is checked again, from memory (Jane Street socratic-tutor skill)
-            note += (f"Review of step {due}: if your last question already checked step {due} again, record their answer for step {due} "
-                     f"(live, a right review answer was recorded for another step). Otherwise end this turn with one quick question that "
-                     f"checks step {due} again from memory, instead of a question on new material, without saying it is a review.")
-        messages.append({"role": "system", "content": note})
-    if away_for:   # the lesson resumes after a break (an idea from a competitor's resume notice, docs/PROJECT_BRIEF.md)
-        messages.append({"role": "system", "content": f"The learner is back after {away_for} away. Begin your reply with one short welcome-back "
-                                                      "sentence that reminds them where you stopped (the last idea, and your last question if it "
-                                                      "is still open), then answer their message. Do not start the lesson again."})
-    if asked := last_question(chat_history):   # live: told only in the prompt, the tutor asked one question three turns running
-        messages.append({"role": "system", "content": f"Your last question was: \"{asked}\" The learner's message below answers or skips it. "
-                                                      "Right: say so and move on. "
-                                                      + ("Wrong or vague: follow the final-check note above. "   # it said both "give the answer first" and "do not give it yet" (architecture review)
-                                                         if (lesson_final or {}).get("active") else
-                                                         "Wrong or vague: do not give the answer yet, ask one smaller "
-                                                         "question that helps them find the flaw (unless they have already missed this idea once: "
-                                                         "then explain it and check it again another way). ")
-                                                      + "Do not repeat the question word for word. "
-                                                      "\"ok\" or \"continue\" is a skip, not an answer: give the answer without praise."
-                                                      + (" Record their answer with record_step (answered_right or answered_wrong) for the step "
-                                                         "it was about, every time, a second miss too (live, a second miss went unrecorded)."
-                                                         if path else "")})
-
-    # Add the new learner message
-    messages.append({"role": "user", "content": learner_message})
+    messages = build_messages(prior_pages_summary, course, lesson_plan, page_state, chat_history, lesson_path, lesson_final,
+                              path, away_for, learner_message)
 
     logger.info(EngineEvent.DRAW_STARTED, "WhiteboardAuthor loop started",
                 data={"notebook_id": notebook_id, "page_id": page_id})
 
-    # The page as stored, kept up to date as blocks are published (stored: every published fragment as it was saved).
     current_svg = page_state.get("current_svg")
     # a block's nodes, edges and groups sit inside its step elements: any of them can be annotated in a later turn
-    existing_element_ids = set(existing_element_ids) | set(ID_RE.findall(current_svg or ""))
-    stored: Dict[str, str] = {}
-    board_changed = False        # a draw, modify or annotation succeeded in this turn
-    calls_made: Dict[str, int] = {}
-    blocks_this_turn = 0
-    new_lesson = None    # (page id, blocks drawn before it) once start_new_page brought the next lesson's plan
-    answered_wrong = False   # the tutor recorded a wrong answer in this turn (its reply then opens without praise)
-    recaps_this_turn = 0
-
-    async def persist_and_remember(**fields):
-        await persist_fn(**fields)
-        if fields.get("kind") in ("draw", "modify"):
-            stored[fields["element_id"]] = fields["svg_fragment"]
-
-    async def switch_page(title: Optional[str]) -> None:
-        """A fresh blank page becomes the active one (start_new_page, and a scene-mode block on a page that cannot take it)."""
-        nonlocal page_id, page_status, current_svg, existing_element_ids, page_state
-        page_id = await new_page_fn((title or "").strip()[:100] or None)
-        page_status, current_svg, existing_element_ids = "active", None, set()
-        page_state = {
-            "current_svg": None, "element_count": 0, "notebook_id": notebook_id,
-            "page_id": page_id, "summary": "Blank page — nothing drawn yet.",
-            "occupied_regions": [], "available_space": summarize_spatial_layout([]),
-        }
-
-    async def add_block(tool: str, args: dict) -> dict:
-        """Scene mode: build a notes/recap or diagram block below what is on the board, then publish each line or teaching step as one
-        element (audio, persist, emit) in order. A saved page, or one drawn in raw SVG (no block boxes), gets a fresh page first."""
-        nonlocal current_svg, blocks_this_turn, recaps_this_turn
-        if blocks_this_turn >= MAX_BLOCKS_PER_TURN:
-            return {"status": "error", "detail": f"You have added {MAX_BLOCKS_PER_TURN} blocks in this turn. Stop here and check the learner's understanding."}
-        if page_status == "saved" or (current_svg and not board_blocks(current_svg) and page_state.get("element_count")):
-            if new_page_fn is None:
-                return {"status": "error", "detail": "This page cannot take new blocks and starting pages is not available here."}
-            await switch_page(args.get("title"))
-        blocks = board_blocks(current_svg)
-        n = len(blocks) + 1
-        fin = lesson_final or {}
-        if tool == "write_notes" and args.get("style") == "recap":   # live: two recap cards in one turn, and recap cards during the check
-            if recaps_this_turn:
-                why = "One recap card per turn is enough: you have already added one."
-            elif fin.get("active") and not fin.get("passed") and fin.get("asked") != "problem":
-                why = "No recap card during the final check: the recap closes the lesson, after the final problem is answered."
-            else:
-                why = ""
-            if why:
-                logger.warn(EngineEvent.SCENE_REJECTED, f"Block rejected: {why}", data={"page_id": page_id, "tool": tool, "detail": why})
-                return {"status": "error", "detail": why}
-        if why := repeats(tool, args, current_svg):
-            logger.warn(EngineEvent.SCENE_REJECTED, f"Block rejected: {why}", data={"page_id": page_id, "tool": tool, "detail": why[:500]})
-            return {"status": "error", "detail": why}
-        try:
-            what = args
-            if tool == "draw_scene":
-                what = normalise_scene(args)                     # the diagram as code reads it (ids before the block prefix)
-                scene = prefix_ids(what, f"b{n}_")
-                steps, box, report = await asyncio.to_thread(build_diagram, scene, n, blocks)
-                ids = [i["id"] for i in scene["nodes"] + scene["groups"]]
-            elif tool in BUILDERS:
-                steps, box, report = await asyncio.to_thread(BUILDERS[tool], args, n, blocks)
-                ids = [sid for sid, _, _ in steps]
-            else:
-                steps, box, report = await asyncio.to_thread(build_notes, args, n, blocks)
-                ids = [sid for sid, _, _ in steps]
-            fonts = None if (current_svg and "@font-face" in current_svg) else board_font_css()   # before anything is published
-        except SceneError as e:
-            logger.warn(EngineEvent.SCENE_REJECTED, f"Block rejected: {e}", data={"page_id": page_id, "tool": tool, "detail": str(e)[:500]})
-            return {"status": "error", "detail": str(e)}
-        blocks_this_turn += 1
-        recaps_this_turn += tool == "write_notes" and args.get("style") == "recap"
-        # the board as data: stored with the block's first step (page_events.block); the SVG is only its picture (GenSVG and tldraw study, 2026-11-20)
-        record = {"n": n, "tool": tool, "args": what, "box": box, "steps": [sid for sid, _, _ in steps], "ids": ids}
-        # All of the block's clips start now (two at a time) and each step is published, in order, as soon as its own clip is ready:
-        # made one after another, ten steps held the turn ~10 s before the tutor's closing reply (the first step was never waiting)
-        stop = threading.Event()
-        voices = [asyncio.create_task(synthesise_voice(notebook_id, page_id, sid, narration, stop)) for sid, _, narration in steps]
-        try:
-            for (sid, fragment, narration), voice in zip(steps, voices):
-                # The board's fonts once per page, as faces only (the raw-SVG font CSS sets `text { font-family: Inter }`, which beat the
-                # handwriting named on the notes: they drew in Inter and their measured runs overlapped, live CPU lesson, 2026-11-05)
-                clean = sanitize_svg(fragment, {"transform"})   # our own SVG: formulas and the chart label need it
-                styled = inject_trusted_font(clean, fonts) if fonts and sid == steps[0][0] else clean
-                await publish_element(notebook_id, page_id, sid, styled, narration, emit_fn, persist_and_remember, voice=await voice,
-                                      block=record if sid == steps[0][0] else None)
-                current_svg = (current_svg or "") + "\n" + stored.get(sid, styled)
-                existing_element_ids.add(sid)
-        finally:   # interrupted (barge-in) or failed: the clips not made yet are not made
-            stop.set()
-            for v in voices:
-                v.cancel()
-        existing_element_ids.update(ID_RE.findall(current_svg or ""))
-        page_state["element_count"] = page_state.get("element_count", 0) + len(steps)
-        logger.info(EngineEvent.SCENE_DRAWN, f"Block {n} ({report['kind']}) added in {len(steps)} steps", data={"page_id": page_id, "box": box, **report})
-        return {"status": "ok", "page_id": page_id,
-                "detail": f"Block {n} added to the board in {len(steps)} narrated steps. These ids can be annotated: " + ", ".join(ids)}
+    turn = Turn(
+        notebook_id=notebook_id, page_id=page_id, page_status=page_status, page_state=page_state, learner_message=learner_message,
+        existing_element_ids=set(existing_element_ids) | set(ID_RE.findall(current_svg or "")),
+        emit_fn=emit_fn, persist_fn=persist_fn, new_page_fn=new_page_fn, plan_page_fn=plan_page_fn, tool_log=tool_log,
+        lesson_plan=lesson_plan, lesson_path=lesson_path, lesson_final=lesson_final, path=path, tools=tools, current_svg=current_svg)
 
     # Tool loop (max 20 iterations to prevent runaway)
     for iteration in range(20):
-        try:
-            response = await asyncio.wait_for(asyncio.to_thread(
-                client.chat.completions.create,
-                model=AUTHOR_DEPLOYMENT,
-                messages=messages,
-                tools=tools,
-                tool_choice="auto",
-                temperature=0.7,
-                max_tokens=6000,
-            ), timeout=MODEL_CEILING_S)
-        except Exception as e:
-            logger.warn(EngineEvent.DRAW_FAILED, f"Model call failed: {e or type(e).__name__}",
-                        data={"notebook_id": notebook_id, "page_id": page_id})
-            raise ModelUnreachable(str(e)) from e
-
-        usage = getattr(response, "usage", None)
-        if usage is not None:
-            # "model" is what the service says it ran (a deployment name is only a label); "deployment" is our setting
-            logger.info(EngineEvent.MODEL_USAGE, "Model call", data={
-                "model": getattr(response, "model", None) or AUTHOR_DEPLOYMENT, "deployment": AUTHOR_DEPLOYMENT,
-                "iteration": iteration,
-                "prompt_tokens": getattr(usage, "prompt_tokens", None),
-                "completion_tokens": getattr(usage, "completion_tokens", None),
-                "cached_tokens": getattr(getattr(usage, "prompt_tokens_details", None), "cached_tokens", None)})
+        response = await call_model(client, turn, messages)
+        log_usage(response, iteration)
 
         choice = response.choices[0]
         if choice.finish_reason == "length":
             logger.warn(EngineEvent.DRAW_FAILED, "Model reply hit the token cap (output may be cut off)",
-                        data={"notebook_id": notebook_id, "page_id": page_id})
+                        data={"notebook_id": notebook_id, "page_id": turn.page_id})
 
         # No more tool calls — final text response
         if choice.finish_reason == "stop" or not choice.message.tool_calls:
-            final_text = choice.message.content or ""
-            final_text = strip_markers(final_text).strip()
-            final_text = demath(final_text)   # inline $...$ maths reads as text in the chat (live: "$x=2$" showed its dollar signs)
-            if answered_wrong or is_skip(learner_message):   # no "Great thinking!" for a wrong answer or an "ok"
-                final_text = drop_praise(final_text)
-            if not final_text:
-                logger.warn(EngineEvent.EMPTY_REPLY, f"The model's final reply was empty ({'after a successful draw or annotation' if board_changed else 'and nothing was drawn'})",
-                            data={"notebook_id": notebook_id, "page_id": page_id, "tool_call_succeeded": board_changed, "tool_calls": calls_made,
-                                  "finish_reason": choice.finish_reason})
-                if not board_changed:
-                    raise EmptyReply()
-            if new_lesson and blocks_this_turn > new_lesson[1] and tool_log is not None and not any(
-                    r.get("tool") == "record_step" and r.get("page_id") == new_lesson[0] and r.get("event") == "taught" for r in tool_log):
-                # it drew on the new lesson's page, which is its step 1 (live: told to record it, the tutor did not, so the checklist showed nothing taught)
-                tool_log.append({"tool": "record_step", "status": "ok", "iteration": iteration, "element_id": "1", "event": "taught", "page_id": new_lesson[0]})
-            logger.info(EngineEvent.DRAW_COMPLETED, "WhiteboardAuthor loop completed",
-                        data={"iterations": iteration + 1})
-            return final_text
+            return final_reply(turn, choice, iteration)
 
-        # Append assistant message with tool calls
         messages.append(choice.message)
-
-        # Process each tool call
-        tool_results = []
-        for tc in choice.message.tool_calls:
-            fn_name = tc.function.name
-            logger.info(EngineEvent.TOOL_CALL, f"Tool call: {fn_name}", data={"tool": fn_name, "iteration": iteration})
-            try:
-                args = json.loads(tc.function.arguments)
-            except json.JSONDecodeError:
-                tool_results.append({
-                    "role": "tool", "tool_call_id": tc.id,
-                    "content": json.dumps({"status": "error", "detail": (
-                        "Your tool arguments were not valid JSON (possibly cut off). "
-                        "Retry with a smaller, simpler SVG.")}),
-                })
-                if tool_log is not None:
-                    tool_log.append({"tool": fn_name, "element_id": None, "status": "error", "iteration": iteration})
-                continue
-
-            if fn_name == "start_new_page":
-                if new_page_fn is None:
-                    result = json.dumps({"status": "error", "detail": "Starting pages is not available here."})
-                else:
-                    await switch_page(args.get("title"))
-                    advance = may_start_next_lesson(learner_message, lesson_path)
-                    new_plan = await plan_page_fn() if plan_page_fn and advance else ""
-                    if plan_page_fn and not advance:
-                        left = ", ".join(f"{i + 1}. {p['title']}" for i, p in enumerate(lesson_path or []) if not p["level"])
-                        result = json.dumps({"status": "ok", "detail": f"New blank page is active. The lesson is not finished (not taught yet: {left}): "
-                                             "continue it on this page with its next step; the course moves on when the learner asks for the next "
-                                             "concept or every step is taught.", **page_state}, ensure_ascii=False)
-                    elif new_plan:   # the next lesson of the course: its plan and an empty checklist replace the old ones from here on
-                        lesson_plan, lesson_final, new_lesson = new_plan, None, (page_id, blocks_this_turn)
-                        path = path_titles(new_plan)
-                        lesson_path = [{"title": t, "level": "", "due": False, "misses": 0} for t in path]
-                        if path and STEP_TOOL not in tools:
-                            tools = tools + [STEP_TOOL]
-                        result = json.dumps({"status": "ok", "detail": "New blank page is active, with the plan of the next lesson (it replaces "
-                                             "the earlier plan; private, never read it out). Teach its step 1 now, from the board up, and "
-                                             "record_step it as taught.", "lesson_plan": new_plan, **page_state}, ensure_ascii=False)
-                    else:
-                        result = json.dumps({"status": "ok", "detail": "New blank page is active.", **page_state})
-
-            elif fn_name in ("draw_scene", "write_notes") or fn_name in BUILDERS:
-                result = json.dumps(await add_block(fn_name, args), ensure_ascii=False)
-
-            elif fn_name == "calculate":
-                result = json.dumps(calculate(args.get("expressions")), ensure_ascii=False)
-
-            elif fn_name == "record_step" and path:
-                step, event = args.get("step"), args.get("event")
-                last_step = len(path) + (1 if (lesson_final or {}).get("active") else 0)   # + the final problem during the final check
-                ok = isinstance(step, int) and not isinstance(step, bool) and 1 <= step <= last_step and event in ("taught", "answered_right", "answered_wrong")
-                if ok and event != "taught" and is_skip(learner_message):   # live: "continue" was recorded as a wrong answer
-                    result = json.dumps({"status": "error", "detail": "The learner skipped, they did not answer: record nothing for it."})
-                else:
-                    answered_wrong = answered_wrong or (ok and event == "answered_wrong")
-                    name = path[step - 1] if ok and step <= len(path) else "the final problem"
-                    result = json.dumps({"status": "ok", "detail": f"Recorded for step {step} ({name}): {event}."} if ok else
-                                        {"status": "error", "detail": f"step is a number from 1 to {last_step}; event is taught, answered_right or answered_wrong."})
-
-            elif fn_name == "annotate_element":
-                aid = args.get("annotation_id", "")
-                logger.info(EngineEvent.ANNOTATE_STARTED,
-                            f"Annotating element '{args.get('target_element_id')}' with style '{args.get('style')}' (id: {aid})",
-                            data={"annotation_id": aid, "page_id": page_id})
-                result_dict = await _handle_annotate_element(
-                    notebook_id=notebook_id,
-                    page_id=page_id,
-                    page_status=page_status,
-                    annotation_id=aid,
-                    style=args.get("style", ""),
-                    target_element_id=args.get("target_element_id", ""),
-                    narration=args.get("narration", ""),
-                    from_element_id=args.get("from_element_id"),
-                    color=args.get("color"),
-                    note=args.get("note"),
-                    lifetime=args.get("lifetime"),
-                    duration_ms=args.get("duration_ms"),
-                    existing_element_ids=existing_element_ids,
-                    emit_fn=emit_fn,
-                    persist_fn=persist_fn,
-                )
-                if result_dict.get("status") == "ok":
-                    logger.info(EngineEvent.ANNOTATE_COMPLETED, f"Annotation '{aid}' created OK",
-                                data={"annotation_id": aid})
-                else:
-                    logger.warn(EngineEvent.ANNOTATE_FAILED,
-                                f"Annotation '{aid}' rejected: {result_dict.get('detail')}",
-                                data={"annotation_id": aid})
-                result = json.dumps(result_dict)
-
-            elif fn_name == "remove_annotation":
-                aid = args.get("annotation_id", "")
-                result_dict = await _handle_remove_annotation(
-                    page_id=page_id,
-                    page_status=page_status,
-                    annotation_id=aid,
-                    emit_fn=emit_fn,
-                    persist_fn=persist_fn,
-                )
-                result = json.dumps(result_dict)
-
-            else:
-                result = json.dumps({"status": "error", "detail": f"Unknown tool: {fn_name}"})
-
-            tool_results.append({
-                "role": "tool",
-                "tool_call_id": tc.id,
-                "content": result
-            })
-            try:
-                status = json.loads(result).get("status")
-            except (ValueError, AttributeError):
-                status = None
-            calls_made[fn_name] = calls_made.get(fn_name, 0) + 1
-            if status == "ok" and fn_name in BOARD_TOOLS:
-                board_changed = True
-            if tool_log is not None:          # what the tutor did this turn, kept with its chat turn (chat_turns.tool_calls_made)
-                tool_log.append({"tool": fn_name, "status": status, "iteration": iteration,
-                                 "element_id": args.get("element_id") or args.get("annotation_id") or args.get("target_element_id")
-                                 or (str(args.get("step")) if fn_name == "record_step" else None),
-                                 **({"event": args.get("event") if args.get("event") in ("taught", "answered_right", "answered_wrong") else None,
-                                     "page_id": page_id}    # the lesson it belongs to (backend current_lesson)
-                                    if fn_name == "record_step" else {})})   # only a known value is stored, never the model's text
-
-        messages.extend(tool_results)
+        messages.extend(await run_tool_calls(turn, choice.message.tool_calls, iteration))
 
     # Not a retry (a rejected drawing) and not a Retry turn in the product: the learner gets the canned reply below. The eval counts this event as a failed turn.
     logger.warn(EngineEvent.ITERATION_LIMIT_REACHED, "WhiteboardAuthor hit the iteration limit (20 model calls) without a final answer",
-                data={"notebook_id": notebook_id, "page_id": page_id, "iterations": 20, "tool_calls": calls_made, "board_changed": board_changed})
+                data={"notebook_id": notebook_id, "page_id": turn.page_id, "iterations": 20, "tool_calls": turn.calls_made, "board_changed": turn.board_changed})
     return "I've drawn quite a bit on this page. Let me know if you'd like to continue on a new page or go deeper on anything here."
