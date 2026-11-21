@@ -11,7 +11,6 @@ of baselines A and B.
   same first two words        the most common two-word opening among replies, and among narrations
   no valid marker             narrations whose [[MARK:id]] was missing or wrongly written, as the model produced them
 """
-import json
 import re
 import statistics
 import sys

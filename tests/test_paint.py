@@ -4,7 +4,7 @@ import re
 
 from engine.graph import build_graph
 from engine.sanitiser import sanitize_svg
-from engine.scene import _node_svg, outline, paint
+from engine.scene import _node_svg, outline
 from test_graph import SKY
 
 NODE = {"id": "b1_lb", "shape": "box", "rows": [], "th": 0}

@@ -100,7 +100,6 @@ def test_a_nul_in_a_topic_and_a_title_is_replaced_too(api):
 
 
 def test_a_nul_in_lesson_board_notes_is_never_stored(api):
-    import json
     from backend.models import Page, PageEvent
     from test_scene import _chat as scene_chat, _model as scene_model
     client, eng = api

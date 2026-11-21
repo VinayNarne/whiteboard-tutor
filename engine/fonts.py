@@ -7,6 +7,7 @@ Subsets and base64-inlines WOFF2 font data (T18 / R10).
 
 import re
 import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as DET
 try:
     from ._font_data import INTER_REGULAR_WOFF2_B64, INTER_BOLD_WOFF2_B64
 except (ImportError, ValueError):
@@ -48,7 +49,7 @@ def inject_trusted_font(svg_text: str, font_css: str = None) -> str:
     and only presenter-trusted fonts/styles are added (SAD §6.1, §8.3, R10).
     """
     try:
-        root = ET.fromstring(svg_text)
+        root = DET.fromstring(svg_text)
         local_tag = root.tag.split("}")[-1] if "}" in root.tag else root.tag
 
         # Leaf elements like <rect>, <circle>, <line> cannot have <defs> as children in SVG

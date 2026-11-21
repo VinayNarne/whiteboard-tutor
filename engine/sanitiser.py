@@ -12,6 +12,7 @@ from contextvars import ContextVar
 import html.entities as html_entities
 from pathlib import Path
 import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as DET
 
 _this_dir = Path(__file__).parent
 _root_dir = _this_dir.parent
@@ -268,17 +269,17 @@ def _sanitize_svg(svg_text: str) -> str:
         logger.warn(EngineEvent.CONTROL_CHARS_REPLACED, f"Replaced {stripped} control character(s) in model SVG with a visible placeholder",
                     data={"count": stripped})
     try:
-        root = ET.fromstring(clean_text)
+        root = DET.fromstring(clean_text)
     except ET.ParseError:
         try:
             import lxml.etree as LET
             parser = LET.XMLParser(recover=True, no_network=True, resolve_entities=False)
             lxml_root = LET.XML(clean_text.encode("utf-8"), parser=parser)
             recovered = LET.tostring(lxml_root, encoding="unicode")
-            root = ET.fromstring(recovered)
+            root = DET.fromstring(recovered)
         except Exception:
             # Re-raise original ET ParseError if recovery fails
-            root = ET.fromstring(clean_text)
+            root = DET.fromstring(clean_text)
 
     local_root = tag_local(root.tag)
     if local_root not in ALLOWED_TAGS:
@@ -434,8 +435,8 @@ def _test_real_slide_preservation() -> bool:
     orig_svg = slide_path.read_text(encoding="utf-8")
     san_svg = sanitize_svg(orig_svg)
 
-    orig_tree = ET.fromstring(orig_svg)
-    san_tree = ET.fromstring(san_svg)
+    orig_tree = DET.fromstring(orig_svg)
+    san_tree = DET.fromstring(san_svg)
 
     orig_elements = [el for el in orig_tree.iter() if not (tag_local(el.tag) == "style" and any(k in (el.text or "") for k in ("System UI", "Inter")))]
     san_elements = list(san_tree.iter())

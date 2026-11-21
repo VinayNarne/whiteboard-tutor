@@ -153,7 +153,7 @@ def test_text_contrast_meets_aa_on_every_screen_and_menu(theme, notebook):
 
 
 def test_choice_is_made_in_the_ui_persists_across_reload_and_applies_before_first_paint():
-    from playwright.sync_api import sync_playwright, expect
+    from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)

@@ -1,0 +1,8 @@
+target-version = "py312"
+extend-exclude = ["old_version", "research_repos", "frontend", "engine/scene_layout", "generated_notebooks", "docs"]
+
+[lint]
+select = ["F", "E9"]
+
+[lint.per-file-ignores]
+"tests/test_board_camera.py" = ["F811"]  # pytest fixture imported then used as an argument

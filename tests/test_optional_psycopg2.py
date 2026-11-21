@@ -37,12 +37,12 @@ def test_the_requirements_split_the_driver_out_of_the_default_install():
 
 def test_the_app_starts_and_works_on_sqlite_without_psycopg2(tmp_path):
     db = (tmp_path / "plain.db").as_posix()
-    code = f'''
+    code = '''
 from fastapi.testclient import TestClient
 import backend.main as bm
 with TestClient(bm.app) as c:
     assert c.get("/health").status_code == 200
-    nb = c.post("/api/notebooks", json={{"topic": "No Postgres"}}).json()["id"]
+    nb = c.post("/api/notebooks", json={"topic": "No Postgres"}).json()["id"]
     assert c.get("/api/notebooks/" + nb).json()["pages"][0]["page_number"] == 1
 assert "psycopg2" not in sys.modules
 print("OK")
