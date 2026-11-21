@@ -7,7 +7,6 @@ history slots, went into the page summary and the export as if the tutor had sai
 and keeps the failed turn for the learner's screen; the history, the page summary and the export leave failed turns out; "Try again" sends the learner's same
 turn again (`retry_turn_id`) and creates no second learner turn. The model client has an explicit 60 s timeout and one retry.
 """
-import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -22,6 +21,7 @@ from sqlmodel import Session, select
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import backend.main as bm
+import seed
 from backend.database import engine, init_db
 from backend.migrate import alembic_config
 from backend.models import ChatTurn, Page
@@ -59,10 +59,7 @@ class _Broken:
 def board():
     nb = client.post("/api/notebooks", json={"topic": "Failures"}).json()["id"]
     pg = client.get(f"/api/notebooks/{nb}").json()["pages"][0]["id"]
-    with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
-        r = client.post(f"/api/notebooks/{nb}/pages/{pg}/draw", json={"element_id": "law1", "svg_fragment": CARD.format(e="law1", x=60, y=120, tx=80, ty=180),
-                                                                    "narration": "[[MARK:law1]] First law."})
-        assert r.status_code == 200, r.text
+    seed.draw(engine, pg, "law1", CARD.format(e="law1", x=60, y=120, tx=80, ty=180), "[[MARK:law1]] First law.")
     yield nb, pg
     client.delete(f"/api/notebooks/{nb}")
 

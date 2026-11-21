@@ -1,5 +1,5 @@
 """
-Scene mode (engine/scene.py, LP_SCENE_MODE=1): the tutor says what to show, the code lays it out on a lesson board.
+The lesson board (engine/scene.py): the tutor says what to show, the code lays it out on a lesson board.
 
 - normalise(): slips the code can repair are repaired (unsafe ids, an arrow listed before its ends, parts never shown, a group shown
   after its members); slips it cannot repair go back to the tutor as one error.
@@ -7,8 +7,8 @@ Scene mode (engine/scene.py, LP_SCENE_MODE=1): the tutor says what to show, the 
   one <g id="b{n}_s{k}"> per teaching step whose narration starts with its marker, and the sanitiser keeps every fragment whole.
 - build_notes(): **bold** and ==highlight== become bold runs and highlighter bands, recap cards get checks, numbered lines no bullet.
 - place_block(): blocks never overlap; a diagram sits beside the notes it follows; a wide block goes below everything.
-- the chat API with the flag on: blocks pile up on one board (ids prefixed per block), a node id can be annotated in a later turn,
-  start_new_page opens a new board, and with the flag off the tutor is not offered the board tools.
+- the chat API: blocks pile up on one board (ids prefixed per block), a node id can be annotated in a later turn,
+  start_new_page opens a new board.
 """
 import json
 import re
@@ -257,7 +257,6 @@ def _tool_results(calls, i):
 @needs_elk
 def test_chat_turns_build_one_lesson_board(api, monkeypatch):
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Scenes"}).json()["id"]
     ring = ("annotate_element", {"annotation_id": "r1", "style": "circle", "target_element_id": "b2_lb", "narration": "[[MARK:r1]] This one."})
     m, calls = _model([[("write_notes", NOTES), ("draw_scene", SCENE)], [ring]])
@@ -297,16 +296,6 @@ def _overlap(a, b):
     return a["x"] < b["x"] + b["w"] and b["x"] < a["x"] + a["w"] and a["y"] < b["y"] + b["h"] and b["y"] < a["y"] + a["h"]
 
 
-def test_scene_mode_off_keeps_the_raw_svg_tools(api, monkeypatch):
-    client, _ = api
-    monkeypatch.setenv("LP_SCENE_MODE", "0")
-    nb_id = client.post("/api/notebooks", json={"topic": "Off"}).json()["id"]
-    m, calls = _model([], final="Just text.")
-    assert _chat(client, nb_id, m).status_code == 200
-    names = {t["function"]["name"] for t in calls[0]["tools"]}
-    assert "draw_new_element" in names and not {"draw_scene", "write_notes"} & names
-
-
 # ---- hostile and malformed tool arguments (security review) ------------------------------------------------------------------------
 
 JUNK = [None, True, 3, 2.5, [], {}, ["x"], {"id": "a"}, "", "<script>alert(1)</script>", '"><img src=x onerror=alert(1)>', chr(0) + chr(27), "x" * 5000]
@@ -333,7 +322,6 @@ def test_any_json_in_any_field_is_repaired_or_refused_never_a_crash_or_markup(ju
 @needs_elk
 def test_one_turn_cannot_order_unlimited_voice(api, monkeypatch):   # security review: each block is up to 12 paid voice clips
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Cap"}).json()["id"]
     words = "apple banana cherry damson elder fig grape".split()             # different blocks: identical ones are refused as repeats
     m, calls = _model([[("write_notes", {"lines": [{"text": f"{w} orchard"}]}) for w in words]])
@@ -346,7 +334,6 @@ def test_one_turn_cannot_order_unlimited_voice(api, monkeypatch):   # security r
 @needs_elk
 def test_learner_can_point_at_a_node_inside_a_step(api, monkeypatch):   # pen circling used to map only to whole steps
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Point"}).json()["id"]
     m, _ = _model([[("draw_scene", SCENE)]])
     assert _chat(client, nb_id, m).status_code == 200
@@ -369,7 +356,6 @@ def test_missing_parts_names_what_scene_mode_needs(monkeypatch):
 @needs_elk
 def test_a_question_on_a_saved_lesson_board_is_answered_and_new_blocks_go_to_a_fresh_page(api, monkeypatch):
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Saved"}).json()["id"]
     m, _ = _model([[("write_notes", {"lines": [{"text": "first board"}]})]])
     assert _chat(client, nb_id, m).status_code == 200
@@ -382,15 +368,12 @@ def test_a_question_on_a_saved_lesson_board_is_answered_and_new_blocks_go_to_a_f
     assert r.status_code == 200, r.text                                              # was a 400 (seen live while pointing at an old board)
     pages = [p for p in _draws(eng, nb_id).values() if p]
     assert pages == [[("draw", "b1_s1")], [("draw", "b1_s1")]]                       # the saved board is untouched; the answer has its own page
-    monkeypatch.setenv("LP_SCENE_MODE", "0")
-    assert client.post(f"/api/notebooks/{nb_id}/chat", json={"message": "x", "page_id": page_id}).status_code == 400   # raw-SVG mode: unchanged
 
 
 
 @needs_elk
 def test_asking_about_an_old_board_continues_the_current_one(api, monkeypatch):   # code review: it locked the current lesson
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Two boards"}).json()["id"]
     m, _ = _model([[("draw_scene", SCENE)]])
     assert _chat(client, nb_id, m).status_code == 200
@@ -416,7 +399,6 @@ def test_each_block_is_stored_as_data_beside_its_picture(api, monkeypatch):
     """The board as data (GenSVG and tldraw study, 2026-11-20): a block's first step keeps what the tutor asked for and where code put
     it; its other steps keep none; the SVG stays the picture."""
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Load balancers"}).json()["id"]
     m, _ = _model([[("write_notes", NOTES), ("draw_scene", SCENE)]])
     assert _chat(client, nb_id, m).status_code == 200

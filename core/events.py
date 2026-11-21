@@ -29,9 +29,6 @@ class EngineEvent:
     UNLABELED_CARD_NOTE = "unlabeled_card_note"   # a drawing has a card-sized rectangle and no text (was a rejection, now a note)
     TEXT_WIDTH_NOTE = "text_width_note"       # LOG ONLY (not shown to the tutor): a label's estimated width runs past its card, off the canvas or into another element
     LAYOUT_HINT = "layout_hint"               # an advisory hint (unlabeled card / empty container) shown to the tutor
-    SHADOW_VALIDATED = "shadow_validated"     # LOG ONLY: what the proposed shape-level validator would decide for a drawing, next to the existing checks (engine/shadow.py); changes nothing
-    SHADOW_SKIPPED = "shadow_skipped"         # LOG ONLY: the shadow check took longer than its time limit and was abandoned
-    SHADOW_FAILED = "shadow_failed"           # LOG ONLY: the shadow check raised an error (caught; the drawing was not affected)
     AUDIO_SYNTHESIS_STARTED = "audio_synthesis_started"
     AUDIO_SYNTHESIS_COMPLETED = "audio_synthesis_completed"
     AUDIO_SYNTHESIS_FAILED = "audio_synthesis_failed"

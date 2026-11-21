@@ -3,7 +3,6 @@ The [[MARK:id]] marker is a recording detail: the code makes it right however th
 ever reaches the voice. Baseline D: 40-56% of narrations had no marker and 5 used single brackets (read aloud).
 """
 import asyncio
-import json
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -14,12 +13,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.events import EngineEvent
 from engine import voice
-from engine.author import _handle_annotate_element, _handle_draw_new_element
+from engine.author import _handle_annotate_element
 from engine.markers import MARKER_LIKE, normalise_marker, strip_markers
 
 CANON = "[[MARK:el]]"
 ALIGN = {"characters": list("x"), "character_start_times_seconds": [0.0], "character_end_times_seconds": [1.0]}
-BOX = '<g id="el"><rect x="100" y="100" width="300" height="140"/><text x="120" y="170">Label</text></g>'
 
 
 # ---- a) every form ends up as ONE valid marker -----------------------------------------------------------------------
@@ -99,40 +97,7 @@ def test_strip_markers_for_replies_and_exports():
     assert strip_markers("") == "" and strip_markers(None) == ""
 
 
-# ---- through the real handlers: stored, emitted, spoken, counted -------------------------------------------------------------
-
-def _draw(narration):
-    events, saved, spoken = [], [], []
-
-    async def emit(kind, payload):
-        events.append((kind, payload))
-
-    async def persist(**k):
-        saved.append(k)
-
-    def fake_tts(clean_text):
-        spoken.append(clean_text)
-        return b"MP3", ALIGN, 1.0, False
-    with patch.object(voice, "_call_elevenlabs_tts", fake_tts), patch("engine.author.logger") as log:
-        r = asyncio.run(_handle_draw_new_element("nb", "pg", "active", "el", BOX, narration, None, emit, persist))
-    repairs = [c for c in log.info.call_args_list if c.args[0] == EngineEvent.MARKER_REPAIRED]
-    return r, events, saved, spoken, repairs
-
-
-@pytest.mark.parametrize("narration,reasons", [(n, w) for n, w in VARIANTS if w])
-def test_the_draw_handler_repairs_stores_emits_speaks_and_counts(narration, reasons):
-    r, events, saved, spoken, repairs = _draw(narration)
-    assert r["status"] == "ok"
-    assert saved[0]["narration"].count(CANON) == 1 and len(MARKER_LIKE.findall(saved[0]["narration"])) == 1
-    assert events[0][1]["narration"] == saved[0]["narration"]
-    assert all("[" not in t and "]" not in t for t in spoken)
-    assert len(repairs) == 1 and repairs[0].kwargs["data"]["reasons"] == reasons and repairs[0].kwargs["data"]["element_id"] == "el"
-
-
-def test_a_correct_narration_is_not_counted_as_repaired():
-    r, events, saved, spoken, repairs = _draw("[[MARK:el]] Hello world.")
-    assert r["status"] == "ok" and repairs == [] and saved[0]["narration"] == "[[MARK:el]] Hello world."
-
+# ---- through the real annotation handler ----------------------------------------------------------------------------------
 
 def test_the_annotation_handler_uses_the_same_repair():
     async def noop(*a, **k):

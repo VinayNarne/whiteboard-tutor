@@ -10,7 +10,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fastapi.testclient import TestClient
 
 import backend.main as bm
-from backend.database import init_db
+import seed
+from backend.database import engine, init_db
 from backend.page_state import rebuild_page_svg
 
 init_db()
@@ -34,11 +35,8 @@ def board():
     """A notebook with a page holding three drawn elements (a, b, c); TTS writes real files."""
     nb = client.post("/api/notebooks", json={"topic": "Undo"}).json()["id"]
     pg = client.get(f"/api/notebooks/{nb}").json()["pages"][0]["id"]
-    with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
-        for i, eid in enumerate(["a", "b", "c"]):
-            r = client.post(f"/api/notebooks/{nb}/pages/{pg}/draw",
-                            json={"element_id": eid, "svg_fragment": _box(eid, 40 + i * 300), "narration": f"Draw {eid}."})
-            assert r.status_code == 200, r.text
+    for i, eid in enumerate(["a", "b", "c"]):
+        seed.draw(engine, pg, eid, _box(eid, 40 + i * 300), f"Draw {eid}.", nb=nb)
     yield nb, pg
     client.delete(f"/api/notebooks/{nb}")
 
@@ -59,12 +57,8 @@ def _files(nb, pg):
 def test_rebuild_helper_reproduces_what_persistence_stores(board):
     """The helper must mirror how draws/modifies build current_svg, or undo would corrupt pages."""
     nb, pg = board
-    with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
-        r = client.post(f"/api/notebooks/{nb}/pages/{pg}/modify",
-                        json={"element_id": "b", "new_svg_fragment": _box("b", 700)})
-        assert r.status_code == 200, r.text
+    seed.modify(engine, pg, "b", _box("b", 700))
     from sqlmodel import Session, select
-    from backend.database import engine
     from backend.models import Page, PageEvent
     with Session(engine) as db:
         stored = db.get(Page, pg)
@@ -89,9 +83,7 @@ def test_undo_removes_only_the_last_element_its_audio_and_updates_every_view(boa
     assert {"a_audio.mp3", "b_audio.mp3"} <= files                                    # the others are untouched
 
     # the page keeps working: the undone id can be drawn again, and the export shows the final state
-    with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
-        assert client.post(f"/api/notebooks/{nb}/pages/{pg}/draw",
-                           json={"element_id": "c", "svg_fragment": _box("c", 640), "narration": "Again."}).status_code == 200
+    seed.draw(engine, pg, "c", _box("c", 640), "Again.", nb=nb)
     assert _page(nb)["element_count"] == 3
 
 
@@ -107,8 +99,7 @@ def test_undo_walks_back_to_empty_then_reports_nothing_to_undo(board):
 def test_undo_also_removes_edits_and_annotations_that_belong_to_the_element(board):
     nb, pg = board
     with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
-        assert client.post(f"/api/notebooks/{nb}/pages/{pg}/modify",
-                           json={"element_id": "c", "new_svg_fragment": _box("c", 700)}).status_code == 200
+        seed.modify(engine, pg, "c", _box("c", 700))
         for ann, target in (("ann_on_c", "c"), ("ann_on_a", "a")):
             r = client.post(f"/api/notebooks/{nb}/pages/{pg}/annotate", json={
                 "annotation_id": ann, "style": "circle", "target_element_id": target, "narration": f"Look at {target}."})
@@ -170,8 +161,7 @@ def test_undo_still_works_with_unique_seq_and_the_next_event_takes_the_next_numb
     with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
         for eid, x in (("d", 700), ("e", 40)):
             frag = f'<g id="{eid}"><rect x="{x}" y="450" width="250" height="120"/><text x="{x + 20}" y="510" font-size="16">{eid}</text></g>'
-            r = client.post(f"/api/notebooks/{nb}/pages/{pg}/draw", json={"element_id": eid, "svg_fragment": frag, "narration": f"Draw {eid}."})
-            assert r.status_code == 200, r.text
+            seed.draw(engine, pg, eid, frag, f"Draw {eid}.", nb=nb)
     seqs = [e["seq"] for e in _events(nb, pg)]
     assert seqs == [1, 2, 3, 4] and len(set(seqs)) == len(seqs)
     assert client.post(f"/api/notebooks/{nb}/pages/{pg}/undo").status_code == 200

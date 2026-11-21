@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from backend.models import ChatTurn, Page
 from core.events import EngineEvent
 from engine.author import EMPTY_REPLY_MESSAGE
+from test_scene import NOTES
 
 
 def _fake_tts(narration, audio_path, alignment_path, element_id=None):
@@ -49,11 +50,9 @@ def model(rounds, final):
     return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))), sent
 
 
-CARD = '<g id="{e}"><rect x="60" y="120" width="300" height="120"/><text x="80" y="180" font-size="16">{e}</text></g>'
-DRAW = ("draw_new_element", {"element_id": "a", "svg_fragment": CARD.format(e="a"), "narration": "[[MARK:a]] Here."})
-BAD_DRAW = ("draw_new_element", {"element_id": "b", "svg_fragment": '<g id="b"><rect x="5000" y="120" width="300" height="120"/><text x="5010" y="180">b</text></g>',
-                                 "narration": "[[MARK:b]] Off the board."})
-ANNOTATE = ("annotate_element", {"annotation_id": "ring", "style": "circle", "target_element_id": "a", "narration": "[[MARK:ring]] Look."})
+DRAW = ("write_notes", NOTES)
+BAD_DRAW = ("write_notes", {"lines": []})   # nothing to write: rejected
+ANNOTATE = ("annotate_element", {"annotation_id": "ring", "style": "circle", "target_element_id": "b1_s1", "narration": "[[MARK:ring]] Look."})
 
 
 @pytest.fixture()
@@ -99,7 +98,7 @@ def test_a_rejected_drawing_is_not_a_successful_tool_call(nb):
     client, eng, nb_id = nb
     r, events = chat(client, nb_id, "Draw it", model([[BAD_DRAW]], "")[0])
     assert r.status_code == 503 and r.json()["error"] == "empty_reply"
-    assert events[0].kwargs["data"]["tool_call_succeeded"] is False and events[0].kwargs["data"]["tool_calls"] == {"draw_new_element": 1}
+    assert events[0].kwargs["data"]["tool_call_succeeded"] is False and events[0].kwargs["data"]["tool_calls"] == {"write_notes": 1}
 
 
 # ---- something was drawn or annotated: the board is the answer ----------------------------------------------------------------------------
@@ -114,7 +113,7 @@ def test_an_empty_final_reply_after_a_successful_draw_stores_no_empty_turn_and_i
     assert len(sent) == 2, "no extra model call: the draw round and the final reply, nothing more"
     assert len(events) == 1 and events[0].kwargs["data"]["tool_call_succeeded"] is True
     with Session(eng) as db:
-        assert "a" in (db.exec(select(Page).where(Page.notebook_id == nb_id)).one().current_svg or "")
+        assert "b1_s1" in (db.exec(select(Page).where(Page.notebook_id == nb_id)).one().current_svg or "")
 
 
 def test_an_empty_final_reply_after_a_successful_annotation_is_not_an_error_either(nb):

@@ -11,6 +11,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import seed
 from lp_env import API, BACKEND
 
 
@@ -85,7 +86,7 @@ def notebook():
     nb = requests.post(f"{API}/notebooks", json={"topic": "Theme check"}).json()["id"]
     pg = requests.get(f"{API}/notebooks/{nb}").json()["pages"][0]["id"]
     frag = '<g id="t1"><rect x="80" y="200" width="300" height="120"/><text x="100" y="260" font-size="16">Hello</text></g>'
-    requests.post(f"{API}/notebooks/{nb}/pages/{pg}/draw", json={"element_id": "t1", "svg_fragment": frag, "narration": "Hello."})
+    seed.draw_live(pg, "t1", frag, "Hello.")
     yield nb, pg
     requests.delete(f"{API}/notebooks/{nb}")
 

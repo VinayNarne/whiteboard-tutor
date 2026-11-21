@@ -14,9 +14,9 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 import backend.main as bm
+import seed
 from backend.database import engine, init_db
 from backend.models import Page
-from core.events import EngineEvent
 from engine.validator import compute_coverage
 
 init_db()
@@ -49,20 +49,17 @@ def _coverage(pg):
 
 
 def _draw(nb, pg, eid, x, y, **kw):
-    with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
-        return client.post(f"/api/notebooks/{nb}/pages/{pg}/draw", json={"element_id": eid, "svg_fragment": _card(eid, x, y, **kw), "narration": f"[[MARK:{eid}]] Here."})
+    return seed.draw(engine, pg, eid, _card(eid, x, y, **kw), f"[[MARK:{eid}]] Here.")
 
 
-def test_a_new_page_has_no_coverage_and_every_drawing_raises_it_to_the_same_number_the_density_check_logs(page):
+def test_a_new_page_has_no_coverage_and_every_drawing_raises_it(page):
     nb, pg = page
     assert _coverage(pg)[0] == 0.0
     seen = []
     for eid, x, y in (("a", 60, 60), ("b", 450, 60), ("c", 60, 300)):
-        with patch("engine.author.logger") as log:
-            assert _draw(nb, pg, eid, x, y).status_code == 200
-        logged = [c.kwargs["data"]["canvas_coverage"] for c in log.info.call_args_list if c.args[0] == EngineEvent.DENSITY_CHECKED]
+        _draw(nb, pg, eid, x, y)
         cov, svg = _coverage(pg)
-        assert cov == logged[0] == round(compute_coverage(svg), 3)
+        assert cov == round(compute_coverage(svg), 3)
         seen.append(cov)
     assert 0 < seen[0] < seen[1] < seen[2]
 
@@ -72,7 +69,7 @@ def test_a_modified_element_changes_the_coverage_and_an_annotation_does_not(page
     _draw(nb, pg, "a", 60, 60)
     before = _coverage(pg)[0]
     bigger = _card("a", 60, 60, w=600, h=400)
-    assert client.post(f"/api/notebooks/{nb}/pages/{pg}/modify", json={"element_id": "a", "new_svg_fragment": bigger}).status_code == 200
+    seed.modify(engine, pg, "a", bigger)
     grown = _coverage(pg)[0]
     assert grown > before
     with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):

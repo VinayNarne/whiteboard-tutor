@@ -69,7 +69,6 @@ def test_mistakes_go_back_to_the_tutor(build, bad, words):
 
 def test_a_table_only_turn_reaches_the_board_and_is_not_an_empty_reply(api, monkeypatch):
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Tables"}).json()["id"]
     m, calls = _model([[("draw_table", TABLE)]], final="")                                         # a table and no chat text
     with patch("engine.author.get_azure_client", lambda: m), patch("engine.author.generate_narration_audio", side_effect=_fake_tts):

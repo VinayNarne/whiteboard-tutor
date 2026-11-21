@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 
 from backend.main import app
 from backend.database import init_db
+import seed
 from engine.author import generate_annotation_seed, _handle_annotate_element, _handle_remove_annotation
 from core.events import SessionEvent
 
@@ -235,15 +236,9 @@ def test_rest_annotate_and_remove_endpoints():
     page_id = nb_detail.json()["pages"][0]["id"]
 
     # 3. Draw a base element first
-    draw_res = client.post(
-        f"/api/notebooks/{nb_id}/pages/{page_id}/draw",
-        json={
-            "element_id": "queue_node",
-            "svg_fragment": '<g id="queue_node"><rect x="100" y="100" width="200" height="100" /><text x="150" y="150">Queue</text></g>',
-            "narration": "[[MARK:queue_node]] Here is the queue node.",
-        }
-    )
-    assert draw_res.status_code == 200
+    from backend.database import engine
+    seed.draw(engine, page_id, "queue_node", '<g id="queue_node"><rect x="100" y="100" width="200" height="100" /><text x="150" y="150">Queue</text></g>',
+              "[[MARK:queue_node]] Here is the queue node.")
 
     # 4. Annotate the element with circle
     with patch("engine.author.generate_narration_audio", return_value=(1.0, b"", {})):

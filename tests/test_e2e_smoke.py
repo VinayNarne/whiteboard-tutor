@@ -17,6 +17,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import seed
 from lp_env import API, BACKEND
 
 
@@ -48,9 +49,7 @@ def notebook():
     nb = requests.post(f"{API}/notebooks", json={"topic": "Smoke test"}).json()["id"]
     page = requests.get(f"{API}/notebooks/{nb}").json()["pages"][0]["id"]
     for i in range(2):
-        r = requests.post(f"{API}/notebooks/{nb}/pages/{page}/draw",
-                          json={"element_id": f"smoke_{i}", "svg_fragment": _box(i), "narration": f"Box {i}."})
-        assert r.status_code == 200, r.text
+        seed.draw_live(page, f"smoke_{i}", _box(i), f"Box {i}.")
     yield nb, page
     requests.delete(f"{API}/notebooks/{nb}")
 

@@ -88,7 +88,6 @@ def test_code_mistakes_go_back_to_the_tutor(bad, words):
 @needs_elk
 def test_a_repeated_diagram_in_a_turn_goes_back_to_the_tutor(api, monkeypatch):
     client, _ = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Repeats"}).json()["id"]
     m, calls = _model([[("draw_scene", SCENE)], [("draw_scene", {**SCENE, "title": "Again"})]])
     with patch("engine.author.get_azure_client", lambda: m), patch("engine.author.generate_narration_audio", side_effect=_fake_tts):

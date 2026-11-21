@@ -12,14 +12,12 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, select
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import backend.main as bm
-from backend.models import ChatTurn, Notebook, PageEvent
+from backend.models import ChatTurn, Notebook
 
 PLACEHOLDER = "�"
 GOOD = [
@@ -91,7 +89,7 @@ def test_a_nul_in_a_chat_message_never_reaches_the_database_and_the_turn_still_w
     assert sent[0][-1]["content"] == expected, "the tutor reads the placeholder, not the NUL"
 
 
-def test_a_nul_in_a_topic_a_title_and_a_narration_is_replaced_too(api):
+def test_a_nul_in_a_topic_and_a_title_is_replaced_too(api):
     client, eng = api
     r = client.post("/api/notebooks", json={"topic": "Top\x00ic", "title": "Ti\x00tle"})
     assert r.status_code == 201, r.text
@@ -99,11 +97,19 @@ def test_a_nul_in_a_topic_a_title_and_a_narration_is_replaced_too(api):
     with Session(eng) as db:
         n = db.get(Notebook, nb)
         assert n.topic == f"Top{PLACEHOLDER}ic" and n.title == f"Ti{PLACEHOLDER}tle"
-    pg = client.get(f"/api/notebooks/{nb}").json()["pages"][0]["id"]
-    card = '<g id="a"><rect x="60" y="120" width="300" height="120"/><text x="80" y="180" font-size="16">a</text></g>'
-    with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
-        r = client.post(f"/api/notebooks/{nb}/pages/{pg}/draw", json={"element_id": "a", "svg_fragment": card, "narration": "[[MARK:a]] Hel\x00lo."})
+
+
+def test_a_nul_in_lesson_board_notes_is_never_stored(api):
+    import json
+    from backend.models import Page, PageEvent
+    from test_scene import _chat as scene_chat, _model as scene_model
+    client, eng = api
+    nb = client.post("/api/notebooks", json={"topic": "Board"}).json()["id"]
+    notes = {"title": "T", "lines": [{"text": "bad\x00text", "say": "bad\x00say"}]}
+    m, _ = scene_model([[("write_notes", notes)]])
+    r = scene_chat(client, nb, m)
     assert r.status_code == 200, r.text
     with Session(eng) as db:
-        narration = db.exec(select(PageEvent).where(PageEvent.element_id == "a")).first().narration
-        assert "\x00" not in narration and f"Hel{PLACEHOLDER}lo." in narration
+        events = db.exec(select(PageEvent).join(Page, Page.id == PageEvent.page_id).where(Page.notebook_id == nb, PageEvent.kind == "draw")).all()
+        assert events
+        assert all("\x00" not in (e.narration or "") and "\x00" not in (e.svg_fragment or "") for e in events)

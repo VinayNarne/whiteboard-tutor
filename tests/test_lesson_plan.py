@@ -32,7 +32,6 @@ def _ask(client, nb_id, text, final="Here."):
 
 def test_plan_is_written_once_and_read_every_turn(api, monkeypatch):
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Plans"}).json()["id"]
     factory, planner_calls = _planner(PLAN)
     monkeypatch.setattr(lp, "CLIENT_FACTORY", factory)
@@ -52,9 +51,8 @@ def test_plan_is_written_once_and_read_every_turn(api, monkeypatch):
         assert db.get(Notebook, nb_id).lesson_plan == PLAN
 
 
-def test_no_plan_for_a_greeting_or_a_failure_and_none_outside_scene_mode(api, monkeypatch):
+def test_no_plan_for_a_greeting_or_a_failure(api, monkeypatch):
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Hi"}).json()["id"]
     monkeypatch.setattr(lp, "CLIENT_FACTORY", _planner("NONE.")[0])
     assert "<lesson_plan>" not in _ask(client, nb_id, "hi")[1]["content"]                            # a greeting: no plan yet
@@ -63,11 +61,6 @@ def test_no_plan_for_a_greeting_or_a_failure_and_none_outside_scene_mode(api, mo
     assert "<lesson_plan>" not in _ask(client, nb_id, "Teach me X")[1]["content"]
     with Session(eng) as db:
         assert db.get(Notebook, nb_id).lesson_plan is None
-    monkeypatch.setenv("LP_SCENE_MODE", "0")
-    factory, calls = _planner(PLAN)
-    monkeypatch.setattr(lp, "CLIENT_FACTORY", factory)
-    nb2 = client.post("/api/notebooks", json={"topic": "Raw"}).json()["id"]
-    assert "<lesson_plan>" not in _ask(client, nb2, "Teach me X")[1]["content"] and calls == []    # the raw-SVG path is unchanged
 
 
 def test_clean_plan():
@@ -128,7 +121,6 @@ def test_levels_are_earned_not_given():
 
 def test_the_tutor_records_steps_and_the_notebook_shows_the_levels(api, monkeypatch):
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Path"}).json()["id"]
     monkeypatch.setattr(lp, "CLIENT_FACTORY", _planner(STEPPED)[0])
     _ask(client, nb_id, "Why is the sky blue?")                                          # the plan is written during this turn
@@ -188,7 +180,6 @@ def test_a_learner_back_after_a_break_is_welcomed_back(api, monkeypatch):
     from sqlmodel import select
     from backend.models import ChatTurn
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Break"}).json()["id"]
     msgs = _ask(client, nb_id, "Teach me X", final="X is Y. Why?")
     assert not any("is back after" in str(m.get("content")) for m in msgs if isinstance(m, dict))     # no break, no welcome
@@ -220,7 +211,6 @@ def test_final_check_starts_when_everything_is_taught_and_ends_with_a_problem():
 
 def test_the_tutor_runs_the_final_check(api, monkeypatch):
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Final"}).json()["id"]
     monkeypatch.setattr(lp, "CLIENT_FACTORY", _planner(STEPPED)[0])
     _ask(client, nb_id, "Why is the sky blue?")
@@ -272,7 +262,6 @@ def test_a_course_goal_and_one_plan_per_page(api, monkeypatch):
     from sqlmodel import select
     from backend.models import Page
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Full stack engineering"}).json()["id"]
     replies, calls = iter([COURSE + "\n" + STEPPED, LESSON2]), []
 
@@ -329,7 +318,6 @@ def test_slips_seen_on_gpt_4_1_mini():
 
 def test_no_praise_after_a_wrong_answer_and_no_new_lesson_mid_lesson(api, monkeypatch):
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Web"}).json()["id"]
     factory, planner_calls = _planner(COURSE + "\n" + STEPPED)
     monkeypatch.setattr(lp, "CLIENT_FACTORY", factory)
@@ -353,7 +341,6 @@ def test_a_turn_with_no_reply_keeps_its_records(api, monkeypatch):
     from sqlmodel import select
     from backend.models import ChatTurn
     client, eng = api
-    monkeypatch.setenv("LP_SCENE_MODE", "1")
     nb_id = client.post("/api/notebooks", json={"topic": "Sky"}).json()["id"]
     monkeypatch.setattr(lp, "CLIENT_FACTORY", _planner(STEPPED)[0])
     _ask(client, nb_id, "Why is the sky blue?")

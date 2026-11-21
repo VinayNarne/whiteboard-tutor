@@ -1,6 +1,6 @@
 """
 engine/scene.py
-Scene mode (the default; LP_SCENE_MODE=0 switches to the older raw-SVG tutor): the tutor says WHAT to show, the code decides WHERE. The page is a lesson board
+The lesson board: the tutor says WHAT to show, the code decides WHERE. The page is a lesson board
 that grows like a notebook, and the frontend camera follows the block being explained.
 
 Blocks: write_notes (handwritten lines with **bold** and ==highlight==; style recap = a card of takeaways) and draw_scene (a diagram:
