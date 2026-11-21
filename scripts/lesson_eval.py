@@ -83,7 +83,8 @@ def check_turn(kind: str, reply: str, records: list, previous_reply: str, status
 
 def _http(url, body=None, timeout=300):
     req = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    # B310 ok: the URL is the developer's own local server, given on the command line
+    with urllib.request.urlopen(req, timeout=timeout) as r:  # nosec B310
         return r.status, json.load(r)
 
 

@@ -5,7 +5,6 @@ LP_TEST_SUMMARIES_OFF=1 hides every page summary from the tutor's context (page 
 LP_TEST_HISTORY_TURNS shrinks the history window (default 15) so an earlier page is out of it. Every chat turn logs `context_built`: how many earlier pages, how many
 show a summary, how many history turns, and which switches were on, so a run can say how often the summaries were really in the tutor's context.
 """
-import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace

@@ -57,3 +57,17 @@ jobs:
       - run: npm ci --prefix frontend
       - name: Type-check and build
         run: npm run build --prefix frontend
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ruff bandit
+      - name: Ruff (real-bug rules)
+        run: ruff check .
+      - name: Bandit (medium and high)
+        run: bandit -r backend engine core scripts -ll -q
