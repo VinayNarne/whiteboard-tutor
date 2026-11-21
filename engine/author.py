@@ -872,7 +872,7 @@ async def replace_block(turn: Turn, args: dict) -> dict:
     say = str(args.get("say") or "").strip()
     for sid in changed:
         first = sid == changed[0]
-        await modify_step(turn, sid, olds[sid], new[sid][0], f"[[MARK:{sid}]] {say}" if first and say else None, record if first else None)
+        await modify_step(turn, sid, olds[sid], new[sid][0], (f"[[MARK:{sid}]] {say}" if say else new[sid][1]) if first else None, record if first else None)   # no `say` given: the step's own line is spoken
     for sid in gone:   # an empty group: the step's id stays known, nothing is drawn (a modify with no SVG would not replay)
         await modify_step(turn, sid, olds[sid], f'<g id="{sid}"></g>', None, record if not changed and sid == gone[0] else None)
     if added:

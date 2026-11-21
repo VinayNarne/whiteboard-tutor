@@ -112,3 +112,11 @@ def test_extending_a_diagram_keeps_old_steps(monkeypatch):
     assert b.turn.records[1]["args"]["nodes"][-1]["id"] == "e"
     assert sum(1 for e in b.events if e["kind"] == "modify" and e["narration"]) <= 1   # old steps stay silent; the new step speaks as a draw
     assert [e for e in b.events if e["element_id"] == "b1_s3"][0]["narration"]
+
+
+def test_missing_say_still_narrates_first_changed_step(monkeypatch):
+    b = Board(monkeypatch)
+    b.run("write_notes", notes("DNS is a phone book", "It maps names to addresses"))
+    assert b.replace(1, "write_notes", notes("DNS is an address book", "It maps names to addresses"), say="")["status"] == "ok"
+    mods = [e for e in b.events if e["kind"] == "modify"]
+    assert len(mods) == 1 and mods[0]["narration"] and "address book" in mods[0]["narration"]

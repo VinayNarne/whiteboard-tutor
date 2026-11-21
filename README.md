@@ -12,7 +12,9 @@ you can reopen, replay and export.
 ## What it does
 
 - **Teaches on a lesson board.** Notes, flow diagrams, graphs, tables, bar charts and Venn diagrams appear one step at a time while
-  the tutor speaks; a camera follows the step being explained.
+  the tutor speaks; a camera follows the step being explained. Diagram boxes can carry a small icon (Lucide).
+- **Fixes and grows its drawings.** When a diagram is wrong, or a follow-up question needs more, the tutor corrects or extends the
+  same block in place instead of drawing it again; only the new or changed parts are shown and narrated.
 - **Plans before it teaches.** Your first message becomes a course: your goal and a roadmap of lessons. Each page gets a private
   lesson plan (checked facts, steps, check questions, common misconceptions) that the tutor follows.
 - **Keeps you on track.** Your own questions are answered first, on the board too; questions far from your goal are answered briefly
@@ -20,6 +22,8 @@ you can reopen, replay and export.
 - **Checks understanding.** Each step of "Today's path" earns a level from your answers: taught, understood, remembered (after a
   surprise review). A lesson ends with a short final check.
 - **Talks and listens.** Spoken explanations with word timings (ElevenLabs) and voice input (Deepgram); both are optional.
+- **You stay in control.** Pause and resume the explanation (Space), play it at 0.75x to 1.5x, replay a page, draw on the board
+  with a pen or highlighter (undo and redo with Ctrl+Z / Ctrl+Y), and circle anything to ask about it.
 - **Runs locally for one person.** FastAPI + React, SQLite by default or Postgres.
 
 ## How it works
@@ -32,7 +36,7 @@ Browser (React + Vite)  ──HTTP /api──►  FastAPI backend  ──►  Po
 ```
 
 **The model says what to show; code decides where.** Each learner message goes to one agent (`engine/author.py`) that calls tools
-such as `write_notes`, `draw_scene` (a diagram), `draw_graph`, `draw_table`, `annotate_element`, `start_new_page` and `record_step`.
+such as `write_notes`, `draw_scene` (a diagram), `draw_graph`, `draw_table`, `replace_block` (correct or extend a block), `annotate_element`, `start_new_page` and `record_step`.
 Code lays every block out (`engine/scene.py`, diagrams by ELK.js), renders it as SVG, makes the narration for each step, stores it,
 and streams it to the board. Code also refuses what would hurt the lesson, such as a block that repeats the board or a second recap
 card, and sends the reason back to the model as a tool error so it can do better. Numbers come from a `calculate` tool, not the
