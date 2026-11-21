@@ -456,3 +456,24 @@ def test_icon_is_drawn_in_its_node_and_survives_the_sanitiser_and_unknown_words_
     from engine.scene import size_node
     n = size_node({**normalise(sc)["nodes"][0]})
     assert n["height"] >= 34 + LABEL[2] and n["width"] >= 60
+
+
+def test_cut_note_names_what_was_trimmed_and_is_silent_otherwise():
+    from engine.scene import CUTS, build_notes, cut_note
+    cuts = []
+    CUTS.set(cuts)
+    build_notes({"lines": [{"text": "x" * 200, "say": "y" * 700}]}, 1, [])
+    CUTS.set(None)
+    assert len(cuts) == 2 and "200 -> 160" in cuts[0] and "700 -> 600" in cuts[1]
+    note = cut_note({"cut": cuts + ["a", "b"]})
+    assert note.startswith(" Note: some text was cut to fit:") and "; b" not in note   # at most 3 items
+    assert cut_note({"cut": []}) == "" and cut_note({}) == ""
+
+
+def test_long_page_note_fires_once_when_the_page_crosses_the_limit():
+    from engine.scene import LONG_PAGE_H, long_page_note
+    low = {"x": 0, "y": 100, "w": 500, "h": 200}
+    crossing = {"x": 0, "y": LONG_PAGE_H - 100, "w": 500, "h": 300}
+    assert long_page_note([], low) == ""
+    assert "getting long" in long_page_note([low], crossing)
+    assert long_page_note([low, crossing], {"x": 0, "y": LONG_PAGE_H + 400, "w": 500, "h": 100}) == ""

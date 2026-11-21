@@ -12,7 +12,7 @@ import operator
 from typing import List, Tuple
 from xml.sax.saxutils import escape
 
-from engine.scene import (DIAGRAM_LANE, demath, paint, paint_on, texture_on, INK, INK2, INTER, MAX_SAY, MAX_TEXT, PALETTE, SceneError, _cam, _lst, _n, _txt, place_block)
+from engine.scene import (DIAGRAM_LANE, demath, paint, paint_on, texture_on, INK, INK2, INTER, MAX_SAY, MAX_TEXT, PALETTE, _cut, SceneError, _cam, _lst, _n, _txt, place_block)
 
 MAX_SERIES, MAX_POINTS, MAX_MARKS, SAMPLES = 4, 60, 6, 240
 PLOT_W, PLOT_H = 580, 420
@@ -154,8 +154,8 @@ def _num(v):
 
 
 def build_graph(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str, str, str]], dict, dict]:
-    title = demath(_txt(args.get("title"))).strip()[:MAX_TEXT]
-    intro = _txt(args.get("intro")).strip()[:MAX_SAY]
+    title = _cut(demath(_txt(args.get("title"))).strip(), MAX_TEXT, "title")
+    intro = _cut(_txt(args.get("intro")).strip(), MAX_SAY, "narration of the intro")
     xa = args.get("x") if isinstance(args.get("x"), dict) else {}
     ya = args.get("y") if isinstance(args.get("y"), dict) else {}
     x0, x1 = _num(xa.get("min")), _num(xa.get("max"))
@@ -169,19 +169,19 @@ def build_graph(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
 
     lines = []   # (label, say, [(x, y or None)], is_points)
     for s in series:
-        say = _txt(s.get("say")).strip()[:MAX_SAY]
+        say = _cut(_txt(s.get("say")).strip(), MAX_SAY, "narration")
         if not say:
             raise SceneError("Each series needs `say`: what you say while it is drawn.")
         pts = [p for p in _lst(s.get("points")) if isinstance(p, list) and len(p) == 2 and None not in (_num(p[0]), _num(p[1]))]
         if pts:
             data = sorted((float(a), float(b)) for a, b in pts[:MAX_POINTS])
-            lines.append((demath(_txt(s.get("label"))).strip()[:40], say, data, True))
+            lines.append((_cut(demath(_txt(s.get("label"))).strip(), 40, "label"), say, data, True))
         else:
             f = compile_formula(s.get("formula"))
             data = [(x, f(x)) for x in (x0 + (x1 - x0) * i / SAMPLES for i in range(SAMPLES + 1))]
             if not any(y is not None for _, y in data):
                 raise SceneError(f"The formula for '{_txt(s.get('label'))}' has no value between x = {fmt(x0)} and {fmt(x1)}.")
-            lines.append((demath(_txt(s.get("label"))).strip()[:40], say, data, False))
+            lines.append((_cut(demath(_txt(s.get("label"))).strip(), 40, "label"), say, data, False))
 
     marks = []
     first = lines[0]
@@ -194,8 +194,8 @@ def build_graph(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
         else:
             my = compile_formula(series[0].get("formula"))(mx)
         if my is not None:
-            marks.append((mx, my, demath(_txt(m.get("label"))).strip()[:40]))
-    marks_say = _txt(args.get("marks_say")).strip()[:MAX_SAY]
+            marks.append((mx, my, _cut(demath(_txt(m.get("label"))).strip(), 40, "label")))
+    marks_say = _cut(_txt(args.get("marks_say")).strip(), MAX_SAY, "narration of the marks")
     sh = args.get("shade") if isinstance(args.get("shade"), dict) else {}
     a, z = _num(sh.get("from")), _num(sh.get("to"))
     shade = (max(a, x0), min(z, x1)) if a is not None and z is not None and min(z, x1) > max(a, x0) else None
@@ -244,8 +244,8 @@ def build_graph(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
         axes.append(f'<line x1="{_n(px0)}" y1="{_n(Y)}" x2="{_n(px0 + pw)}" y2="{_n(Y)}" stroke="#EEEAE0" stroke-width="1"/>')
         axes.append(txt(px0 - 8, Y + 4, fmt(t), anchor="end"))
     axes.append(f'<path d="M{_n(px0)},{_n(py0)} V{_n(py0 + ph)} H{_n(px0 + pw)}" fill="none" stroke="{INK}" stroke-width="1.6"/>')
-    axes.append(txt(px0 + pw / 2, py0 + ph + 40, demath(_txt(xa.get("label"))).strip()[:MAX_TEXT], 14, color=INK, weight=700))
-    yl = demath(_txt(ya.get("label"))).strip()[:MAX_TEXT]
+    axes.append(txt(px0 + pw / 2, py0 + ph + 40, _cut(demath(_txt(xa.get("label"))).strip(), MAX_TEXT, "axis label"), 14, color=INK, weight=700))
+    yl = _cut(demath(_txt(ya.get("label"))).strip(), MAX_TEXT, "axis label")
     if yl:
         axes.append(f'<text x="{_n(bx + 18)}" y="{_n(py0 + ph / 2)}" font-family="{INTER}" font-size="14" font-weight="700" fill="{INK}" '
                     f'text-anchor="middle" transform="rotate(-90 {_n(bx + 18)} {_n(py0 + ph / 2)})">{escape(yl)}</text>')

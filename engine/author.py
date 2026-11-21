@@ -28,7 +28,7 @@ from engine.markers import normalise_marker, strip_markers
 from engine.blocks import BAR_TOOL, TABLE_TOOL, VENN_TOOL, build_bar_chart, build_table, build_venn
 from engine.graph import CALC_TOOL, GRAPH_TOOL, build_graph, calculate
 from engine.lesson_plan import COURSE_GUIDE, PLAN_GUIDE, STEP_TOOL, may_start_next_lesson, path_titles
-from engine.scene import (ID_RE, MAX_BLOCKS_PER_TURN, NOTES_TOOL, SCENE_SYSTEM_PROMPT, SCENE_TOOL, SceneError, board_blocks, board_font_css, build_diagram, icon_note, layout_note, build_notes,
+from engine.scene import (ID_RE, MAX_BLOCKS_PER_TURN, NOTES_TOOL, SCENE_SYSTEM_PROMPT, SCENE_TOOL, SceneError, board_blocks, board_font_css, build_diagram, CUTS, cut_note, icon_note, layout_note, long_page_note, build_notes,
                           normalise as normalise_scene, page_view, prefix_ids, repeats, demath)
 from engine.validator import summarize_spatial_layout
 from engine.voice import generate_narration_audio
@@ -697,6 +697,7 @@ def block_rejection(turn: Turn, tool: str, args: dict) -> str:
 async def build_block(turn: Turn, tool: str, args: dict, n: int, blocks: list):
     """The block as steps: (what was asked, steps, box, report, ids, fonts). Raises SceneError."""
     what = args
+    CUTS.set(cuts := [])
     if tool == "draw_scene":
         what = normalise_scene(args)                     # the diagram as code reads it (ids before the block prefix)
         scene = prefix_ids(what, f"b{n}_")
@@ -708,6 +709,7 @@ async def build_block(turn: Turn, tool: str, args: dict, n: int, blocks: list):
     else:
         steps, box, report = await asyncio.to_thread(build_notes, args, n, blocks)
         ids = [sid for sid, _, _ in steps]
+    report["cut"] = cuts
     fonts = None if (turn.current_svg and "@font-face" in turn.current_svg) else board_font_css()   # before anything is published
     return what, steps, box, report, ids, fonts
 
@@ -761,7 +763,7 @@ async def add_block(turn: Turn, tool: str, args: dict) -> dict:
     turn.page_state["element_count"] = turn.page_state.get("element_count", 0) + len(steps)
     logger.info(EngineEvent.SCENE_DRAWN, f"Block {n} ({report['kind']}) added in {len(steps)} steps", data={"page_id": turn.page_id, "box": box, **report})
     return {"status": "ok", "page_id": turn.page_id,
-            "detail": f"Block {n} added to the board in {len(steps)} narrated steps. These ids can be annotated: " + ", ".join(ids) + icon_note(report) + layout_note(report)}
+            "detail": f"Block {n} added to the board in {len(steps)} narrated steps. These ids can be annotated: " + ", ".join(ids) + icon_note(report) + layout_note(report) + cut_note(report) + long_page_note(blocks, box)}
 
 
 async def tool_start_new_page(turn: Turn, args: dict) -> str:

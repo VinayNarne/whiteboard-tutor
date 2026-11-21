@@ -8,7 +8,7 @@ from typing import List, Tuple
 from xml.sax.saxutils import escape
 
 from engine.graph import _num, fmt, nice_ticks
-from engine.scene import (DIAGRAM_LANE, INK, INK2, INTER, MAX_SAY, MAX_TEXT, PALETTE, WIDE_LANE, SceneError, _cam, _lst, _n, _txt,
+from engine.scene import (DIAGRAM_LANE, INK, INK2, INTER, MAX_SAY, MAX_TEXT, PALETTE, _cut, WIDE_LANE, SceneError, _cam, _lst, _n, _txt,
                           demath, measure, place_block, plain, wrap)
 
 CELL, HEAD = (15, 400, 20), (15, 700, 20)
@@ -29,7 +29,7 @@ def _lines(x, y, lines, f, color=INK, anchor="middle") -> str:
 
 
 def _say(text, fallback) -> str:
-    return (plain(_txt(text)) or plain(fallback))[:MAX_SAY]
+    return _cut(plain(_txt(text)) or plain(fallback), MAX_SAY, "narration")
 
 
 def _steps(n: int, parts: List[Tuple[str, str]], cam: str) -> Steps:
@@ -55,13 +55,13 @@ TABLE_TOOL = {"type": "function", "function": {
 
 
 def build_table(args: dict, n: int, blocks: List[dict]) -> Tuple[Steps, dict, dict]:
-    title = demath(_txt(args.get("title"))).strip()[:MAX_TEXT]
-    cols = [demath(_txt(c)).strip()[:MAX_CELL] for c in _lst(args.get("columns"))]
+    title = _cut(demath(_txt(args.get("title"))).strip(), MAX_TEXT, "title")
+    cols = [_cut(demath(_txt(c)).strip(), MAX_CELL, "cell") for c in _lst(args.get("columns"))]
     if not 2 <= len(cols) <= MAX_COLS or not all(cols):
         raise SceneError(f"draw_table needs 2 to {MAX_COLS} non-empty column headings.")
     rows = []
     for r in [r for r in _lst(args.get("rows")) if isinstance(r, dict)]:
-        cells = [demath(_txt(c)).strip()[:MAX_CELL] for c in _lst(r.get("cells"))]
+        cells = [_cut(demath(_txt(c)).strip(), MAX_CELL, "cell") for c in _lst(r.get("cells"))]
         if len(cells) != len(cols):
             raise SceneError(f"Each table row needs exactly {len(cols)} cells, one per column (a row had {len(cells)}).")
         rows.append((cells, _say(r.get("say"), f"{cells[0]}: " + ", ".join(f"{c} {v}" for c, v in zip(cols[1:], cells[1:])))))
@@ -129,8 +129,8 @@ BAR_TOOL = {"type": "function", "function": {
 
 
 def build_bar_chart(args: dict, n: int, blocks: List[dict]) -> Tuple[Steps, dict, dict]:
-    title = demath(_txt(args.get("title"))).strip()[:MAX_TEXT]
-    cats = [demath(_txt(c)).strip()[:40] for c in _lst(args.get("categories"))]
+    title = _cut(demath(_txt(args.get("title"))).strip(), MAX_TEXT, "title")
+    cats = [_cut(demath(_txt(c)).strip(), 40, "category") for c in _lst(args.get("categories"))]
     if not 2 <= len(cats) <= MAX_CATS or not all(cats):
         raise SceneError(f"draw_bar_chart needs 2 to {MAX_CATS} named categories.")
     series = []
@@ -141,7 +141,7 @@ def build_bar_chart(args: dict, n: int, blocks: List[dict]) -> Tuple[Steps, dict
         say = _say(s.get("say"), "")
         if not say:
             raise SceneError("Each series needs `say`: what you say while its bars appear.")
-        series.append((demath(_txt(s.get("label"))).strip()[:30], values, say))
+        series.append((_cut(demath(_txt(s.get("label"))).strip(), 30, "series label"), values, say))
     if not 1 <= len(series) <= MAX_BAR_SERIES:
         raise SceneError(f"draw_bar_chart needs 1 to {MAX_BAR_SERIES} series.")
     intro = _say(args.get("intro"), "")
@@ -191,7 +191,7 @@ def build_bar_chart(args: dict, n: int, blocks: List[dict]) -> Tuple[Steps, dict
     for i, c in enumerate(cats):
         lines = wrap(c, (12, 400, 15), slot - 6)[:2]
         axes.append(_lines(px0 + slot * (i + 0.5), py0 + plot_h + 8, lines, (12, 400, 15), INK))
-    yl = demath(_txt(args.get("y_label"))).strip()[:MAX_TEXT]
+    yl = _cut(demath(_txt(args.get("y_label"))).strip(), MAX_TEXT, "axis label")
     if yl:
         axes.append(f'<text x="{_n(bx + 18)}" y="{_n(py0 + plot_h / 2)}" font-family="{INTER}" font-size="13" font-weight="700" fill="{INK}" '
                     f'text-anchor="middle" transform="rotate(-90 {_n(bx + 18)} {_n(py0 + plot_h / 2)})">{escape(yl)}</text>')
@@ -230,8 +230,8 @@ VENN_TOOL = {"type": "function", "function": {
 
 
 def build_venn(args: dict, n: int, blocks: List[dict]) -> Tuple[Steps, dict, dict]:
-    title = demath(_txt(args.get("title"))).strip()[:MAX_TEXT]
-    sets = [(demath(_txt(s.get("label"))).strip()[:40], _say(s.get("say"), _txt(s.get("label"))))
+    title = _cut(demath(_txt(args.get("title"))).strip(), MAX_TEXT, "title")
+    sets = [(_cut(demath(_txt(s.get("label"))).strip(), 40, "label"), _say(s.get("say"), _txt(s.get("label"))))
             for s in _lst(args.get("sets")) if isinstance(s, dict)]
     if len(sets) not in (2, 3) or not all(label for label, _ in sets):
         raise SceneError("draw_venn needs 2 or 3 named sets.")
@@ -244,7 +244,7 @@ def build_venn(args: dict, n: int, blocks: List[dict]) -> Tuple[Steps, dict, dic
         if tuple(idx) in seen:
             raise SceneError(f"Two regions are both inside sets {idx}: put all their items in one region.")
         seen.add(tuple(idx))
-        items = [demath(_txt(i)).strip()[:40] for i in _lst(r.get("items")) if _txt(i).strip()]
+        items = [_cut(demath(_txt(i)).strip(), 40, "item") for i in _lst(r.get("items")) if _txt(i).strip()]
         if not 1 <= len(items) <= MAX_ITEMS:
             raise SceneError(f"Each region holds 1 to {MAX_ITEMS} short items.")
         names = " and ".join(sets[i - 1][0] for i in idx)

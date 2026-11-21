@@ -23,6 +23,7 @@ import math
 import re
 import shutil
 import subprocess
+from contextvars import ContextVar
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -193,6 +194,16 @@ def _lst(v) -> list:
     return v if isinstance(v, list) else []
 
 
+CUTS: ContextVar = ContextVar("cuts", default=None)   # the list one block build records its trimmed texts into (author.build_block sets it)
+
+
+def _cut(s: str, limit: int, what: str) -> str:
+    """s cut to `limit` characters; what was lost is recorded for cut_note, so the tutor can be told."""
+    if len(s) > limit and (c := CUTS.get()) is not None:
+        c.append(f'{what} "{s[:30]}..." ({len(s)} -> {limit} chars)')
+    return s[:limit]
+
+
 def _txt(v) -> str:
     """A text field as the tutor meant it; a list, object, true/false or null is no text (each crashed the build: security fuzz)."""
     return str(v) if isinstance(v, (str, int, float)) and not isinstance(v, bool) else ""
@@ -239,7 +250,7 @@ def normalise(scene: dict) -> dict:
     for item in nodes + edges + groups:   # every text the board will show, cut to a readable length
         for k in ("label", "detail"):
             if isinstance(item.get(k), str):
-                item[k] = item[k][:MAX_TEXT]
+                item[k] = _cut(item[k], MAX_TEXT, k)
     for n in nodes:
         if not str(n.get("label") or "").strip():
             problems.append(f"Node '{n['id']}' needs a label.")
@@ -254,7 +265,7 @@ def normalise(scene: dict) -> dict:
             n["icon"] = name
         elif word:
             misses.append(word)
-        n["sections"] = [{"heading": _txt(s.get("heading"))[:MAX_TEXT], "text": _txt(s.get("text"))[:MAX_TEXT]}
+        n["sections"] = [{"heading": _cut(_txt(s.get("heading")), MAX_TEXT, "heading"), "text": _cut(_txt(s.get("text")), MAX_TEXT, "text")}
                          for s in n["sections"][:6] if isinstance(s, dict) and _txt(s.get("text")).strip()]
     if problems:
         raise SceneError(" ".join(problems))
@@ -273,8 +284,8 @@ def normalise(scene: dict) -> dict:
     for e in edges:
         when[e["id"]] = max(when.get(e["id"], 0), when[e["from"]], when[e["to"]])
     groups = [g for g in groups if any(n.get("group") == g["id"] for n in nodes)]
-    return {"title": demath(_txt(scene.get("title"))).strip()[:MAX_TEXT], "layout": _txt(scene.get("layout")), "direction": _txt(scene.get("direction")),
-            "nodes": nodes, "edges": edges, "groups": groups, "steps": [{"say": str(s["say"]).strip()[:MAX_SAY]} for s in steps], "when": when, "icon_misses": misses}
+    return {"title": _cut(demath(_txt(scene.get("title"))).strip(), MAX_TEXT, "title"), "layout": _txt(scene.get("layout")), "direction": _txt(scene.get("direction")),
+            "nodes": nodes, "edges": edges, "groups": groups, "steps": [{"say": _cut(str(s["say"]).strip(), MAX_SAY, f"narration of step {k + 1}")} for k, s in enumerate(steps)], "when": when, "icon_misses": misses}
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------
@@ -1001,8 +1012,8 @@ def build_code(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str, 
     for l in _lst(args.get("lines")):
         if not isinstance(l, dict):
             continue
-        code = _txt(l.get("text")).replace("\r", "").replace("\t", "    ").rstrip()[:MAX_SAY]
-        say = plain(_txt(l.get("say")))[:MAX_SAY]
+        code = _txt(l.get("text")).replace("\r", "").replace("\t", "    ").rstrip()
+        code, say = _cut(code, MAX_SAY, "code"), _cut(plain(_txt(l.get("say"))), MAX_SAY, "narration")
         if code.strip():
             if not say:
                 raise SceneError("Each code step needs `say`: explain what that code does (the code itself is not read aloud).")
@@ -1011,7 +1022,7 @@ def build_code(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str, 
         raise SceneError("write_notes with style code needs at least one line of code.")
     if len(chunks) > MAX_LINES:
         raise SceneError(f"A code block holds at most {MAX_LINES} steps; split it into two blocks.")
-    title = _txt(args.get("title")).strip()[:MAX_TEXT]
+    title = _cut(_txt(args.get("title")).strip(), MAX_TEXT, "title")
     longest = max(len(r) for c, _ in chunks for r in c)
     lane = NOTE_LANE if longest * CODE_CHAR + 2 * CODE_PAD <= NOTE_LANE[1] else WIDE_LANE
     per_row = int((lane[1] - 2 * CODE_PAD) / CODE_CHAR)
@@ -1053,7 +1064,7 @@ def build_notes(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
     if len(lines) > MAX_LINES:
         raise SceneError(f"A notes block holds at most {MAX_LINES} lines; split it into two blocks.")
     recap = args.get("style") == "recap"
-    title = demath(_txt(args.get("title")) or ("Recap" if recap else "")).strip()[:MAX_TEXT]
+    title = _cut(demath(_txt(args.get("title")) or ("Recap" if recap else "")).strip(), MAX_TEXT, "title")
     size, lh = HAND_LINE[0], HAND_LINE[2]
     lane_x, lane_w = NOTE_LANE
     pad, indent = (22 if recap else 0), 34
@@ -1070,15 +1081,15 @@ def build_notes(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
             if not plain(l["say"]):
                 raise SceneError(f"A formula line needs `say`: what you say about {tex[:60]} (the TeX is not read aloud).")
             fh = min(r["h"] * EX_PX, r["h"] * EX_PX * (lane_w - 2 * pad - indent) / (r["w"] * EX_PX))
-            laid.append((y, None, indent, {**r, "tex": tex}, plain(l["say"])[:MAX_SAY]))
+            laid.append((y, None, indent, {**r, "tex": tex}, _cut(plain(l["say"]), MAX_SAY, "narration")))
             y += fh + 14
             continue
-        words = rich_words(demath(l["text"])[:MAX_TEXT])
+        words = rich_words(_cut(demath(l["text"]), MAX_TEXT, "line"))
         # "1." is the line's marker, and wrapped lines hang after it (they started under the number: live order lesson)
         num = words.pop(0) if not recap and re.match(r"^\d+[.)]$", words[0][0]) else None
         lead = measure_hand(num[0] + " ", size, num[1]) if num else indent
         rows = wrap_rich(words, size, lane_w - 2 * pad - lead) or [[]]
-        laid.append((y, num, lead, rows, (plain(l.get("say") or "") or plain(l["text"]))[:MAX_SAY]))
+        laid.append((y, num, lead, rows, _cut(plain(l.get("say") or "") or plain(l["text"]), MAX_SAY, "narration")))
         y += len(rows) * lh + 10
     h = y + pad - 10
     x0, y0 = place_block(NOTE_LANE, h, blocks)
@@ -1112,6 +1123,24 @@ def build_notes(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
 def icon_note(report: dict) -> str:
     words = ", ".join(f'"{w}"' for w in report.get("icon_misses", [])[:3])
     return f" No icon matched: {words} (the label is shown without it)." if words else ""
+
+
+def cut_note(report: dict) -> str:
+    cut = report.get("cut", [])[:3]
+    return f" Note: some text was cut to fit: {'; '.join(cut)}. Shorter text will show in full." if cut else ""
+
+
+# A "screen" is the camera's default view, H board units tall; a page longer than this many screens reads better as two pages.
+LONG_PAGE_H = 3 * H
+
+
+def long_page_note(blocks: List[dict], box: dict) -> str:
+    """Said once per page: only when the new block's bottom crosses LONG_PAGE_H (`blocks`: the board before it)."""
+    before = max([b["y"] + b["h"] for b in blocks] or [0])
+    bottom = box["y"] + box["h"]
+    if before < LONG_PAGE_H <= bottom:
+        return f" Note: this page is getting long (about {bottom / H:.1f} screens); if the next idea is a new topic or step, start_new_page would read better."
+    return ""
 
 
 def layout_note(report: dict) -> str:
