@@ -10,6 +10,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import seed
 from lp_env import API, BACKEND
 
 
@@ -29,9 +30,7 @@ BOX = ('<g id="{eid}"><rect x="{x}" y="220" width="300" height="140" rx="10" fil
 
 
 def _draw(nb, pg, eid, x):
-    r = requests.post(f"{API}/notebooks/{nb}/pages/{pg}/draw",
-                      json={"element_id": eid, "svg_fragment": BOX.format(eid=eid, x=x, tx=x + 150), "narration": f"{eid}."})
-    assert r.status_code == 200, r.text
+    seed.draw_live(pg, eid, BOX.format(eid=eid, x=x, tx=x + 150), f"{eid}.")
 
 
 @pytest.fixture()
@@ -121,24 +120,6 @@ def test_phone_tabs_switch_panes_keep_the_drawing_and_are_keyboard_operable(note
             assert page.evaluate("document.activeElement.id") == "tab-chat"
             page.keyboard.press("ArrowLeft")
             expect(page.get_by_role("tab", name="Board")).to_have_attribute("aria-selected", "true")
-        finally:
-            browser.close()
-
-
-def test_phone_shows_a_dot_on_the_board_tab_when_the_tutor_draws_while_you_read_chat(notebook):
-    from playwright.sync_api import sync_playwright, expect
-
-    nb, pg = notebook
-    with sync_playwright() as p:
-        browser, page = _open(p, nb, pg, 390, 800)
-        try:
-            page.get_by_role("tab", name="Chat").click()
-            expect(page.get_by_role("tab", name="Board")).not_to_contain_text("(new)")
-            _draw(nb, pg, "second", 420)                                            # the tutor draws elsewhere
-            expect(page.get_by_role("tab", name="Board")).to_contain_text("(new)", timeout=5000)
-            page.get_by_role("tab", name="Board").click()
-            expect(page.get_by_role("tab", name="Board")).not_to_contain_text("(new)")
-            expect(page.locator("#whiteboard-elements #second")).to_have_count(1)    # and it is on the board
         finally:
             browser.close()
 

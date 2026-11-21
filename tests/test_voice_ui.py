@@ -16,6 +16,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import seed
 from lp_env import API, BACKEND
 
 
@@ -48,8 +49,7 @@ def _silent_wav(seconds):
 def notebook():
     nb = requests.post(f"{API}/notebooks", json={"topic": "Voice UI"}).json()["id"]
     pg = requests.get(f"{API}/notebooks/{nb}").json()["pages"][0]["id"]
-    requests.post(f"{API}/notebooks/{nb}/pages/{pg}/draw",
-                  json={"element_id": "first", "svg_fragment": BOX.format(eid="first", x=80, tx=180), "narration": ""})
+    seed.draw_live(pg, "first", BOX.format(eid="first", x=80, tx=180), "")
     yield nb, pg
     requests.delete(f"{API}/notebooks/{nb}")
 
@@ -254,34 +254,6 @@ def test_pressing_the_mic_twice_while_the_permission_prompt_is_open_starts_one_c
             page.keyboard.press("Alt+M")                                  # the shortcut while the first request is pending
             page.wait_for_timeout(1500)
             assert page.evaluate("window.__gum") == 1
-        finally:
-            browser.close()
-
-
-def test_interrupting_the_tutor_mid_narration_never_freezes_the_board(notebook):
-    """Regression: the cut clip never finished, so the drawing queue waited forever and later drawings never appeared."""
-    from playwright.sync_api import sync_playwright, expect
-
-    nb, pg = notebook
-    clip = _silent_wav(8)
-    with sync_playwright() as p:
-        browser, page, relay, _ = _open(p, nb, pg)
-        page.route("**/static/notebooks/**/*_audio.mp3", lambda r: r.fulfill(body=clip, content_type="audio/wav"))
-
-        def draw(eid, x):
-            r = requests.post(f"{API}/notebooks/{nb}/pages/{pg}/draw", json={
-                "element_id": eid, "svg_fragment": BOX.format(eid=eid, x=x, tx=x + 100), "narration": "Short note."})
-            assert r.status_code == 200, r.text
-        try:
-            draw("a", 320)
-            expect(page.locator("#whiteboard-elements #a")).to_have_count(1, timeout=8000)
-            page.wait_for_timeout(300)                                     # a's 8 second clip is playing
-            draw("b", 560)                                                 # queued behind it
-            page.wait_for_timeout(300)
-            page.evaluate("window.dispatchEvent(new CustomEvent('tutor_barge_in'))")
-            expect(page.locator("#whiteboard-elements #b")).to_have_count(1, timeout=3000)   # shown at once, not lost
-            draw("c", 800)                                                 # and the board keeps working afterwards
-            expect(page.locator("#whiteboard-elements #c")).to_have_count(1, timeout=6000)
         finally:
             browser.close()
 

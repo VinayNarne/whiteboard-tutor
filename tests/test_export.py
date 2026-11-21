@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+import seed
 from backend.database import engine, init_db
 from backend.main import app
 from backend.models import ChatTurn
@@ -22,11 +23,7 @@ def _seed():
     client.patch(f"/api/notebooks/{nb}/pages/{pg}", json={"title": "Packets & headers"})
     frag = ('<g id="pkt_box"><rect x="100" y="150" width="320" height="140"/>'
             '<text x="260" y="225" text-anchor="middle" font-size="16">Header</text></g>')
-    with patch("engine.author.generate_narration_audio", return_value=(1.0, 5, {"is_synthetic": False})):
-        r = client.post(f"/api/notebooks/{nb}/pages/{pg}/draw", json={
-            "element_id": "pkt_box", "svg_fragment": frag,
-            "narration": "[[MARK:pkt_box]] A packet has a <script>alert(1)</script> header."})
-        assert r.status_code == 200, r.text
+    seed.draw(engine, pg, "pkt_box", frag, "[[MARK:pkt_box]] A packet has a <script>alert(1)</script> header.")
     with Session(engine) as db:
         db.add(ChatTurn(notebook_id=nb, seq=1, role="user", content="What is a packet?"))
         db.add(ChatTurn(notebook_id=nb, seq=2, role="assistant", content="A small unit of data."))

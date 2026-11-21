@@ -57,7 +57,7 @@ class SummaryModel:
 
 
 def _draw(eid, narration, i=0):
-    return ("draw_new_element", {"element_id": eid, "svg_fragment": card(eid, i), "narration": f"[[MARK:{eid}]] {narration}"})
+    return ("write_notes", {"title": eid, "lines": [{"text": f"Note {eid}", "say": narration}]})
 
 
 def _turn(nb, text, rounds, reply, summary_model, monkeypatch):
@@ -110,7 +110,7 @@ def test_a_normal_one_page_notebook_has_the_input_it_always_had(notebook, monkey
     with Session(engine) as db:
         items, has_drawing = page_summary._transcript(db, page)
     assert has_drawing and items == [("learner", "", "How does binary search work?"), ("tutor", "", "It halves the range."),
-                                     ("learner", "", "And duplicates?"), ("tutor", "", "They can sit side by side."), ("drawing", "array", "Here is a sorted array.")]
+                                     ("learner", "", "And duplicates?"), ("tutor", "", "They can sit side by side."), ("drawing", "b1_s1", "Here is a sorted array.")]
 
 
 def test_an_unanswered_question_and_a_failed_turn_are_handled_by_the_same_rule(notebook, monkeypatch):

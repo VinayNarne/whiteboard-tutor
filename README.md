@@ -5,9 +5,9 @@ full stack engineer"), and the tutor plans a course, explains each idea with han
 appear step by step in time with its voice, asks you questions, and tracks what you have understood. Everything lives in a notebook
 you can reopen, replay and export.
 
-> **Status: early version.** It works end to end and is tested (about 950 automated tests and a repeatable lesson check), but
-> it is built for one person on one machine (no login), it has been tried as a learner only by its author, and an older
-> tutor that draws raw SVG is still in the code behind `LP_SCENE_MODE=0`: it is being retired.
+> **Status: early version.** It works end to end and is tested (about 590 automated tests and a repeatable lesson check), but
+> it is built for one person on one machine (no login), and it has been tried as a learner only by its author. The
+> older tutor that drew raw SVG was retired; it is kept in the git tag `pre-raw-svg-retirement`.
 
 ## What it does
 
@@ -42,7 +42,7 @@ Data model: `Notebook` (with its course) → `Page` (with its lesson plan) → `
 picture, its narration, and for a block's first step the block as data), plus `ChatTurn`. Audio files live in
 `generated_notebooks/<notebook>/<page>/`.
 
-An older tutor that writes raw SVG itself is still in the code (`LP_SCENE_MODE=0`); the lesson board is the default.
+The older tutor that wrote raw SVG itself was retired and now lives only in the git tag `pre-raw-svg-retirement`.
 
 ## Run it
 

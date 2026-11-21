@@ -24,5 +24,8 @@ frontend/.env.local
 # cloned repos for research (kept locally, not part of the project)
 research_repos/
 
+# Kept on the owner's laptop, never published or deleted (the retired raw-SVG tutor)
+old_version/
+
 # personal notes, never published
 notes.txt

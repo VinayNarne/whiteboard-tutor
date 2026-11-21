@@ -118,8 +118,6 @@ def _no_real_model_for_summaries(monkeypatch):
     monkeypatch.setattr(page_summary, "CLIENT_FACTORY", refuse)
     import engine.lesson_plan as lesson_plan                                   # nor for a scene-mode lesson plan (a failure: teaching goes on without one)
     monkeypatch.setattr(lesson_plan, "CLIENT_FACTORY", refuse)
-    # Scene mode is the app's default; most tests were written for the raw-SVG tutor and keep testing it. A scene test sets LP_SCENE_MODE=1.
-    monkeypatch.setenv("LP_SCENE_MODE", "0")
     monkeypatch.delenv("LP_VOICE", raising=False)   # voice tests fake ElevenLabs; LP_VOICE=0 (a lesson-check setting) would bypass them
     # Tests fake the model client, but the app checks that a model is configured: a placeholder lets the suite run on a machine
     # with no .env (GitHub CI, a fresh clone). The missing-key test removes it again.

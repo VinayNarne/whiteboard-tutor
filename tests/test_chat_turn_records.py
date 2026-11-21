@@ -20,6 +20,8 @@ from fastapi.testclient import TestClient
 
 import backend.main as bm
 from backend.database import engine, init_db
+import seed
+from test_scene import NOTES
 from backend.migrate import alembic_config
 from backend.models import ChatTurn
 
@@ -59,10 +61,7 @@ def _scripted(*calls, reply="Done."):
 def board():
     nb = client.post("/api/notebooks", json={"topic": "Records"}).json()["id"]
     pg = client.get(f"/api/notebooks/{nb}").json()["pages"][0]["id"]
-    with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
-        r = client.post(f"/api/notebooks/{nb}/pages/{pg}/draw", json={"element_id": "law1", "svg_fragment": CARD.format(e="law1", x=60, y=120, tx=80, ty=180),
-                                                                    "narration": "[[MARK:law1]] First law."})
-        assert r.status_code == 200, r.text
+    seed.draw(engine, pg, "law1", CARD.format(e="law1", x=60, y=120, tx=80, ty=180), "[[MARK:law1]] First law.")
     yield nb, pg
     client.delete(f"/api/notebooks/{nb}")
 
@@ -100,9 +99,7 @@ def test_a_question_about_nothing_stores_no_element_ids(board):
 
 def test_pointing_at_two_drawings_stores_both(board):
     nb, pg = board
-    with patch("engine.author.generate_narration_audio", side_effect=_fake_tts):
-        assert client.post(f"/api/notebooks/{nb}/pages/{pg}/draw", json={"element_id": "law2", "svg_fragment": CARD.format(e="law2", x=460, y=120, tx=480, ty=180),
-                                                                       "narration": "[[MARK:law2]] Second."}).status_code == 200
+    seed.draw(engine, pg, "law2", CARD.format(e="law2", x=460, y=120, tx=480, ty=180), "[[MARK:law2]] Second.")
     _chat(nb, pg, "How do these relate?", _scripted(reply="They are linked.")[0], selected_element_ids=["law1", "law2"])
     assert _turns(nb)[0][2] == ["law1", "law2"]
 
@@ -118,14 +115,14 @@ def test_a_text_only_reply_records_an_empty_list_of_tool_calls(board):
 def test_every_tool_call_of_the_turn_is_recorded_in_order_with_its_status(board):
     nb, pg = board
     model, _ = _scripted(
-        ("draw_new_element", {"element_id": "law2", "svg_fragment": CARD.format(e="law2", x=460, y=120, tx=480, ty=180), "narration": "[[MARK:law2]] Second."}),
-        ("draw_new_element", {"element_id": "law3", "svg_fragment": CARD.format(e="law3", x=100, y=150, tx=120, ty=210), "narration": "[[MARK:law3]] Third."}),   # on top of law1
-        ("annotate_element", {"annotation_id": "ring", "style": "circle", "target_element_id": "law2", "narration": "[[MARK:ring]] Look."}),
+        ("write_notes", NOTES),
+        ("write_notes", {"lines": []}),   # nothing to write: an error the tutor is told about
+        ("annotate_element", {"annotation_id": "ring", "style": "circle", "target_element_id": "b1_s1", "narration": "[[MARK:ring]] Look."}),
         ("no_such_tool", {}))
     _chat(nb, pg, "Show the second law", model)
     records = _turns(nb)[1][3]
     assert [(r["tool"], r["element_id"], r["status"]) for r in records] == [
-        ("draw_new_element", "law2", "ok"), ("draw_new_element", "law3", "error"), ("annotate_element", "ring", "ok"), ("no_such_tool", None, "error")]
+        ("write_notes", records[0]["element_id"], "ok"), ("write_notes", records[1]["element_id"], "error"), ("annotate_element", "ring", "ok"), ("no_such_tool", None, "error")]
     assert all(r["iteration"] == 0 for r in records)
 
 
@@ -142,10 +139,9 @@ def test_a_turn_whose_model_call_failed_records_the_notice_and_no_tool_calls(boa
 
 def test_the_notebook_endpoint_shows_both_records(board):
     nb, pg = board
-    _chat(nb, pg, "What is this?", _scripted(("draw_new_element", {"element_id": "x1", "svg_fragment": CARD.format(e="x1", x=700, y=400, tx=720, ty=460),
-                                                                    "narration": "[[MARK:x1]] Here."}), reply="Done.")[0], selected_element_ids=["law1"])
+    _chat(nb, pg, "What is this?", _scripted(("write_notes", NOTES), reply="Done.")[0], selected_element_ids=["law1"])
     turns = client.get(f"/api/notebooks/{nb}").json()["chat_turns"]
-    assert turns[0]["about_element_ids"] == ["law1"] and turns[1]["tool_calls_made"][0]["tool"] == "draw_new_element"
+    assert turns[0]["about_element_ids"] == ["law1"] and turns[1]["tool_calls_made"][0]["tool"] == "write_notes"
 
 
 # ---- the migration ----------------------------------------------------------------------------------------------------------------------

@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import backend.main as main
 import engine.author as author
+import seed
 from backend.database import engine as db_engine
 from backend.models import ChatTurn
 
@@ -43,12 +44,9 @@ def long_notebook():
         pid = page_ids[-1]
         for j in range(3):
             t0 = time.perf_counter()
-            r = client.post(f"/api/notebooks/{nb}/pages/{pid}/draw", json={
-                "element_id": f"p{i}_e{j}", "narration": "",
-                "svg_fragment": f'<g id="p{i}_e{j}"><rect x="{80 + j * 300}" y="220" width="240" height="120"/>'
-                                f'<text x="{110 + j * 300}" y="290" font-size="18">box {j}</text></g>'})
+            seed.draw(db_engine, pid, f"p{i}_e{j}", f'<g id="p{i}_e{j}"><rect x="{80 + j * 300}" y="220" width="240" height="120"/>'
+                                                       f'<text x="{110 + j * 300}" y="290" font-size="18">box {j}</text></g>', "")
             draw_times.append(time.perf_counter() - t0)
-            assert r.status_code == 200, r.text
         client.patch(f"/api/notebooks/{nb}/pages/{pid}", json={"title": f"Concept {i + 1}", "summary": LONG_SUMMARY[:2000]})
         if i < PAGES - 1:
             client.post(f"/api/notebooks/{nb}/pages/{pid}/save", json={})
@@ -150,12 +148,6 @@ def test_drawing_stays_fast_as_the_notebook_grows(long_notebook):
     assert last < max(3 * first, 400), (first, last)
 
 
-def test_the_model_never_sees_the_font_but_stored_drawings_keep_it(long_notebook):
-    client, nb, page_ids = long_notebook
-    stored = client.get(f"/api/notebooks/{nb}/pages/{page_ids[0]}/events").json()["events"][0]["svg_fragment"]
-    assert "@font-face" in stored and len(stored) > 10_000       # exports and the board still render with the real font
-
-
 def test_strip_embedded_fonts_removes_only_the_font():
     from engine.fonts import inject_trusted_font, strip_embedded_fonts
     drawing = '<g id="a"><rect x="10" y="10" width="50" height="30"/><text x="12" y="30">Hi</text></g>'
@@ -165,31 +157,3 @@ def test_strip_embedded_fonts_removes_only_the_font():
     assert "base64" not in lean and "@font-face" not in lean
     assert '<rect x="10" y="10" width="50" height="30"' in lean and ">Hi</text>" in lean and 'id="a"' in lean
     assert strip_embedded_fonts(lean) == lean and strip_embedded_fonts(None) is None and strip_embedded_fonts("") == ""
-
-
-def test_editing_drawings_does_not_pile_up_font_copies(monkeypatch):
-    """Every edit used to add another ~16 KB copy of the font to the page: dozens of edits made pages megabytes big."""
-    from backend.models import Page
-    monkeypatch.setattr(author, "generate_narration_audio", lambda text, a, b, eid=None: (1.0, len(text), {"is_synthetic": False}))
-    client = TestClient(main.app)
-    nb = client.post("/api/notebooks", json={"topic": "Font copies"}).json()["id"]
-    pg = client.get(f"/api/notebooks/{nb}").json()["pages"][0]["id"]
-
-    def box(eid, x, label):
-        return (f'<g id="{eid}"><rect x="{x}" y="220" width="240" height="120"/>'
-                f'<text x="{x + 30}" y="290" font-size="18">{label}</text></g>')
-
-    def font_faces():
-        with Session(db_engine) as db:
-            return db.get(Page, pg).current_svg.count("base64,")
-
-    try:
-        for eid, x in (("a", 80), ("b", 400)):
-            client.post(f"/api/notebooks/{nb}/pages/{pg}/draw", json={"element_id": eid, "svg_fragment": box(eid, x, eid), "narration": "x"})
-        assert font_faces() == 2                                        # one copy = regular + bold
-        for n, (eid, x) in enumerate((("b", 400), ("a", 80), ("b", 400), ("a", 80), ("b", 400))):
-            r = client.post(f"/api/notebooks/{nb}/pages/{pg}/modify", json={"element_id": eid, "new_svg_fragment": box(eid, x, f"v{n}")})
-            assert r.status_code == 200, r.text
-            assert font_faces() == 2, f"font copies piled up after edit {n + 1}: {font_faces()} faces"
-    finally:
-        client.delete(f"/api/notebooks/{nb}")

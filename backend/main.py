@@ -64,7 +64,7 @@ from backend.limits import (
 
 from engine.scene import ID_RE as SCENE_ID_RE, board_blocks, board_font_css, missing_parts
 from engine.lesson_plan import final_check, path_titles, split_course, step_levels, write_next_plan, write_plan
-from engine.author import run_whiteboard_author, scene_mode_on, OUTPUT_DIR, ModelUnreachable, MODEL_UNREACHABLE_MESSAGE, EmptyReply, EMPTY_REPLY_MESSAGE, MODEL_NOT_CONFIGURED_MESSAGE, model_configured
+from engine.author import run_whiteboard_author, OUTPUT_DIR, ModelUnreachable, MODEL_UNREACHABLE_MESSAGE, EmptyReply, EMPTY_REPLY_MESSAGE, MODEL_NOT_CONFIGURED_MESSAGE, model_configured
 
 logger = get_logger("backend")
 
@@ -152,10 +152,10 @@ def on_startup():
     logger.info(BackendEvent.SERVER_STARTUP, "Learning Platform API started", data={"port": 8001})
     if not model_configured():
         logger.warn(BackendEvent.SERVER_STARTUP, MODEL_NOT_CONFIGURED_MESSAGE, data={"missing": ["AZURE_OPENAI_API_KEY or AZURE_OPENAI_ENDPOINT"]})
-    missing = missing_parts() if scene_mode_on() else []   # say at startup what the lesson board needs, not at the learner's first question
+    missing = missing_parts()   # say at startup what the lesson board needs, not at the learner's first question
     if missing:
         logger.warn(BackendEvent.SERVER_STARTUP, "Scene mode is on but cannot draw: " + "; ".join(missing), data={"missing": missing})
-    elif scene_mode_on():
+    else:
         try:
             board_font_css()   # build the export fonts now (about a second, once), not in the middle of the first lesson
         except Exception as e:  # a broken font file must not keep the app from starting; the first block will report it to the tutor
@@ -196,15 +196,6 @@ class ChatRequest(BaseModel):
     # "Try again": the id of the learner turn the tutor never answered. That same turn is sent again (its stored text and pointed-at drawings; `message`
     # is ignored), so no second learner turn is created.
     retry_turn_id: Optional[str] = Field(default=None, max_length=64)
-
-class DrawElementRequest(BaseModel):
-    element_id: str = Field(max_length=100)
-    svg_fragment: Svg
-    narration: Optional[Narration] = None
-
-class ModifyElementRequest(BaseModel):
-    element_id: str = Field(max_length=100)
-    new_svg_fragment: Svg
 
 class AnnotateElementRequest(BaseModel):
     annotation_id: str = Field(max_length=100)
@@ -279,15 +270,13 @@ def get_notebook(notebook_id: str, session: SessionDep):
             } for p in pages
         ],
         "chat_turns": _chat_turns_json(turns),
-        "lesson_board": scene_mode_on(),   # scene mode: pages are lesson boards that never fill up
+        "lesson_board": True,   # pages are lesson boards that never fill up (the frontend reads this)
         **_lesson_state(nb, pages, turns),
     }
 
 
 def _lesson_state(nb, pages, turns) -> dict:
-    """What the learner sees of the current lesson: its checklist, its final check, and the course goal (scene mode only)."""
-    if not scene_mode_on():
-        return {"lesson_path": [], "lesson_final": None, "goal": None}
+    """What the learner sees of the current lesson: its checklist, its final check, and the course goal."""
     plan, records = current_lesson(nb, pages, turns)
     goal = next((line.split(":", 1)[1].strip() for line in (nb.course or "").splitlines() if line.startswith("COURSE GOAL:")), None)
     return {"lesson_path": lesson_path(plan, records), "lesson_final": lesson_final(plan, records), "goal": goal or None}
@@ -588,47 +577,6 @@ def get_page_events(notebook_id: str, page_id: str, session: SessionDep):
     }
 
 
-@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/draw")
-async def draw_on_page(notebook_id: str, page_id: str, req: DrawElementRequest, session: SessionDep):
-    page = session.get(Page, page_id)
-    if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail="Page not found")
-    if page.status == "saved":
-        raise HTTPException(status_code=400, detail="Page is saved and locked. Cannot draw on a saved page.")
-
-    async def _emit(event_type: str, payload: dict):
-        await emit_notebook_event(notebook_id, event_type, payload)
-
-    async def _persist(kind: str, element_id: str, svg_fragment: str,
-                       narration: Optional[str] = None,
-                       audio_path: Optional[str] = None,
-                       alignment_path: Optional[str] = None,
-                       old_svg_fragment: Optional[str] = None):
-        def apply(pg):
-            if kind == "draw":
-                pg.current_svg = (pg.current_svg or "") + "\n" + svg_fragment
-                pg.element_count += 1
-        append_event(engine, page.id, apply,
-                       kind=kind, element_id=element_id, svg_fragment=svg_fragment, old_svg_fragment=old_svg_fragment,
-                       narration=narration, audio_path=audio_path, alignment_path=alignment_path)
-
-    from engine.author import _handle_draw_new_element
-    res = await _handle_draw_new_element(
-        notebook_id=notebook_id,
-        page_id=page_id,
-        page_status=page.status,
-        element_id=req.element_id,
-        svg_fragment=req.svg_fragment,
-        narration=req.narration or f"Drew {req.element_id}",
-        current_svg=page.current_svg,
-        emit_fn=_emit,
-        persist_fn=_persist,
-    )
-    if res.get("status") == "error":
-        raise HTTPException(status_code=400, detail=res.get("detail"))
-    return res
-
-
 @app.post("/api/notebooks/{notebook_id}/pages/{page_id}/undo")
 async def undo_last_drawing(notebook_id: str, page_id: str, session: SessionDep):
     """
@@ -681,50 +629,6 @@ async def undo_last_drawing(notebook_id: str, page_id: str, session: SessionDep)
         "page_id": page_id, "element_id": target, "annotation_ids": annotation_ids,
     })
     return {"status": "ok", "removed_element_id": target, "element_count": page.element_count}
-
-
-@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/modify")
-async def modify_on_page(notebook_id: str, page_id: str, req: ModifyElementRequest, session: SessionDep):
-    page = session.get(Page, page_id)
-    if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail="Page not found")
-    if page.status == "saved":
-        raise HTTPException(status_code=400, detail="Page is saved and locked. Cannot modify a saved page.")
-
-    existing_events = session.exec(
-        select(PageEvent).where(PageEvent.page_id == page.id)
-    ).all()
-    existing_element_ids = {e.element_id for e in existing_events if e.kind in ("draw", "modify")}
-
-    async def _emit(event_type: str, payload: dict):
-        await emit_notebook_event(notebook_id, event_type, payload)
-
-    async def _persist(kind: str, element_id: str, svg_fragment: str,
-                       narration: Optional[str] = None,
-                       audio_path: Optional[str] = None,
-                       alignment_path: Optional[str] = None,
-                       old_svg_fragment: Optional[str] = None):
-        def apply(pg):
-            if kind == "modify" and pg.current_svg and old_svg_fragment:
-                pg.current_svg = pg.current_svg.replace(old_svg_fragment, svg_fragment, 1)
-        append_event(engine, page.id, apply,
-                       kind=kind, element_id=element_id, svg_fragment=svg_fragment, old_svg_fragment=old_svg_fragment,
-                       narration=narration, audio_path=audio_path, alignment_path=alignment_path)
-
-    from engine.author import _handle_modify_existing_element
-    res = await _handle_modify_existing_element(
-        page_id=page_id,
-        page_status=page.status,
-        element_id=req.element_id,
-        new_svg_fragment=req.new_svg_fragment,
-        current_svg=page.current_svg,
-        existing_element_ids=existing_element_ids,
-        emit_fn=_emit,
-        persist_fn=_persist,
-    )
-    if res.get("status") == "error":
-        raise HTTPException(status_code=400, detail=res.get("detail"))
-    return res
 
 
 @app.post("/api/notebooks/{notebook_id}/pages/{page_id}/annotate")
@@ -845,13 +749,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
         page = session.get(Page, req.page_id)
         if not page or page.notebook_id != notebook_id:
             raise HTTPException(status_code=404, detail="Page not found")
-        # A learner may ask about a saved lesson board (scene mode): the tutor answers, and any new block goes to a fresh page
-        # (engine/author.add_block). The raw-SVG path keeps refusing, as it can only draw on the page it was given.
-        if page.status == "saved" and not scene_mode_on():
-            raise HTTPException(
-                status_code=400,
-                detail=f"Page {page.page_number} is saved and locked. Cannot draw on or modify a saved page."
-            )
+        # A learner may ask about a saved lesson board: the tutor answers, and any new block goes to a fresh page (engine/author.add_block).
     else:
         page = session.exec(
             select(Page)
@@ -912,7 +810,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     # active board, so new blocks continue the current lesson. Drawing from the saved board would have opened a page, and opening a
     # page saves the active one: asking about an old board locked the current lesson (code review). With no active board the tutor
     # opens one itself (engine/author.add_block).
-    if page.status == "saved" and scene_mode_on():
+    if page.status == "saved":
         current = session.exec(select(Page).where(Page.notebook_id == notebook_id, Page.status == "active")
                                .order_by(Page.page_number.desc())).first()
         if current:
@@ -950,7 +848,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
         history_query = history_query.where(ChatTurn.seq < retry_turn.seq)         # the retried question is sent as the new message, not twice
     recent_turns = session.exec(history_query.order_by(ChatTurn.seq.desc()).limit(HISTORY_TURNS)).all()
     history = [{"role": t.role, "content": t.content} for t in reversed(recent_turns)]
-    away_for = time_away(recent_turns[0].timestamp) if scene_mode_on() and recent_turns and not retry_turn else ""
+    away_for = time_away(recent_turns[0].timestamp) if recent_turns and not retry_turn else ""
     logger.info(BackendEvent.CONTEXT_BUILT, f"Context for the tutor: {len(all_pages)} earlier page(s), {summaries_in_context(all_pages)} with a summary, {len(history)} history turn(s)",
                 data={"prior_pages": len(all_pages), "with_summary": summaries_in_context(all_pages), "history_turns": len(history),
                       "summaries_off": os.getenv("LP_TEST_SUMMARIES_OFF") == "1", "history_limit": HISTORY_TURNS})
@@ -986,7 +884,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     # answer and used from the next turn: written first, it was 8 of the 12 s before anything appeared (the first answer's main gain from
     # it, answering the whole question, is in the tutor's own rules). Saved when this turn ends.
     # The first plan also sets the course (goal and roadmap); each new page the tutor starts gets the next lesson's plan (_plan_next_lesson).
-    plan_task = asyncio.create_task(write_plan(nb.topic, message_text)) if scene_mode_on() and not nb.lesson_plan else None
+    plan_task = asyncio.create_task(write_plan(nb.topic, message_text)) if not nb.lesson_plan else None
 
     # -----------------------------------------------------------------------
     # Closures for emit and persist passed into the agent
@@ -1026,7 +924,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
 
     async def _plan_next_lesson() -> str:
         """start_new_page in a notebook with a course: the new page gets the next lesson's plan (the tutor waits for it), or "" to go on."""
-        if not (scene_mode_on() and nb.course):
+        if not nb.course:
             return ""
         with Session(engine) as db:
             pages = db.exec(select(Page).where(Page.notebook_id == notebook_id, Page.id != active["page_id"])).all()
@@ -1055,7 +953,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
             pass
 
     tool_log: list = []                                       # filled by the agent: one record per tool call of this turn
-    planned = scene_mode_on() and nb.lesson_plan
+    planned = nb.lesson_plan
     past = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id)).all() if planned else []
     plan_now, records = current_lesson(nb, session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), past) if planned else ("", [])
 
@@ -1069,7 +967,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
             page_state=page_state,
             prior_pages_summary=prior_summary,
             lesson_plan=plan_now,
-            course=(nb.course or "") if scene_mode_on() else "",
+            course=nb.course or "",
             away_for=away_for,
             lesson_path=lesson_path(plan_now, records, bool(away_for)) if planned else None,
             lesson_final=lesson_final(plan_now, records) if planned else None,
