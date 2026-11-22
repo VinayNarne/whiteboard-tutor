@@ -9,8 +9,8 @@ export function NarrationCaption() {
 
   useEffect(() => {
     const onCaption = (e: Event) => { setClip((e as CustomEvent).detail); setSpoken(0); };
-    window.addEventListener('narration_caption', onCaption);
-    return () => window.removeEventListener('narration_caption', onCaption);
+    globalThis.addEventListener('narration_caption', onCaption);
+    return () => globalThis.removeEventListener('narration_caption', onCaption);
   }, []);
 
   useEffect(() => {

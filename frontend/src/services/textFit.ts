@@ -31,7 +31,7 @@ function shapesOf(root: Element): Shape[] {
   root.querySelectorAll('rect,circle,ellipse').forEach(e => {
     if (inDefs(e)) return;
     const tag = e.tagName.toLowerCase();
-    const f = (k: string) => parseFloat(e.getAttribute(k) || '0');
+    const f = (k: string) => Number.parseFloat(e.getAttribute(k) || '0');
     let s: Shape;
     if (tag === 'rect') s = { kind: 'rect', x: f('x'), y: f('y'), w: f('width'), h: f('height') };
     else if (tag === 'circle') s = { kind: 'ellipse', x: f('cx') - f('r'), y: f('cy') - f('r'), w: 2 * f('r'), h: 2 * f('r') };
@@ -73,13 +73,13 @@ function uniqueShape(box: Box, shapes: Shape[]): Shape | null {
   return touchesAnother ? null : containing[0];
 }
 
-const sizeOf = (t: Element) => parseFloat(getComputedStyle(t).fontSize);
+const sizeOf = (t: Element) => Number.parseFloat(getComputedStyle(t).fontSize);
 
 function scaleText(t: SVGTextElement, factor: number, orig: { size: number; own: string; tspans: (string | null)[] }) {
   t.style.fontSize = `${orig.size * factor}px`;
   t.querySelectorAll('tspan').forEach((x, i) => {
     const fs = orig.tspans[i];
-    if (fs) x.setAttribute('font-size', String(parseFloat(fs) * factor));
+    if (fs) x.setAttribute('font-size', String(Number.parseFloat(fs) * factor));
   });
 }
 
@@ -108,7 +108,7 @@ async function measureResizes(fragments: string[]): Promise<Resize[]> {
     svg.querySelectorAll('g[data-fit-frag]').forEach(g => {
       const frag = Number(g.getAttribute('data-fit-frag'));
       g.querySelectorAll('text').forEach((el, textIndex) => {
-        const t = el as SVGTextElement;
+        const t = el;
         if (inDefs(t) || !t.textContent?.trim()) return;
         const box0 = boxOf(t);
         const shape = uniqueShape(box0, shapes);
@@ -137,7 +137,7 @@ async function measureResizes(fragments: string[]): Promise<Resize[]> {
  */
 export async function fitTextInFragments(fragments: string[]): Promise<Map<string, string>> {
   const result = new Map<string, string>();
-  if (typeof window === 'undefined' || !fragments.length) return result;
+  if (typeof globalThis.window === 'undefined' || !fragments.length) return result;
   try {
     const resizes = await measureResizes(fragments);
     const byFrag = new Map<number, Resize[]>();
@@ -163,7 +163,7 @@ function applyFactors(fragment: string, rs: Resize[]): string {
     (t as SVGElement).style.setProperty('font-size', `${r.size}px`);
     t.querySelectorAll('tspan').forEach(x => {
       const fs = x.getAttribute('font-size');
-      if (fs) x.setAttribute('font-size', String(parseFloat(fs) * r.factor));
+      if (fs) x.setAttribute('font-size', String(Number.parseFloat(fs) * r.factor));
     });
   }
   return [...doc.documentElement.childNodes].map(n => new XMLSerializer().serializeToString(n)).join('\n');

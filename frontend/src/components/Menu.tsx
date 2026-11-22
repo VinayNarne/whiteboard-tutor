@@ -13,12 +13,12 @@ const triggerStyle: React.CSSProperties = {
   cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px',
 };
 
-export function Menu({ label, items, align = 'right', icon }: {
+export function Menu({ label, items, align = 'right', icon }: Readonly<{
   label: string;
   items: MenuItem[];
   align?: 'left' | 'right';
   icon?: 'dots'; // icon-only trigger: `label` becomes its accessible name
-}) {
+}>) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);

@@ -8,7 +8,6 @@ import type { PageSummary } from '../types';
 import { Menu } from './Menu';
 
 interface Props {
-  notebookTopic: string;
   pages: PageSummary[];
   activePageId: string | null;
   isReplaying: boolean;
@@ -49,7 +48,7 @@ const Chevron = ({ dir }: { dir: 'left' | 'right' }) => (
 export function PageSidebar({
   pages, activePageId, isReplaying, onSelectPage, onNewPage, onSavePage, onReplayPage,
   onBack, onForward, onRenamePage, onDeletePage, layout = 'wide', showFullness = true,
-}: Props) {
+}: Readonly<Props>) {
   const phone = layout === 'phone';
   const [isCollapsed, setIsCollapsed] = useState(layout === 'compact');
   // follow the screen size: a laptop-width window starts collapsed, a wide one expanded

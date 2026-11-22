@@ -83,12 +83,12 @@ export function WhiteboardCanvas({
   replayFrom = null,
   onReplayFrom,
   isMuted = false,
-  playbackSpeed: propSpeed = 1.0,
+  playbackSpeed: propSpeed = 1,
   onPlaybackSpeedChange,
   activeLearnerIntent,
   onLearnerIntentChange,
   onAskAboutSelection,
-}: Props) {
+}: Readonly<Props>) {
   const [playbackSpeed, setPlaybackSpeedState] = useState<number>(propSpeed);
   const playbackSpeedRef = useRef(playbackSpeed);
   playbackSpeedRef.current = playbackSpeed;
@@ -147,7 +147,7 @@ export function WhiteboardCanvas({
   const camAnimRef = useRef(0);
   const moveCamera = useCallback((to: Box, ms = 650) => {
     cancelAnimationFrame(camAnimRef.current);
-    if (ms === 0 || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setView(to); return; }
+    if (ms === 0 || globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setView(to); return; }
     const from = viewRef.current, t0 = performance.now();
     const step = (t: number) => {
       const k = Math.min(1, (t - t0) / ms);
@@ -200,8 +200,8 @@ export function WhiteboardCanvas({
   const [narration, setNarration] = useState({ active: false, paused: false });
   useEffect(() => {
     const on = (e: Event) => setNarration((e as CustomEvent<{ active: boolean; paused: boolean }>).detail);
-    window.addEventListener('narration_state', on);
-    return () => window.removeEventListener('narration_state', on);
+    globalThis.addEventListener('narration_state', on);
+    return () => globalThis.removeEventListener('narration_state', on);
   }, []);
   const [redoStrokes, setRedoStrokes] = useState<LearnerStroke[]>([]);   // strokes taken back by undo; a new stroke or clear empties it
   const [activeIntent, setActiveIntent] = useState<LearnerIntent | null>(activeLearnerIntent || null);
@@ -250,8 +250,8 @@ export function WhiteboardCanvas({
       debug('[WhiteboardCanvas] Barge-in: showing queued drawings without narration');
       flushLiveQueueRef.current();
     };
-    window.addEventListener('tutor_barge_in', handleBargeIn);
-    return () => window.removeEventListener('tutor_barge_in', handleBargeIn);
+    globalThis.addEventListener('tutor_barge_in', handleBargeIn);
+    return () => globalThis.removeEventListener('tutor_barge_in', handleBargeIn);
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -326,7 +326,7 @@ export function WhiteboardCanvas({
 
   // Remove annotation event listener from WS
   useEffect(() => {
-    if (!pendingRemoveAnnotationEvent || pendingRemoveAnnotationEvent.page_id !== pageId) return;
+    if (pendingRemoveAnnotationEvent?.page_id !== pageId) return;
     removeAnnotationDom(pendingRemoveAnnotationEvent.annotation_id);
   }, [pendingRemoveAnnotationEvent, pageId, removeAnnotationDom]);
 
@@ -347,8 +347,8 @@ export function WhiteboardCanvas({
       });
       activeAnnotationsRef.current.clear();
       setReplayStep(0);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
+      if (typeof globalThis.window !== 'undefined') {
+        globalThis.dispatchEvent(
           new CustomEvent('replay_started', {
             detail: { totalEvents: replayEvents.length },
           })
@@ -427,8 +427,8 @@ export function WhiteboardCanvas({
       setActiveElementId(null);
       setIsPlaying(false);
       setReplayStep(0);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('replay_completed'));
+      if (typeof globalThis.window !== 'undefined') {
+        globalThis.dispatchEvent(new CustomEvent('replay_completed'));
       }
       onReplayDoneRef.current?.();
     };
@@ -446,13 +446,13 @@ export function WhiteboardCanvas({
   // Live draw & annotate events from WS: enqueue into FIFO live queue
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!pendingDrawEvent || pendingDrawEvent.page_id !== pageId) return;
+    if (pendingDrawEvent?.page_id !== pageId) return;
     liveQueueRef.current.push({ type: 'draw', payload: pendingDrawEvent });
     processLiveQueueRef.current();
   }, [pendingDrawEvent, pageId]);
 
   useEffect(() => {
-    if (!pendingAnnotateEvent || pendingAnnotateEvent.page_id !== pageId) return;
+    if (pendingAnnotateEvent?.page_id !== pageId) return;
     liveQueueRef.current.push({ type: 'annotate', payload: pendingAnnotateEvent });
     processLiveQueueRef.current();
   }, [pendingAnnotateEvent, pageId]);
@@ -541,7 +541,7 @@ export function WhiteboardCanvas({
   // Modify event handling
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!pendingModifyEvent || pendingModifyEvent.page_id !== pageId) return;
+    if (pendingModifyEvent?.page_id !== pageId) return;
     const { element_id, new_svg_fragment } = pendingModifyEvent;
     if (pendingModifyEvent.audio_url) {   // a spoken correction: queued and played like a draw (the picture changes as the voice starts)
       liveQueueRef.current.push({ type: 'draw', payload: { page_id: pageId, element_id, svg_fragment: new_svg_fragment, narration: pendingModifyEvent.narration ?? '',
@@ -593,7 +593,7 @@ export function WhiteboardCanvas({
             if (ann.lifetime === 'permanent') {
               permanentAnns.push(ann);
             }
-          } catch (err) {}
+          } catch { /* malformed annotation fragment: skip it */ }
         } else if (ev.kind === 'remove_annotation' && ev.element_id) {
           removedAnnIds.add(ev.element_id);
         }
@@ -651,8 +651,8 @@ export function WhiteboardCanvas({
       debug('[WhiteboardCanvas] Network reconnected — re-syncing canvas elements and annotations');
       loadPage();
     };
-    window.addEventListener('notebook_reconnected', handleReconnect);
-    return () => window.removeEventListener('notebook_reconnected', handleReconnect);
+    globalThis.addEventListener('notebook_reconnected', handleReconnect);
+    return () => globalThis.removeEventListener('notebook_reconnected', handleReconnect);
   }, [loadPage]);
 
   // ---------------------------------------------------------------------------
@@ -674,7 +674,7 @@ export function WhiteboardCanvas({
     moveCamera((last ? blockFrame(last) : null) ?? overview(elements.values()) ?? DEFAULT_VIEW);   // an empty last element falls back too
   };
   /** Board units per screen pixel (the viewBox is letterboxed into the paper). */
-  const unitsPerPx = () => { const m = svgRef.current?.getScreenCTM(); return m && m.a ? 1 / m.a : 1; };
+  const unitsPerPx = () => { const m = svgRef.current?.getScreenCTM(); return m?.a ? 1 / m.a : 1; };
   const handleBoardKeyDown = (e: React.KeyboardEvent) => {
     if (e.target !== e.currentTarget) return;   // keys typed into something inside the board are theirs
     const v = viewRef.current, step = { ArrowLeft: [-0.15, 0], ArrowRight: [0.15, 0], ArrowUp: [0, -0.15], ArrowDown: [0, 0.15] }[e.key];
@@ -701,7 +701,7 @@ export function WhiteboardCanvas({
     // Detect hovered element id
     const target = e.target as SVGElement | null;
     const parentGroup = target?.closest('#whiteboard-elements > g');
-    if (parentGroup && parentGroup.id) {
+    if (parentGroup?.id) {
       setHoveredElementId(parentGroup.id);
     } else {
       setHoveredElementId(null);
@@ -815,7 +815,7 @@ export function WhiteboardCanvas({
   const askAboutItem = (prompt: (label: string) => string) => {
     if (!activeIntent) return;
     const label = activeIntent.candidates[0]?.label || activeIntent.selectedElementIds[0];
-    window.dispatchEvent(new CustomEvent('send_chat_query', { detail: { message: prompt(label), intent: activeIntent } }));
+    globalThis.dispatchEvent(new CustomEvent('send_chat_query', { detail: { message: prompt(label), intent: activeIntent } }));
     closeItemActions();
   };
   /** Replay from here: the step group that holds the clicked item (a node inside a diagram belongs to its step). */
@@ -826,14 +826,14 @@ export function WhiteboardCanvas({
     if (n) { onReplayFrom?.(n.id); closeItemActions(); }
   };
   /** Ask…: the item stays selected and the learner types their own question about it. */
-  const askTyped = () => window.dispatchEvent(new CustomEvent('focus_chat_input'));
+  const askTyped = () => globalThis.dispatchEvent(new CustomEvent('focus_chat_input'));
 
   const handleExplainThis = () => {
     if (!activeIntent) return;
     if (onAskAboutSelection) {
       onAskAboutSelection(activeIntent);
     } else {
-      window.dispatchEvent(
+      globalThis.dispatchEvent(
         new CustomEvent('ask_tutor_about_selection', { detail: activeIntent })
       );
     }
@@ -869,7 +869,7 @@ export function WhiteboardCanvas({
 
   // The learner's own strokes are client-side only: undo/redo just moves the last stroke between two lists.
   const undoStroke = useCallback(() => {
-    const last = learnerStrokes[learnerStrokes.length - 1];
+    const last = learnerStrokes.at(-1);
     if (!last) return;
     setLearnerStrokes(learnerStrokes.slice(0, -1));
     setRedoStrokes(r => [...r, last]);
@@ -877,7 +877,7 @@ export function WhiteboardCanvas({
     onLearnerIntentChange?.(null);
   }, [learnerStrokes, onLearnerIntentChange]);
   const redoStroke = useCallback(() => {
-    const last = redoStrokes[redoStrokes.length - 1];
+    const last = redoStrokes.at(-1);
     if (!last) return;
     setRedoStrokes(redoStrokes.slice(0, -1));
     setLearnerStrokes(s => [...s, last]);
@@ -903,13 +903,13 @@ export function WhiteboardCanvas({
         else if (canUndo) { e.preventDefault(); handleUndo(); }
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    globalThis.addEventListener('keydown', onKey);
+    return () => globalThis.removeEventListener('keydown', onKey);
   }, [canUndo, handleUndo, learnerStrokes.length, redoStrokes.length, undoStroke, redoStroke, narration.active]);
 
   // The server removed an element (undo from any tab): drop it and any annotations drawn on it
   useEffect(() => {
-    if (!pendingRemoveElementEvent || pendingRemoveElementEvent.page_id !== pageId) return;
+    if (pendingRemoveElementEvent?.page_id !== pageId) return;
     const { element_id, annotation_ids } = pendingRemoveElementEvent;
     setElements(prev => {
       if (!prev.has(element_id)) return prev;
@@ -1199,7 +1199,7 @@ export function WhiteboardCanvas({
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexDirection: 'column', gap: '12px',
-            color: theme === 'blackboard' ? 'var(--ink-2)' : 'var(--ink-2)',
+            color: 'var(--ink-2)',
             pointerEvents: 'none',
             zIndex: 2,
           }}>
@@ -1208,7 +1208,7 @@ export function WhiteboardCanvas({
               <path d="M3 9h18M9 21V9" />
             </svg>
             <span style={{ fontSize: '14px', fontWeight: 500 }}>
-              {!pageId ? 'Select or create a page to begin' : 'Ask a question in chat to start drawing'}
+              {pageId ? 'Ask a question in chat to start drawing' : 'Select or create a page to begin'}
             </span>
           </div>
         )}

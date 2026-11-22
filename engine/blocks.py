@@ -285,7 +285,10 @@ def build_venn(args: dict, n: int, blocks: List[dict]) -> Tuple[Steps, dict, dic
         parts.append(((("".join(frame)) if i == 0 else "") + circle + _t(lx, ly, label, 16, 700, strong), say))
     for idx, items, say in regions:
         x, y = anchor(idx)
-        width = (120 if len(idx) == 1 else 96) if k == 2 else {1: 96, 2: 70, 3: 56}[len(idx)]   # how wide each region is, near its anchor
+        if k == 2:
+            width = 120 if len(idx) == 1 else 96
+        else:
+            width = {1: 96, 2: 70, 3: 56}[len(idx)]   # how wide each region is, near its anchor
         lines = [ln for it in items for ln in wrap(it, (13, 400, 16), width)][:8]
         parts.append((_lines(x, y - len(lines) * 16 / 2, lines, (13, 400, 16), INK), say))
     box = {"x": bx, "y": by, "w": w, "h": h}

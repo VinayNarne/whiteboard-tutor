@@ -19,7 +19,8 @@ if not DATABASE_URL:
 
 if DATABASE_URL.startswith(("postgres://", "postgresql://", "postgresql+psycopg2://")):
     try:
-        import psycopg2  # noqa: F401  (the driver SQLAlchemy uses for these URLs; optional, see requirements-postgres.txt)
+        # the driver SQLAlchemy uses for these URLs; optional, see requirements-postgres.txt
+        import psycopg2  # noqa: F401
     except ImportError as e:
         raise RuntimeError("DATABASE_URL points at Postgres but the psycopg2 driver is not installed. Install it with "
                            "`pip install -r requirements-postgres.txt`, or unset DATABASE_URL to use SQLite.") from e

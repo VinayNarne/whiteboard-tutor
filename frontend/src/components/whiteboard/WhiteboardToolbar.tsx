@@ -41,7 +41,7 @@ export function WhiteboardToolbar({
   theme, setTheme, showGrid, setShowGrid, isHandDrawn, setIsHandDrawn,
   handleExportSvg, handleExportPng, handleCopySvg, canUndo, handleUndo,
   narrationActive, narrationPaused, onTogglePause,
-}: Props) {
+}: Readonly<Props>) {
   return (
     <>
       {/* Top left: quiet status text (what the tutor is explaining / what the pointer is over) */}
@@ -49,7 +49,7 @@ export function WhiteboardToolbar({
         {isPlaying && (
           <span style={{ fontSize: '12px', color: 'var(--ink-2)', display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
             <span aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)', animation: 'pulse 1s infinite' }} />
-            {activeElementId && !/^b\d+_s\d+$/.test(activeElementId) ? `Explaining ${activeElementId.replace(/_/g, ' ')}` : 'Speaking…'}
+            {activeElementId && !/^b\d+_s\d+$/.test(activeElementId) ? `Explaining ${activeElementId.replaceAll(/_/g, ' ')}` : 'Speaking…'}
           </span>
         )}
         <button
@@ -67,7 +67,7 @@ export function WhiteboardToolbar({
           {narrationPaused ? 'Resume' : 'Pause'}
         </button>
         {hoveredElementId && (
-          <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>{hoveredElementId.replace(/_/g, ' ')}</span>
+          <span style={{ fontSize: '12px', color: 'var(--ink-2)' }}>{hoveredElementId.replaceAll(/_/g, ' ')}</span>
         )}
       </div>
 

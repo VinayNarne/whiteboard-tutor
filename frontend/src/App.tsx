@@ -35,7 +35,7 @@ const LEVELS = [
 
 // Notebook topics created with a depth other than Standard are stored as "[Deep-dive] topic".
 function parseTopic(topic: string): { text: string; tag: string | null } {
-  const m = topic.match(/^\[(Beginner|Deep-dive)\]\s*/i);
+  const m = /^\[(Beginner|Deep-dive)\]\s*/i.exec(topic);
   if (!m) return { text: topic, tag: null };
   return { text: topic.slice(m[0].length), tag: m[1].toLowerCase() === 'beginner' ? 'Beginner' : 'Deep dive' };
 }
@@ -50,7 +50,7 @@ function storeSetting(key: string, value: string): void {
   try { localStorage.setItem(key, value); } catch { /* private window: lasts until reload */ }
 }
 
-function NewNotebookScreen({ onCreate }: { onCreate: (nb: Notebook) => void }) {
+function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => void }>) {
   const [themePref, setThemePref] = useThemePref();
   const [topic, setTopic] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -101,7 +101,7 @@ function NewNotebookScreen({ onCreate }: { onCreate: (nb: Notebook) => void }) {
 
   const filteredNotebooks = notebooks.filter(nb =>
     nb.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (nb.title && nb.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    (nb.title?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   const canStart = !!topic.trim() && !isCreating;
   const hint = LEVELS.find(l => l.id === level)?.hint;
@@ -294,7 +294,7 @@ function useDialogFocus(open: boolean) {
       if (e.key !== 'Tab') return;
       const items = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)];
       if (!items.length) { e.preventDefault(); return; }
-      const first = items[0], last = items[items.length - 1];
+      const first = items[0], last = items.at(-1)!;
       if (!el.contains(document.activeElement) || (e.shiftKey && document.activeElement === first)) {
         e.preventDefault(); (e.shiftKey ? last : first).focus();
       } else if (!e.shiftKey && document.activeElement === last) {
@@ -317,9 +317,9 @@ const PANE_TABS: { id: PaneTab; label: string }[] = [
   { id: 'pages', label: 'Pages' },
 ];
 
-function PhoneTabs({ tab, onChange, unread }: {
+function PhoneTabs({ tab, onChange, unread }: Readonly<{
   tab: PaneTab; onChange: (t: PaneTab) => void; unread: Partial<Record<PaneTab, boolean>>;
-}) {
+}>) {
   const onKey = (e: React.KeyboardEvent) => {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
     if (!step) return;
@@ -376,7 +376,7 @@ function Pane({ id, active, phone, children }: { id: PaneTab; active: boolean; p
 // ---------------------------------------------------------------------------
 // Main tutor UI
 // ---------------------------------------------------------------------------
-function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void }) {
+function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: () => void }>) {
   const [pages, setPages] = useState<PageSummary[]>([]);
   const phone = useMediaQuery('(max-width: 820px)');
   const compact = useMediaQuery('(max-width: 1200px)');
@@ -412,7 +412,7 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
   const [isAudioMuted, setIsAudioMuted] = useState(() => storedSetting('voiceMuted') === '1');
   const [audioSpeed, setAudioSpeed] = useState(() => {
     const v = Number(storedSetting('voiceSpeed'));
-    return [0.75, 1, 1.25, 1.5].includes(v) ? v : 1.0;
+    return [0.75, 1, 1.25, 1.5].includes(v) ? v : 1;
   });
   useEffect(() => { storeSetting('voiceMuted', isAudioMuted ? '1' : '0'); }, [isAudioMuted]);
   useEffect(() => { storeSetting('voiceSpeed', String(audioSpeed)); }, [audioSpeed]);
@@ -439,11 +439,11 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
       setPages(ps);
       setLessonBoard(!!data.lesson_board);
 
-      const urlParams = new URLSearchParams(window.location.search);
+      const urlParams = new URLSearchParams(globalThis.location.search);
       const urlPageId = urlParams.get('page_id') || localStorage.getItem(`last_page_${notebook.id}`);
       const matchedPage = ps.find(p => p.id === urlPageId);
 
-      const target = matchedPage || ps.filter(p => p.status === 'active').at(-1) || ps.at(-1);
+      const target = matchedPage || ps.findLast(p => p.status === 'active') || ps.at(-1);
       if (target && !activePageId) setActivePageId(target.id);
       if (data.chat_turns && Array.isArray(data.chat_turns)) {
         setChatHistory(data.chat_turns);
@@ -456,10 +456,10 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
   useEffect(() => {
     if (activePageId) {
       localStorage.setItem(`last_page_${notebook.id}`, activePageId);
-      const url = new URL(window.location.href);
+      const url = new URL(globalThis.location.href);
       url.searchParams.set('notebook_id', notebook.id);
       url.searchParams.set('page_id', activePageId);
-      window.history.replaceState({}, '', url.toString());
+      globalThis.history.replaceState({}, '', url.toString());
     }
   }, [activePageId, notebook.id]);
 
@@ -468,8 +468,8 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
       debug('[App] Network reconnected — refreshing pages and chat history');
       fetchPages();
     };
-    window.addEventListener('notebook_reconnected', handleReconnect);
-    return () => window.removeEventListener('notebook_reconnected', handleReconnect);
+    globalThis.addEventListener('notebook_reconnected', handleReconnect);
+    return () => globalThis.removeEventListener('notebook_reconnected', handleReconnect);
   }, [fetchPages]);
 
   // -------------------------------------------------------------------------
@@ -525,7 +525,7 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
           setIsAgentThinking(false);
           const cleanTurn = {
             ...ev.payload,
-            content: (ev.payload.content || '').replace(/\[{1,2}\s*mark\s*:[^[\]\n]*\]{1,2}\s*/gi, ''),
+            content: (ev.payload.content || '').replaceAll(/\[{1,2}\s*mark\s*:[^[\]\n]*\]{1,2}\s*/gi, ''),
           };
           setChatHistory(prev => [...prev, cleanTurn as ChatTurn]);
         }
@@ -643,7 +643,7 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
   const [replayFrom, setReplayFrom] = useState<string | null>(null);
   const handleReplay = async (fromId?: string) => {
     if (!activePageId || (isReplaying && !fromId)) return;
-    if (fromId) window.dispatchEvent(new CustomEvent('tutor_barge_in'));   // stop live narration / a running replay's clip first
+    if (fromId) globalThis.dispatchEvent(new CustomEvent('tutor_barge_in'));   // stop live narration / a running replay's clip first
     const res = await fetch(
       `/api/notebooks/${notebook.id}/pages/${activePageId}/events`
     );
@@ -681,7 +681,7 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${notebookTopic.replace(/[^a-zA-Z0-9_-]/g, '_')}_summary.md`;
+    a.download = `${notebookTopic.replaceAll(/[^a-zA-Z0-9_-]/g, '_')}_summary.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -699,8 +699,8 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
         setIsEditingNotebook(false);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
+    return () => globalThis.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   return (
@@ -788,7 +788,6 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
         <Pane id="pages" active={tab === 'pages'} phone={phone}>
         <PageSidebar
           layout={layout}
-          notebookTopic={notebookTopic}
           pages={pages}
           activePageId={activePageId}
           isReplaying={isReplaying}
@@ -826,7 +825,7 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
           onLearnerIntentChange={setActiveLearnerIntent}
           onAskAboutSelection={(intent) => {
             setActiveLearnerIntent(intent);
-            window.dispatchEvent(
+            globalThis.dispatchEvent(
               new CustomEvent('ask_tutor_about_selection', { detail: intent })
             );
           }}
@@ -935,7 +934,7 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
                 Chat transcript (.md)
               </button>
               <button
-                onClick={() => window.open(`/api/notebooks/${notebook.id}/export?download=true`, '_self')}
+                onClick={() => globalThis.open(`/api/notebooks/${notebook.id}/export?download=true`, '_self')}
                 style={{
                   padding: '8px 14px', borderRadius: '6px',
                   background: 'var(--panel-2)', border: '1px solid var(--border-strong)', color: 'var(--ink)',
@@ -945,7 +944,7 @@ function TutorApp({ notebook, onExit }: { notebook: Notebook; onExit: () => void
                 Download notebook (.html)
               </button>
               <button
-                onClick={() => window.open(`/api/notebooks/${notebook.id}/export?print=1`, '_blank', 'noopener')}
+                onClick={() => globalThis.open(`/api/notebooks/${notebook.id}/export?print=1`, '_blank', 'noopener')}
                 style={{
                   padding: '8px 14px', borderRadius: '6px',
                   background: 'var(--accent)', border: 'none', color: 'var(--on-accent)',
@@ -1062,17 +1061,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     const nbId = params.get('notebook_id') || localStorage.getItem('last_active_notebook_id');
     if (nbId) {
       fetch(`/api/notebooks/${nbId}`)
         .then(r => r.json())
         .then(nb => {
-          if (nb && nb.id) {
+          if (nb?.id) {
             setActiveNotebook(nb);
-            const url = new URL(window.location.href);
+            const url = new URL(globalThis.location.href);
             url.searchParams.set('notebook_id', nb.id);
-            window.history.replaceState({}, '', url.toString());
+            globalThis.history.replaceState({}, '', url.toString());
           }
         })
         .catch(console.error);
@@ -1082,14 +1081,14 @@ export default function App() {
   const handleSelectNotebook = (nb: Notebook) => {
     setActiveNotebook(nb);
     localStorage.setItem('last_active_notebook_id', nb.id);
-    const url = new URL(window.location.href);
+    const url = new URL(globalThis.location.href);
     url.searchParams.set('notebook_id', nb.id);
-    window.history.replaceState({}, '', url.toString());
+    globalThis.history.replaceState({}, '', url.toString());
   };
 
   const handleExit = () => {
     localStorage.removeItem('last_active_notebook_id');
-    window.history.replaceState({}, '', window.location.pathname);
+    globalThis.history.replaceState({}, '', globalThis.location.pathname);
     setActiveNotebook(null);
   };
 

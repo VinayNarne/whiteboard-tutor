@@ -85,6 +85,9 @@ async def lifespan(_app: FastAPI):
     yield
 
 
+NOTEBOOK_NOT_FOUND = "Notebook not found"
+PAGE_NOT_FOUND = "Page not found"
+
 app = FastAPI(title="Learning Platform API", version="1.0.0", lifespan=lifespan)
 
 # Only pages served from this machine may call the API from a browser: any port on localhost,
@@ -216,6 +219,11 @@ class RemoveAnnotationRequest(BaseModel):
 # Notebook endpoints
 # ---------------------------------------------------------------------------
 
+def _responses(errors: dict) -> dict:
+    """OpenAPI `responses` for the HTTPExceptions a route raises: {status: description}."""
+    return {code: {"description": text} for code, text in errors.items()}
+
+
 @app.post("/api/notebooks", status_code=201)
 def create_notebook(req: CreateNotebookRequest, session: SessionDep):
     nb = Notebook(
@@ -247,11 +255,11 @@ def list_notebooks(session: SessionDep):
              "created_at": n.created_at.isoformat()} for n in nbs]
 
 
-@app.get("/api/notebooks/{notebook_id}")
+@app.get("/api/notebooks/{notebook_id}", responses=_responses({404: NOTEBOOK_NOT_FOUND}))
 def get_notebook(notebook_id: str, session: SessionDep):
     nb = session.get(Notebook, notebook_id)
     if not nb:
-        raise HTTPException(status_code=404, detail="Notebook not found")
+        raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
     pages = session.exec(
         select(Page).where(Page.notebook_id == notebook_id).order_by(Page.page_number)
     ).all()
@@ -290,7 +298,11 @@ def time_away(last, now=None) -> str:
     if gap < timedelta(minutes=30):
         return ""
     hours = gap.total_seconds() / 3600
-    return "about an hour" if hours < 1.5 else f"about {round(hours)} hours" if hours < 36 else f"about {round(hours / 24)} days"
+    if hours < 1.5:
+        return "about an hour"
+    if hours < 36:
+        return f"about {round(hours)} hours"
+    return f"about {round(hours / 24)} days"
 
 
 def _tutor_records(turns, scope=None) -> list:
@@ -356,15 +368,15 @@ def _chat_turns_json(turns) -> list:
     return out
 
 
-@app.get("/api/notebooks/{notebook_id}/export")
+@app.get("/api/notebooks/{notebook_id}/export", responses=_responses({404: NOTEBOOK_NOT_FOUND}))
 def export_notebook(notebook_id: str, session: SessionDep, download: bool = False,
-                    print_view: bool = Query(False, alias="print")):
+                    print_view: Annotated[bool, Query(alias="print")] = False):
     """Print-ready HTML of the whole notebook (drawings + what the tutor said + conversation)."""
     from fastapi.responses import HTMLResponse
     from backend.export import build_notebook_html
     nb = session.get(Notebook, notebook_id)
     if not nb:
-        raise HTTPException(status_code=404, detail="Notebook not found")
+        raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
     pages = []
     for p in session.exec(select(Page).where(Page.notebook_id == notebook_id).order_by(Page.page_number)).all():
         events = session.exec(select(PageEvent).where(PageEvent.page_id == p.id).order_by(PageEvent.seq)).all()
@@ -385,11 +397,11 @@ def export_notebook(notebook_id: str, session: SessionDep, download: bool = Fals
     return HTMLResponse(html, headers=headers)
 
 
-@app.delete("/api/notebooks/{notebook_id}")
+@app.delete("/api/notebooks/{notebook_id}", responses=_responses({404: NOTEBOOK_NOT_FOUND}))
 def delete_notebook(notebook_id: str, session: SessionDep):
     nb = session.get(Notebook, notebook_id)
     if not nb:
-        raise HTTPException(status_code=404, detail="Notebook not found")
+        raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
     pages = session.exec(select(Page).where(Page.notebook_id == notebook_id)).all()
     for p in pages:
         events = session.exec(select(PageEvent).where(PageEvent.page_id == p.id)).all()
@@ -406,11 +418,11 @@ def delete_notebook(notebook_id: str, session: SessionDep):
     return {"status": "deleted", "id": notebook_id}
 
 
-@app.patch("/api/notebooks/{notebook_id}")
+@app.patch("/api/notebooks/{notebook_id}", responses=_responses({404: NOTEBOOK_NOT_FOUND}))
 def update_notebook(notebook_id: str, req: UpdateNotebookRequest, session: SessionDep):
     nb = session.get(Notebook, notebook_id)
     if not nb:
-        raise HTTPException(status_code=404, detail="Notebook not found")
+        raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
     if req.topic is not None:
         nb.topic = req.topic.strip()
     if req.title is not None:
@@ -425,11 +437,11 @@ def update_notebook(notebook_id: str, req: UpdateNotebookRequest, session: Sessi
 # Page endpoints
 # ---------------------------------------------------------------------------
 
-@app.post("/api/notebooks/{notebook_id}/pages", status_code=201)
+@app.post("/api/notebooks/{notebook_id}/pages", status_code=201, responses=_responses({404: NOTEBOOK_NOT_FOUND, 409: "Another page was just created; retry"}))
 async def start_page(notebook_id: str, req: StartPageRequest, session: SessionDep):
     nb = session.get(Notebook, notebook_id)
     if not nb:
-        raise HTTPException(status_code=404, detail="Notebook not found")
+        raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
 
     # If the notebook currently only has an uninitialized active page (page 1, 0 elements, no title), reuse it
     existing_pages = session.exec(
@@ -487,11 +499,11 @@ async def start_page(notebook_id: str, req: StartPageRequest, session: SessionDe
             "status": page.status, "created_at": page.created_at.isoformat()}
 
 
-@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/save")
+@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/save", responses=_responses({404: PAGE_NOT_FOUND}))
 async def save_page(notebook_id: str, page_id: str, session: SessionDep, req: Optional[SavePageRequest] = None):
     page = session.get(Page, page_id)
     if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail="Page not found")
+        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
 
     if req:
         if req.final_svg is not None:
@@ -514,11 +526,11 @@ async def save_page(notebook_id: str, page_id: str, session: SessionDep, req: Op
     return {"status": "saved", "page_id": page_id, "page_number": page.page_number}
 
 
-@app.patch("/api/notebooks/{notebook_id}/pages/{page_id}")
+@app.patch("/api/notebooks/{notebook_id}/pages/{page_id}", responses=_responses({404: PAGE_NOT_FOUND}))
 def update_page(notebook_id: str, page_id: str, req: UpdatePageRequest, session: SessionDep):
     page = session.get(Page, page_id)
     if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail="Page not found")
+        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
     if req.title is not None:
         page.title = req.title.strip()
     if req.summary is not None:
@@ -530,11 +542,11 @@ def update_page(notebook_id: str, page_id: str, req: UpdatePageRequest, session:
     return {"id": page.id, "title": page.title, "summary": page.summary}
 
 
-@app.delete("/api/notebooks/{notebook_id}/pages/{page_id}")
+@app.delete("/api/notebooks/{notebook_id}/pages/{page_id}", responses=_responses({404: PAGE_NOT_FOUND}))
 def delete_page(notebook_id: str, page_id: str, session: SessionDep):
     page = session.get(Page, page_id)
     if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail="Page not found")
+        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
     events = session.exec(select(PageEvent).where(PageEvent.page_id == page_id)).all()
     for e in events:
         session.delete(e)
@@ -544,12 +556,12 @@ def delete_page(notebook_id: str, page_id: str, session: SessionDep):
     return {"status": "deleted", "page_id": page_id}
 
 
-@app.get("/api/notebooks/{notebook_id}/pages/{page_id}/events")
+@app.get("/api/notebooks/{notebook_id}/pages/{page_id}/events", responses=_responses({404: PAGE_NOT_FOUND}))
 def get_page_events(notebook_id: str, page_id: str, session: SessionDep):
     """Returns all PageEvents for a page in seq order — used for replay."""
     page = session.get(Page, page_id)
     if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail="Page not found")
+        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
 
     events = session.exec(
         select(PageEvent).where(PageEvent.page_id == page_id).order_by(PageEvent.seq)
@@ -577,7 +589,7 @@ def get_page_events(notebook_id: str, page_id: str, session: SessionDep):
     }
 
 
-@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/undo")
+@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/undo", responses=_responses({400: "Page is saved and locked, or there is nothing to undo", 404: PAGE_NOT_FOUND, 409: "The tutor is still drawing"}))
 async def undo_last_drawing(notebook_id: str, page_id: str, session: SessionDep):
     """
     Removes the most recently drawn element together with everything that depends on it: later edits to it,
@@ -586,7 +598,7 @@ async def undo_last_drawing(notebook_id: str, page_id: str, session: SessionDep)
     """
     page = session.get(Page, page_id)
     if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail="Page not found")
+        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
     if page.status == "saved":
         raise HTTPException(status_code=400, detail="This page is saved and locked, so it can't be changed.")
     task = ACTIVE_AGENT_TASKS.get(notebook_id)
@@ -631,11 +643,11 @@ async def undo_last_drawing(notebook_id: str, page_id: str, session: SessionDep)
     return {"status": "ok", "removed_element_id": target, "element_count": page.element_count}
 
 
-@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/annotate")
+@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/annotate", responses=_responses({400: "Page is saved and locked, or the annotation was rejected", 404: PAGE_NOT_FOUND}))
 async def annotate_on_page(notebook_id: str, page_id: str, req: AnnotateElementRequest, session: SessionDep):
     page = session.get(Page, page_id)
     if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail="Page not found")
+        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
     if page.status == "saved":
         raise HTTPException(status_code=400, detail="Page is saved and locked. Cannot annotate a saved page.")
 
@@ -679,11 +691,11 @@ async def annotate_on_page(notebook_id: str, page_id: str, req: AnnotateElementR
     return res
 
 
-@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/remove-annotation")
+@app.post("/api/notebooks/{notebook_id}/pages/{page_id}/remove-annotation", responses=_responses({400: "Page is saved and locked, or the removal was rejected", 404: PAGE_NOT_FOUND}))
 async def remove_annotation_on_page(notebook_id: str, page_id: str, req: RemoveAnnotationRequest, session: SessionDep):
     page = session.get(Page, page_id)
     if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail="Page not found")
+        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
     if page.status == "saved":
         raise HTTPException(status_code=400, detail="Page is saved and locked. Cannot remove annotations from a saved page.")
 
@@ -716,7 +728,7 @@ async def remove_annotation_on_page(notebook_id: str, page_id: str, req: RemoveA
 # Chat endpoint — triggers WhiteboardAuthor
 # ---------------------------------------------------------------------------
 
-@app.post("/api/notebooks/{notebook_id}/chat")
+@app.post("/api/notebooks/{notebook_id}/chat", responses=_responses({404: "Notebook, page or question not found", 409: "That question already has an answer, or a newer question was asked", 429: "Too many messages; retry after the Retry-After seconds"}))
 async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     """
     Receives a learner message and runs the WhiteboardAuthor agent.
@@ -725,7 +737,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     """
     nb = session.get(Notebook, notebook_id)
     if not nb:
-        raise HTTPException(status_code=404, detail="Notebook not found")
+        raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
     CHAT_LIMITER.prune()
     wait = CHAT_LIMITER.check(notebook_id)
     if wait:
@@ -748,7 +760,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     if req.page_id:
         page = session.get(Page, req.page_id)
         if not page or page.notebook_id != notebook_id:
-            raise HTTPException(status_code=404, detail="Page not found")
+            raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
         # A learner may ask about a saved lesson board: the tutor answers, and any new block goes to a fresh page (engine/author.add_block).
     else:
         page = session.exec(
@@ -1126,7 +1138,7 @@ async def websocket_notebook_events(websocket: WebSocket, notebook_id: str):
 # Voice Ingestion: Deepgram Nova-3 REST & Streaming WebSocket
 # ---------------------------------------------------------------------------
 
-@app.post("/api/transcribe-voice")
+@app.post("/api/transcribe-voice", responses=_responses({400: "Empty audio payload", 413: "Audio too large", 429: "Too many requests; retry after the Retry-After seconds", 500: "Transcription failed", 502: "Transcription service error", 503: "DEEPGRAM_API_KEY is not configured on server"}))
 async def transcribe_voice(request: Request):
     """
     Transcribe audio blob using Deepgram Nova-3 REST API.

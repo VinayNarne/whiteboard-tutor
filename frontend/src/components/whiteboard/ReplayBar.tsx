@@ -7,7 +7,7 @@ interface Props {
   setPlaybackSpeed: (speed: number) => void;
 }
 
-export function ReplayBar({ isReplaying, replayStep, replayTotal, playbackSpeed, setPlaybackSpeed }: Props) {
+export function ReplayBar({ isReplaying, replayStep, replayTotal, playbackSpeed, setPlaybackSpeed }: Readonly<Props>) {
   return (
     <>
       {isReplaying && (
@@ -32,7 +32,7 @@ export function ReplayBar({ isReplaying, replayStep, replayTotal, playbackSpeed,
             borderLeft: '1px solid var(--border-strong)', paddingLeft: '8px',
           }}>
             <span style={{ color: 'var(--ink-2)', fontSize: '12px' }}>Speed:</span>
-            {[1.0, 1.25, 1.5].map(spd => (
+            {[1, 1.25, 1.5].map(spd => (
               <button
                 key={spd}
                 onClick={() => setPlaybackSpeed(spd)}

@@ -27,5 +27,7 @@ research_repos/
 # Kept on the owner's laptop, never published or deleted (the retired raw-SVG tutor)
 old_version/
 
+.scannerwork/
+
 # personal notes, never published
 notes.txt

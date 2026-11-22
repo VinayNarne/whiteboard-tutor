@@ -40,7 +40,7 @@ export function renderRoughAnnotation(
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   g.setAttribute('id', payload.annotation_id);
   g.setAttribute('class', 'rough-annotation-mark');
-  g.setAttribute('data-lifetime', payload.lifetime);
+  g.dataset.lifetime = payload.lifetime;
 
   switch (payload.style) {
     case 'circle': {
@@ -54,7 +54,7 @@ export function renderRoughAnnotation(
           ...baseOptions,
           strokeWidth: 2.4,
           roughness: 1.4,
-          bowing: 2.0,
+          bowing: 2,
         }
       );
       g.appendChild(roughNode);
@@ -76,7 +76,7 @@ export function renderRoughAnnotation(
         ],
         {
           ...baseOptions,
-          strokeWidth: 3.0,
+          strokeWidth: 3,
           roughness: 1.5,
         }
       );
@@ -120,7 +120,7 @@ export function renderRoughAnnotation(
         {
           ...baseOptions,
           stroke: payload.color || '#ef4444',
-          strokeWidth: 3.0,
+          strokeWidth: 3,
           roughness: 1.4,
         }
       );
@@ -132,7 +132,7 @@ export function renderRoughAnnotation(
         {
           ...baseOptions,
           stroke: payload.color || '#ef4444',
-          strokeWidth: 3.0,
+          strokeWidth: 3,
           roughness: 1.4,
         }
       );
@@ -147,7 +147,7 @@ export function renderRoughAnnotation(
       const underlayG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       underlayG.setAttribute('id', `highlight_${payload.annotation_id}`);
       underlayG.setAttribute('class', 'rough-highlight-mark');
-      underlayG.setAttribute('data-lifetime', payload.lifetime);
+      underlayG.dataset.lifetime = payload.lifetime;
 
       const hRect = rc.rectangle(
         targetBounds.left,
@@ -213,11 +213,11 @@ export function renderRoughAnnotation(
   // -------------------------------------------------------------------------
   // Optional handwritten callout note badge (Layer 4)
   // -------------------------------------------------------------------------
-  if (payload.note && payload.note.trim()) {
+  if (payload.note?.trim()) {
     const labelG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     labelG.setAttribute('id', `note_${payload.annotation_id}`);
     labelG.setAttribute('class', 'rough-annotation-label');
-    labelG.setAttribute('data-lifetime', payload.lifetime);
+    labelG.dataset.lifetime = payload.lifetime;
 
     const noteX = targetBounds.right + 10;
     const noteY = targetBounds.top - 6;
@@ -229,7 +229,7 @@ export function renderRoughAnnotation(
       fillStyle: 'solid',
       stroke: payload.color || '#f59e0b',
       strokeWidth: 1.5,
-      roughness: 1.0,
+      roughness: 1,
       seed: payload.seed,
     });
     labelG.appendChild(pill);

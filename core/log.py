@@ -168,7 +168,7 @@ def init_logging(log_file: Optional[Path] = None, console_level: int = logging.I
     root_logger = logging.getLogger("learning_platform")
     root_logger.setLevel(logging.DEBUG)
     
-    for h in list(root_logger.handlers):
+    for h in root_logger.handlers:
         h.close()
     root_logger.handlers.clear()
     root_logger.propagate = False

@@ -55,7 +55,7 @@ export function roughifySvgFragment(
   config: RoughifyConfig = {}
 ): string {
   const cfg = { ...DEFAULT_CONFIG, ...config };
-  if (!cfg.enabled || typeof window === 'undefined') {
+  if (!cfg.enabled || typeof globalThis.window === 'undefined') {
     return svgFragment;
   }
 
@@ -81,7 +81,7 @@ export function roughifySvgFragment(
       const hatch = classes.includes('hatch');   // texture proof (LP_PAINT=svg): chart shading as pencil hatching
       const id = node.getAttribute('id') || undefined;
       const stroke = node.getAttribute('stroke') || '#1e293b';
-      const strokeWidth = parseFloat(node.getAttribute('stroke-width') || '2') || 2;
+      const strokeWidth = Number.parseFloat(node.getAttribute('stroke-width') || '2') || 2;
       const fill = node.getAttribute('fill') || 'none';
       const hasFill = fill !== 'none' && fill !== 'transparent';
       const dash = parseDashArray(node.getAttribute('stroke-dasharray'));
@@ -104,33 +104,33 @@ export function roughifySvgFragment(
       let roughNode: Element | null = null;
 
       if (tag === 'rect') {
-        const x = parseFloat(node.getAttribute('x') || '0');
-        const y = parseFloat(node.getAttribute('y') || '0');
-        const w = parseFloat(node.getAttribute('width') || '0');
-        const h = parseFloat(node.getAttribute('height') || '0');
+        const x = Number.parseFloat(node.getAttribute('x') || '0');
+        const y = Number.parseFloat(node.getAttribute('y') || '0');
+        const w = Number.parseFloat(node.getAttribute('width') || '0');
+        const h = Number.parseFloat(node.getAttribute('height') || '0');
         if (w > 0 && h > 0) {
           roughNode = rc.rectangle(x, y, w, h, commonOpts);
         }
       } else if (tag === 'circle') {
-        const cx = parseFloat(node.getAttribute('cx') || '0');
-        const cy = parseFloat(node.getAttribute('cy') || '0');
-        const r = parseFloat(node.getAttribute('r') || '0');
+        const cx = Number.parseFloat(node.getAttribute('cx') || '0');
+        const cy = Number.parseFloat(node.getAttribute('cy') || '0');
+        const r = Number.parseFloat(node.getAttribute('r') || '0');
         if (r > 0) {
           roughNode = rc.circle(cx, cy, r * 2, commonOpts);
         }
       } else if (tag === 'ellipse') {
-        const cx = parseFloat(node.getAttribute('cx') || '0');
-        const cy = parseFloat(node.getAttribute('cy') || '0');
-        const rx = parseFloat(node.getAttribute('rx') || '0');
-        const ry = parseFloat(node.getAttribute('ry') || '0');
+        const cx = Number.parseFloat(node.getAttribute('cx') || '0');
+        const cy = Number.parseFloat(node.getAttribute('cy') || '0');
+        const rx = Number.parseFloat(node.getAttribute('rx') || '0');
+        const ry = Number.parseFloat(node.getAttribute('ry') || '0');
         if (rx > 0 && ry > 0) {
           roughNode = rc.ellipse(cx, cy, rx * 2, ry * 2, commonOpts);
         }
       } else if (tag === 'line' && !hasMarker(node)) {
-        const x1 = parseFloat(node.getAttribute('x1') || '0');
-        const y1 = parseFloat(node.getAttribute('y1') || '0');
-        const x2 = parseFloat(node.getAttribute('x2') || '0');
-        const y2 = parseFloat(node.getAttribute('y2') || '0');
+        const x1 = Number.parseFloat(node.getAttribute('x1') || '0');
+        const y1 = Number.parseFloat(node.getAttribute('y1') || '0');
+        const x2 = Number.parseFloat(node.getAttribute('x2') || '0');
+        const y2 = Number.parseFloat(node.getAttribute('y2') || '0');
         roughNode = rc.line(x1, y1, x2, y2, commonOpts);
       } else if (tag === 'polygon') {
         const pointsStr = node.getAttribute('points') || '';
@@ -139,7 +139,7 @@ export function roughifySvgFragment(
           .split(/[\s,]+/)
           .reduce<[number, number][]>((acc, val, idx, arr) => {
             if (idx % 2 === 0 && arr[idx + 1] !== undefined) {
-              acc.push([parseFloat(val), parseFloat(arr[idx + 1])]);
+              acc.push([Number.parseFloat(val), Number.parseFloat(arr[idx + 1])]);
             }
             return acc;
           }, []);
@@ -149,8 +149,7 @@ export function roughifySvgFragment(
       } else if (tag === 'g') {
         // Clone the group and recursively transform its children
         const groupClone = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
-        for (let i = 0; i < node.attributes.length; i++) {
-          const attr = node.attributes[i];
+        for (const attr of node.attributes) {
           groupClone.setAttribute(attr.name, attr.value);
         }
         Array.from(node.children).forEach(child => {

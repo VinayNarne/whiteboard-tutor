@@ -367,7 +367,10 @@ def _row_h(r) -> float:
 def size_node(n: dict) -> dict:
     """Content rows (icon, label, detail, card sections) and the box that holds them."""
     card = bool(n["sections"])
-    max_w = 250 if card else 230 if n.get("detail") else 190
+    if card:
+        max_w = 250
+    else:
+        max_w = 230 if n.get("detail") else 190
     rows = [{"icon": n["icon"]}] if n.get("icon") else []
     rows += [{"text": t, "f": LABEL, "color": INK} for t in wrap(n["label"], LABEL, max_w)]
     if n.get("detail"):
@@ -436,7 +439,7 @@ def _has_cycle(scene) -> bool:
                 return True
         state[v] = 2
         return False
-    return any(v not in state and visit(v) for v in list(nxt))
+    return any(v not in state and visit(v) for v in nxt)
 
 
 def missing_parts() -> List[str]:
@@ -762,7 +765,10 @@ def _node_svg(n, b, s, fill, stroke) -> str:
     else:
         shape = f'<rect x="{_n(x)}" y="{_n(y)}" width="{_n(w)}" height="{_n(h)}" {st}/>'
     parts = [shape]
-    cy = y + 9 * s if n["shape"] == "card" else y + (h - n["th"] * s) / 2 + (9 * s if n["shape"] == "cylinder" else 0)
+    if n["shape"] == "card":
+        cy = y + 9 * s
+    else:
+        cy = y + (h - n["th"] * s) / 2 + (9 * s if n["shape"] == "cylinder" else 0)
     for r in n["rows"]:
         if "icon" in r:   # a nested <svg> scales the 24x24 icon without a transform attribute (the board forbids those)
             k = 28 * s
@@ -1063,7 +1069,7 @@ def build_notes(args: dict, n: int, blocks: List[dict]) -> Tuple[List[Tuple[str,
     recap = args.get("style") == "recap"
     title = _cut(demath(_txt(args.get("title")) or ("Recap" if recap else "")).strip(), MAX_TEXT, "title")
     size, lh = HAND_LINE[0], HAND_LINE[2]
-    lane_x, lane_w = NOTE_LANE
+    _, lane_w = NOTE_LANE
     pad, indent = (22 if recap else 0), 34
     y = pad + (HAND_TITLE[2] + 6 if title else 0)
     laid = []

@@ -46,8 +46,8 @@ export function useNotebookWebSocket(
       setIsConnected(true);
       if (hasConnectedOnceRef.current) {
         debug('[WS] Reconnected to notebook — syncing canvas and page events');
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('notebook_reconnected', { detail: { notebookId } }));
+        if (typeof globalThis.window !== 'undefined') {
+          globalThis.dispatchEvent(new CustomEvent('notebook_reconnected', { detail: { notebookId } }));
         }
       } else {
         hasConnectedOnceRef.current = true;

@@ -837,7 +837,7 @@ async def replace_block(turn: Turn, args: dict) -> dict:
         return {"status": "error", "detail": why}
     FIXED_Y.set(old_box["y"])   # ponytail: x comes from the lane the builder picks; a block that changes lane moves sideways
     try:
-        what, steps, box, report, ids, fonts = await build_block(turn, tool, new_args, n, list(others.values()))
+        what, steps, box, report, ids, _ = await build_block(turn, tool, new_args, n, list(others.values()))
     except SceneError as e:
         return {"status": "error", "detail": str(e)}
     finally:

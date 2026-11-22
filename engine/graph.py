@@ -64,9 +64,9 @@ def compile_formula(text: str):
         elif isinstance(n, ast.UnaryOp) and isinstance(n.op, (ast.USub, ast.UAdd)):
             check(n.operand)
         elif isinstance(n, ast.Constant) and type(n.value) in (int, float):
-            pass
+            pass   # a plain number is allowed
         elif isinstance(n, ast.Name) and (n.id == "x" or n.id in _CONST):
-            pass
+            pass   # the variable x or a named constant is allowed
         elif isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in _FUNCS and len(n.args) == 1 and not n.keywords:
             check(n.args[0])
         else:

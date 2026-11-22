@@ -19,7 +19,7 @@ process.stdin.on('end', () => {
     try {
       const node = doc.convert(String(tex), { display: true });
       const svg = adaptor.firstChild(node);
-      return { svg: adaptor.outerHTML(svg), w: parseFloat(adaptor.getAttribute(svg, 'width')), h: parseFloat(adaptor.getAttribute(svg, 'height')) };
+      return { svg: adaptor.outerHTML(svg), w: Number.parseFloat(adaptor.getAttribute(svg, 'width')), h: Number.parseFloat(adaptor.getAttribute(svg, 'height')) };
     } catch (e) {
       return { error: String(e.message || e).slice(0, 200) };
     }

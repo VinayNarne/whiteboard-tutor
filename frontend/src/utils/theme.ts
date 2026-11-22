@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 export type ThemePref = 'light' | 'dark' | 'system';
 const KEY = 'theme';
-const query = () => window.matchMedia('(prefers-color-scheme: dark)');
+const query = () => globalThis.matchMedia('(prefers-color-scheme: dark)');
 
 export function getThemePref(): ThemePref {
   try {
@@ -30,7 +30,7 @@ export function setThemePref(pref: ThemePref): void {
     /* storage unavailable: the choice lasts until reload */
   }
   applyTheme(pref);
-  window.dispatchEvent(new Event('themechange'));
+  globalThis.dispatchEvent(new Event('themechange'));
 }
 
 /** Current preference plus a setter; keeps every switcher in sync and follows the OS when set to "system". */
@@ -39,10 +39,10 @@ export function useThemePref(): [ThemePref, (p: ThemePref) => void] {
   useEffect(() => {
     const sync = () => setPref(getThemePref());
     const os = () => { if (getThemePref() === 'system') applyTheme('system'); };
-    window.addEventListener('themechange', sync);
+    globalThis.addEventListener('themechange', sync);
     query().addEventListener('change', os);
     return () => {
-      window.removeEventListener('themechange', sync);
+      globalThis.removeEventListener('themechange', sync);
       query().removeEventListener('change', os);
     };
   }, []);

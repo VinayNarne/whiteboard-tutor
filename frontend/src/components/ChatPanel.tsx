@@ -49,12 +49,12 @@ export function ChatPanel({
   onAgentResponse,
   isAudioMuted = false,
   onToggleMute,
-  audioSpeed = 1.0,
+  audioSpeed = 1,
   onSpeedChange,
   activeLearnerIntent,
   onClearLearnerIntent,
   layout = 'wide',
-}: Props) {
+}: Readonly<Props>) {
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -122,8 +122,8 @@ export function ChatPanel({
         toggleVoiceInput();
       }
     };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    globalThis.addEventListener('keydown', handleGlobalKeyDown);
+    return () => globalThis.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isListening]);
 
   // Phase 2: Listen for barge-in interruption events
@@ -135,8 +135,8 @@ export function ChatPanel({
         setTimeout(() => setBargeInNotice(false), 2500);
       }
     };
-    window.addEventListener('tutor_barge_in', handleBargeInEvent);
-    return () => window.removeEventListener('tutor_barge_in', handleBargeInEvent);
+    globalThis.addEventListener('tutor_barge_in', handleBargeInEvent);
+    return () => globalThis.removeEventListener('tutor_barge_in', handleBargeInEvent);
   }, [isAgentThinking, notebookId]);
 
   // "Today's path": the lesson plan's step titles with the level each has earned (taught, understood, remembered after a surprise review),
@@ -154,7 +154,7 @@ export function ChatPanel({
   }, [notebookId, tutorReplies]);
 
   useEffect(() => {
-    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const calm = globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
     // Scroll the conversation list only: scrollIntoView also scrolled the whole page, which hid the toolbar and left an empty strip below the app
     const list = bottomRef.current?.parentElement;
     list?.scrollTo({ top: list.scrollHeight, behavior: calm ? 'auto' : 'smooth' });
@@ -181,7 +181,7 @@ export function ChatPanel({
     try {
       const payload: Record<string, any> = { message, page_id: pageId };
       if (retryTurnId) payload.retry_turn_id = retryTurnId;
-      if (intentToUse && intentToUse.selectedElementIds && intentToUse.selectedElementIds.length > 0) {
+      if (intentToUse?.selectedElementIds?.length) {
         payload.selected_element_ids = intentToUse.selectedElementIds;
         payload.gesture_type = intentToUse.gestureType;
         payload.match_score = intentToUse.topScore;
@@ -210,7 +210,7 @@ export function ChatPanel({
         setSendError(friendly);
         onAgentResponse(friendly, pageId || '');
       }
-    } catch (e) {
+    } catch {
       const down = 'Could not reach the server. Check that it is running, then try again.';
       setSendError(down);
       setInput(message);
@@ -225,7 +225,7 @@ export function ChatPanel({
   useEffect(() => {
     const handleAskSelection = (e: any) => {
       const intent: LearnerIntent = e.detail;
-      if (!intent || !intent.candidates || intent.candidates.length === 0) return;
+      if (!intent?.candidates?.length) return;
 
       if (intent.intentType === 'relationship' && intent.candidates.length > 1) {
         const c0 = intent.candidates[0].label || intent.selectedElementIds[0];
@@ -245,13 +245,13 @@ export function ChatPanel({
 
     const focusInput = () => inputRef.current?.focus();   // "Ask…" on a board item: the learner types a question about it
 
-    window.addEventListener('ask_tutor_about_selection', handleAskSelection);
-    window.addEventListener('send_chat_query', handleSendChatQuery);
-    window.addEventListener('focus_chat_input', focusInput);
+    globalThis.addEventListener('ask_tutor_about_selection', handleAskSelection);
+    globalThis.addEventListener('send_chat_query', handleSendChatQuery);
+    globalThis.addEventListener('focus_chat_input', focusInput);
     return () => {
-      window.removeEventListener('ask_tutor_about_selection', handleAskSelection);
-      window.removeEventListener('send_chat_query', handleSendChatQuery);
-      window.removeEventListener('focus_chat_input', focusInput);
+      globalThis.removeEventListener('ask_tutor_about_selection', handleAskSelection);
+      globalThis.removeEventListener('send_chat_query', handleSendChatQuery);
+      globalThis.removeEventListener('focus_chat_input', focusInput);
     };
   }, [notebookId, pageId, isSending, isListening, activeLearnerIntent]);
 
@@ -314,7 +314,7 @@ export function ChatPanel({
           { heading: 'What you hear' },
           { label: 'Speak aloud', kind: 'toggle', checked: !isAudioMuted, onSelect: () => onToggleMute?.() },
           { heading: 'Speaking speed' },
-          ...[0.75, 1.0, 1.25, 1.5].map(spd => ({
+          ...[0.75, 1, 1.25, 1.5].map(spd => ({
             label: `${spd}x`, kind: 'radio' as const, checked: audioSpeed === spd, onSelect: () => onSpeedChange?.(spd),
           })),
         ]} />
@@ -477,7 +477,7 @@ export function ChatPanel({
             {isHandsFree ? 'Listening. I will send when you pause.' : 'Listening. Press Done when finished.'}
           </span>
           <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', gap: '3px', height: '16px' }}>
-            {[0.4, 0.9, 1.2, 0.7, 0.5, 1.0, 0.6].map((mult, idx) => (
+            {[0.4, 0.9, 1.2, 0.7, 0.5, 1, 0.6].map((mult, idx) => (
               <span key={idx} style={{
                 width: '3px', borderRadius: '2px', background: 'var(--ink-2)', transition: 'height 0.08s ease',
                 height: `${Math.max(3, Math.min(16, Math.round(audioLevel * 16 * mult)))}px`,
@@ -573,7 +573,7 @@ function renderRichContent(content: string) {
   if (!content) return null;
 
   // Clean any lingering spoken markers as defense-in-depth
-  const cleanText = content.replace(/\[{1,2}\s*mark\s*:[^[\]\n]*\]{1,2}\s*/gi, '');
+  const cleanText = content.replaceAll(/\[{1,2}\s*mark\s*:[^[\]\n]*\]{1,2}\s*/gi, '');
 
   // Split by code blocks first
   const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
@@ -664,7 +664,7 @@ function renderRichContent(content: string) {
   );
 }
 
-function CodeBlockView({ lang, code }: { lang: string; code: string }) {
+function CodeBlockView({ lang, code }: Readonly<{ lang: string; code: string }>) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {

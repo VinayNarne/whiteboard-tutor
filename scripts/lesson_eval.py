@@ -140,7 +140,7 @@ def run_lesson(url, lesson, script, judge_fn=None) -> dict:
 
 
 def report(results, label, judged) -> str:
-    total = {c: 0 for c in CHECKS}
+    total = dict.fromkeys(CHECKS, 0)
     for r in results:
         for t in r["turns"]:
             for f in t["fails"]:

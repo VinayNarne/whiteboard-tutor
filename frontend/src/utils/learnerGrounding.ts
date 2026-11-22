@@ -76,7 +76,7 @@ export function pointsToSvgPath(points: Array<{ x: number; y: number }>): string
     const midY = (prev.y + curr.y) / 2;
     d += ` Q ${prev.x} ${prev.y}, ${midX} ${midY}`;
   }
-  const last = points[points.length - 1];
+  const last = points.at(-1)!;
   d += ` L ${last.x} ${last.y}`;
   return d;
 }
@@ -99,7 +99,7 @@ export function classifyLearnerGesture(points: Array<{ x: number; y: number }>):
   if (diagonal < 18) return 'point';
 
   const firstPt = points[0];
-  const lastPt = points[points.length - 1];
+  const lastPt = points.at(-1)!;
   const endpointDist = Math.hypot(firstPt.x - lastPt.x, firstPt.y - lastPt.y);
 
   // Circle detection: endpoints close together compared to stroke size
@@ -144,7 +144,7 @@ export function scoreElementCandidates(
 
   // Identify start and end segments of stroke for relationship/connecting detection
   const startPt = points[0];
-  const endPt = points[points.length - 1];
+  const endPt = points.at(-1)!;
   const sliceCount = Math.max(1, Math.floor(points.length * 0.3));
   const startSlice = points.slice(0, sliceCount);
   const endSlice = points.slice(-sliceCount);
@@ -211,7 +211,7 @@ export function scoreElementCandidates(
     }
 
     const rawScore = containment * 0.5 + iou * 0.3 + proximity * 0.2 + enclosureBoost + endpointBoost;
-    const matchScore = Number(Math.min(1.0, Math.max(0, rawScore)).toFixed(2));
+    const matchScore = Number(Math.min(1, Math.max(0, rawScore)).toFixed(2));
 
     if (matchScore >= 0.35) {
       candidates.push({
@@ -286,8 +286,8 @@ export function resolveLearnerIntent(
  */
 export function formatElementLabel(id: string): string {
   return id
-    .replace(/_/g, ' ')
-    .replace(/-/g, ' ')
+    .replaceAll(/_/g, ' ')
+    .replaceAll(/-/g, ' ')
     .split(' ')
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');

@@ -19,7 +19,7 @@ export function toggleNarrationPause(): void {
 
 /** The pause button follows this: `narration_state` says whether a clip is loaded and whether it is paused. */
 function announceState(active: boolean, paused: boolean): void {
-  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('narration_state', { detail: { active, paused } }));
+  if (typeof globalThis.window !== 'undefined') globalThis.dispatchEvent(new CustomEvent('narration_state', { detail: { active, paused } }));
 }
 
 /** Mute or unmute the clip that is playing right now. */
@@ -32,8 +32,8 @@ export function setActiveAudioMuted(muted: boolean): void {
 
 // The learner speaks over the tutor: stop talking at once. The clip is finished (its element still appears and
 // the caller's `await` returns), so the drawing queue never gets stuck behind a silenced clip.
-if (typeof window !== 'undefined') {
-  window.addEventListener('tutor_barge_in', () => interruptActive?.());
+if (typeof globalThis.window !== 'undefined') {
+  globalThis.addEventListener('tutor_barge_in', () => interruptActive?.());
 }
 
 export function sleep(ms: number): Promise<void> {
@@ -57,7 +57,7 @@ export function captionWords(alignment: { characters?: string[]; character_start
 
 /** The caption (NarrationCaption) follows the clip that is playing: `narration_caption` with the words and the audio, then null when it ends. */
 function announceCaption(detail: { words: CaptionWord[]; audio: HTMLAudioElement } | null): void {
-  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('narration_caption', { detail }));
+  if (typeof globalThis.window !== 'undefined') globalThis.dispatchEvent(new CustomEvent('narration_caption', { detail }));
 }
 
 export async function playAudioWithTiming(
@@ -66,11 +66,11 @@ export async function playAudioWithTiming(
   elementId: string,
   onReveal: () => void,
   cancelledRef?: { current: boolean },
-  playbackRate: number = 1.0,
+  playbackRate: number = 1,
   isMuted: boolean = false,
   interruptible: boolean = false   // live tutor narration yes, replay no
 ): Promise<void> {
-  let revealTime = 0.0;
+  let revealTime = 0;
   let audioSeconds = 0;
   let words: CaptionWord[] = [];
 
@@ -113,15 +113,15 @@ export async function playAudioWithTiming(
     const triggerReveal = () => {
       if (revealed || cancelledRef?.current) return;
       revealed = true;
-      if (typeof window !== 'undefined') {
+      if (typeof globalThis.window !== 'undefined') {
         const detail = {
           elementId,
           revealTime,
           audioCurrentTime: audio.currentTime,
           wallClock: performance.now(),
         };
-        (window as unknown as Record<string, unknown>).__LAST_REVEAL_TIMING = detail;
-        window.dispatchEvent(new CustomEvent('element_revealed', { detail }));
+        (globalThis as unknown as Record<string, unknown>).__LAST_REVEAL_TIMING = detail;
+        globalThis.dispatchEvent(new CustomEvent('element_revealed', { detail }));
       }
       onReveal();
     };

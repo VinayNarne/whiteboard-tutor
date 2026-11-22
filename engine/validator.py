@@ -7,6 +7,8 @@ text summary of the occupied and free space.
 import re
 from typing import Optional
 
+_LEFT_COL, _CENTER_COL, _RIGHT_COL = "Left Column", "Center Column", "Right Column"
+
 
 CANVAS_WIDTH  = 1200
 CANVAS_HEIGHT = 800
@@ -153,7 +155,8 @@ def extract_element_bboxes(svg_content: Optional[str]) -> list:
         cy = y + h / 2
         if y < 100 and h < 80:
             return f"Header Zone (x:{x:.0f}-{x+w:.0f}, y:{y:.0f}-{y+h:.0f})"
-        col = "Left Column" if cx < 400 else ("Center Column" if cx < 800 else "Right Column")
+        center_or_right = _CENTER_COL if cx < 800 else _RIGHT_COL
+        col = _LEFT_COL if cx < 400 else center_or_right
         row = "Top Row" if cy < 420 else "Bottom Row"
         return f"{col}, {row} (x:{x:.0f}-{x+w:.0f}, y:{y:.0f}-{y+h:.0f})"
 
@@ -225,23 +228,23 @@ def summarize_spatial_layout(occupied_elements: list) -> str:
             "- Right Column: x: 820-1140, y: 120-720"
         )
 
-    cols_used = {"Left Column": [], "Center Column": [], "Right Column": []}
+    cols_used = {_LEFT_COL: [], _CENTER_COL: [], _RIGHT_COL: []}
     for item in occupied_elements:
         zone = item.get("zone", "")
         eid = item.get("element_id", "unnamed")
-        if "Left Column" in zone:
-            cols_used["Left Column"].append(eid)
-        elif "Center Column" in zone:
-            cols_used["Center Column"].append(eid)
-        elif "Right Column" in zone:
-            cols_used["Right Column"].append(eid)
+        if _LEFT_COL in zone:
+            cols_used[_LEFT_COL].append(eid)
+        elif _CENTER_COL in zone:
+            cols_used[_CENTER_COL].append(eid)
+        elif _RIGHT_COL in zone:
+            cols_used[_RIGHT_COL].append(eid)
 
     recommendations = []
-    if not cols_used["Left Column"]:
+    if not cols_used[_LEFT_COL]:
         recommendations.append("Left Column (x: 60-380, y: 120-720) is OPEN")
-    if not cols_used["Center Column"]:
+    if not cols_used[_CENTER_COL]:
         recommendations.append("Center Column (x: 420-780, y: 120-720) is OPEN")
-    if not cols_used["Right Column"]:
+    if not cols_used[_RIGHT_COL]:
         recommendations.append("Right Column (x: 820-1140, y: 120-720) is OPEN")
 
     if not recommendations:

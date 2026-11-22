@@ -96,5 +96,5 @@ export function pointableParts(root: ParentNode, id: string): Array<{ id: string
 
 /** A part's words, each <text> line its own words ("Left Heart" + "to Body", not "Left Heartto Body": seen live), at most 40 characters. */
 function textOf(e: Element): string {
-  return Array.from(e.querySelectorAll('text'), t => t.textContent ?? '').join(' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+  return Array.from(e.querySelectorAll('text'), t => t.textContent ?? '').join(' ').replaceAll(/\s+/g, ' ').trim().slice(0, 40);
 }

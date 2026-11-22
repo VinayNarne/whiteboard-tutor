@@ -6,7 +6,7 @@ interface Props {
   handleResetZoom: () => void;
 }
 
-export function ZoomControls({ zoom, handleZoomIn, handleZoomOut, handleResetZoom }: Props) {
+export function ZoomControls({ zoom, handleZoomIn, handleZoomOut, handleResetZoom }: Readonly<Props>) {
   return (
       <div style={{
         position: 'absolute', bottom: 16, left: 16,
@@ -27,7 +27,7 @@ export function ZoomControls({ zoom, handleZoomIn, handleZoomOut, handleResetZoo
           title="Zoom out"
           style={{
             background: 'transparent', border: 'none',
-            color: zoom <= 0.21 ? 'var(--ink-2)' : 'var(--ink-2)',
+            color: 'var(--ink-2)',
             fontSize: '14px', cursor: zoom <= 0.21 ? 'not-allowed' : 'pointer',
             padding: '4px 8px', borderRadius: '12px',
           }}
@@ -54,14 +54,14 @@ export function ZoomControls({ zoom, handleZoomIn, handleZoomOut, handleResetZoo
           title="Zoom in"
           style={{
             background: 'transparent', border: 'none',
-            color: zoom >= 7.9 ? 'var(--ink-2)' : 'var(--ink-2)',
+            color: 'var(--ink-2)',
             fontSize: '14px', cursor: zoom >= 7.9 ? 'not-allowed' : 'pointer',
             padding: '4px 8px', borderRadius: '12px',
           }}
         >
           +
         </button>
-        {zoom !== 1.0 && (
+        {zoom !== 1 && (
           <button
             onClick={handleResetZoom}
             title="Fit to Screen"

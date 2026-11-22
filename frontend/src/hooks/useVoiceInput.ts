@@ -72,7 +72,7 @@ export function useVoiceInput(options: UseVoiceInputOptions) {
     const now = Date.now();
     if (now - lastBargeRef.current > 1000) {
       lastBargeRef.current = now;
-      window.dispatchEvent(new CustomEvent('tutor_barge_in', { detail: { timestamp: now } }));
+      globalThis.dispatchEvent(new CustomEvent('tutor_barge_in', { detail: { timestamp: now } }));
     }
   }, []);
 
@@ -187,7 +187,7 @@ export function useVoiceInput(options: UseVoiceInputOptions) {
 
       // Level meter for the waveform, and sustained loud sound = the learner is speaking over the tutor.
       try {
-        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const AudioCtx = globalThis.AudioContext || (globalThis as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         const ctx = new AudioCtx();
         audioCtxRef.current = ctx;
         const analyser = ctx.createAnalyser();
@@ -261,7 +261,7 @@ export function useVoiceInput(options: UseVoiceInputOptions) {
         if (!e.data || e.data.size === 0) return;
         chunksRef.current.push(e.data);
         const ws = wsRef.current;
-        if (ws && ws.readyState === WebSocket.OPEN) ws.send(e.data);
+        if (ws?.readyState === WebSocket.OPEN) ws.send(e.data);
       };
       recorder.onstop = () => {
         // The live socket was down: transcribe the whole recording instead. Not after a send or cancel.

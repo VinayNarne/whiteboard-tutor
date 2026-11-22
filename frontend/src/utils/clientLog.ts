@@ -25,7 +25,7 @@ const recent = new Map<string, number>();
 
 function notebookId(): string | undefined {
   try {
-    return new URLSearchParams(window.location.search).get('notebook_id') || undefined;
+    return new URLSearchParams(globalThis.location.search).get('notebook_id') || undefined;
   } catch {
     return undefined;
   }
@@ -51,7 +51,7 @@ function flush(): void {
   } catch {
     /* nothing to do */
   }
-  if (queue.length) timer = window.setTimeout(flush, FLUSH_MS);
+  if (queue.length) timer = globalThis.setTimeout(flush, FLUSH_MS);
 }
 
 function report(kind: string, message: string, extra: Partial<ClientEvent> = {}): void {
@@ -62,20 +62,20 @@ function report(kind: string, message: string, extra: Partial<ClientEvent> = {})
     if (now - (recent.get(key) ?? 0) < 5000) return;          // the same thing again within 5 s: once is enough
     recent.set(key, now);
     sent += 1;
-    queue.push({ kind, message: message.slice(0, 2000), page_url: window.location.href.slice(0, 500), notebook_id: notebookId(), ts: new Date().toISOString(), ...extra });
-    if (timer === undefined) timer = window.setTimeout(flush, FLUSH_MS);
+    queue.push({ kind, message: message.slice(0, 2000), page_url: globalThis.location.href.slice(0, 500), notebook_id: notebookId(), ts: new Date().toISOString(), ...extra });
+    timer ??= globalThis.setTimeout(flush, FLUSH_MS);
   } catch {
     /* never throw from the reporter */
   }
 }
 
-const originalFetch: typeof window.fetch = window.fetch.bind(window);
+const originalFetch: typeof globalThis.fetch = globalThis.fetch.bind(globalThis);
 
 export function installClientLog(): void {
-  window.addEventListener('error', (e) => {
+  globalThis.addEventListener('error', (e) => {
     report('error', e.message || text(e.error), { source: `${e.filename}:${e.lineno}:${e.colno}`, stack: e.error instanceof Error ? e.error.stack?.slice(0, 3000) : undefined });
   });
-  window.addEventListener('unhandledrejection', (e) => {
+  globalThis.addEventListener('unhandledrejection', (e) => {
     const r = e.reason;
     report('unhandledrejection', text(r), { stack: r instanceof Error ? r.stack?.slice(0, 3000) : undefined });
   });
@@ -87,7 +87,7 @@ export function installClientLog(): void {
     };
   }
   // API calls: a 4xx/5xx answer or no answer at all. The body of a failed call is NOT read (it may be large or private); only the status and the URL path.
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const path = url.replace(/^https?:\/\/[^/]+/, '').split('?')[0];
     const method = (init?.method || (typeof input !== 'string' && !(input instanceof URL) ? input.method : 'GET') || 'GET').toUpperCase();
