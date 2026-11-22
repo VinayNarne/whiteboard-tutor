@@ -29,5 +29,9 @@ old_version/
 
 .scannerwork/
 
+# deep-research notes and reports (local only)
+research_notes/
+reports/
+
 # personal notes, never published
 notes.txt

@@ -15,10 +15,10 @@ SUMMARY_CHARS.
 import re
 from typing import List, Tuple
 
-from backend.limits import MAX_CHAT_CHARS
 from engine.markers import strip_markers
 from engine.sanitiser import _CONTROL_CHARS, replace_control_chars
 
+MAX_CHAT_CHARS = 4000            # the longest chat message; backend/limits.py imports it from here so the value is defined once
 SUMMARY_CHARS = 300
 TRANSCRIPT_CHARS = 6000
 MAX_ITEMS = 30

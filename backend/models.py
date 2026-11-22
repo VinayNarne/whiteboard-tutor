@@ -14,7 +14,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 import uuid
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, Index, JSON, String, Text
+from sqlalchemy import Boolean, Column, Index, JSON, String, Text, false as sa_false
 
 
 def utc_now() -> datetime:
@@ -46,6 +46,8 @@ class Notebook(SQLModel, table=True):
     lesson_plan: Optional[str] = Field(default=None, sa_column=Column(Text))
     # Scene mode: the learner's overall goal and the roadmap of lessons that reach it, written with the first plan; null for older notebooks.
     course: Optional[str] = Field(default=None, sa_column=Column(Text))
+    # Mindprint: the concept id of each step of lesson_plan (engine/mindprint.py), null entries for recap steps; null until mapped.
+    step_concepts: Optional[List[Optional[str]]] = Field(default=None, sa_column=Column(JSON))
 
     pages: List["Page"] = Relationship(back_populates="notebook")
     chat_turns: List["ChatTurn"] = Relationship(back_populates="notebook")
@@ -62,6 +64,7 @@ class Page(SQLModel, table=True):
     summary: Optional[str] = Field(default=None)  # agent-generated, one line
     # Scene mode: the plan of the lesson that started on this page; a page without one continues the latest earlier page's plan.
     lesson_plan: Optional[str] = Field(default=None, sa_column=Column(Text))
+    step_concepts: Optional[List[Optional[str]]] = Field(default=None, sa_column=Column(JSON))   # Mindprint: as on Notebook, for this page's plan
 
     # Quick-access composite SVG — cache only, recomputable from PageEvent rows in seq order
     current_svg: Optional[str] = Field(default=None, sa_column=Column(Text))
@@ -154,3 +157,36 @@ class ChatTurn(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=utc_now)
 
     notebook: Optional[Notebook] = Relationship(back_populates="chat_turns")
+
+
+class Concept(SQLModel, table=True):
+    """Mindprint: one idea a learner has met, and how well they know it (one learner per concept, so the mastery state lives on the row).
+    level: new | taught | understood | remembered. right_turns: ids of the chat turns whose answer was graded right."""
+    __tablename__ = "concepts"
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    learner_id: str = Field(foreign_key="learners.id", index=True)
+    name: str
+    description: str = Field(sa_column=Column(Text, nullable=False))
+    embedding: List[float] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+    level: str = Field(default="new")
+    right_turns: List[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+    last_wrong: Optional[str] = Field(default=None, sa_column=Column(Text))
+    misconception: Optional[str] = Field(default=None, sa_column=Column(Text))
+    # True once a right answer followed the belief; the belief is cleared only by a right answer in a later lesson (misconceptions return after one correction).
+    misconception_corrected: bool = Field(default=False, sa_column=Column(Boolean, nullable=False, server_default=sa_false()))
+    misconception_lesson: Optional[str] = Field(default=None)    # short hash of the lesson plan in force when the belief was recorded or last corrected
+    created_from_page_id: Optional[str] = Field(default=None)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class LearnerPref(SQLModel, table=True):
+    """Mindprint: a way of being taught that the learner chose themselves (kinds are defined in engine/mindprint.PREFERENCES). Never inferred."""
+    __tablename__ = "learner_prefs"
+    __table_args__ = (Index("uq_learner_prefs_learner_kind", "learner_id", "kind", unique=True),)
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    learner_id: str = Field(foreign_key="learners.id", index=True)
+    kind: str
+    created_at: datetime = Field(default_factory=utc_now)

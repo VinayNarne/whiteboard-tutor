@@ -5,6 +5,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 import { BACKEND_WS_PORT } from '../utils/backend';
+import { transcribeVoice } from '../services/api';
 const SEND_DELAY_MS = 700;      // hands-free: quiet time after the last words before the message is sent
 const UTTERANCE_END_DELAY_MS = 300;
 const FLUSH_WAIT_MS = 1500;     // after Done, how long we wait for Deepgram's last words
@@ -141,7 +142,7 @@ export function useVoiceInput(options: UseVoiceInputOptions) {
   const transcribeRecording = useCallback(async (blob: Blob) => {
     setIsTranscribing(true);
     try {
-      const res = await fetch('/api/transcribe-voice', { method: 'POST', headers: { 'Content-Type': blob.type || 'audio/webm' }, body: blob });
+      const res = await transcribeVoice(blob);
       if (!res.ok) {
         fail(res.status === 429
           ? "You're using voice very quickly. Please wait a few seconds and try again."

@@ -55,16 +55,18 @@ from backend.ws import manager, emit_notebook_event
 from engine.markers import strip_markers
 from backend.event_store import append_event
 from engine.validator import compute_coverage
+from backend.mindprint_store import known_steps, note_for_turn, schedule_grading, schedule_mapping, warm_up
 from backend.page_summary import summarise_saved_page
 from backend.page_state import is_drawing, rebuild_page_svg, annotation_target_ids, prior_pages_summary, summaries_in_context
 from backend.limits import no_control_chars
+from backend.learner_api import router as learner_router
 from backend.limits import (
     CHAT_LIMITER, VOICE_LIMITER, CLIENT_LOG_LIMITER, TOO_FAST, MAX_VOICE_SECONDS, Topic, Title, ChatText, Summary, Narration, Svg,
 )
 
 from engine.scene import ID_RE as SCENE_ID_RE, board_blocks, board_font_css, missing_parts
 from engine.lesson_plan import final_check, path_titles, split_course, step_levels, write_next_plan, write_plan
-from engine.author import run_whiteboard_author, OUTPUT_DIR, ModelUnreachable, MODEL_UNREACHABLE_MESSAGE, EmptyReply, EMPTY_REPLY_MESSAGE, MODEL_NOT_CONFIGURED_MESSAGE, model_configured
+from engine.author import run_whiteboard_author, OUTPUT_DIR, ModelUnreachable, MODEL_UNREACHABLE_MESSAGE, EmptyReply, EMPTY_REPLY_MESSAGE, MODEL_NOT_CONFIGURED_MESSAGE, model_configured, last_question
 
 logger = get_logger("backend")
 
@@ -89,6 +91,7 @@ NOTEBOOK_NOT_FOUND = "Notebook not found"
 PAGE_NOT_FOUND = "Page not found"
 
 app = FastAPI(title="Learning Platform API", version="1.0.0", lifespan=lifespan)
+app.include_router(learner_router)
 
 # Only pages served from this machine may call the API from a browser: any port on localhost,
 # 127.0.0.1 or [::1] (Vite picks 5173 by default, other tools use other ports). Other websites are
@@ -155,6 +158,8 @@ def on_startup():
     logger.info(BackendEvent.SERVER_STARTUP, "Learning Platform API started", data={"port": 8001})
     if not model_configured():
         logger.warn(BackendEvent.SERVER_STARTUP, MODEL_NOT_CONFIGURED_MESSAGE, data={"missing": ["AZURE_OPENAI_API_KEY or AZURE_OPENAI_ENDPOINT"]})
+    if model_configured():
+        warm_up()   # Mindprint: opens the embeddings connection in the background (no-op when LP_MINDPRINT=0)
     missing = missing_parts()   # say at startup what the lesson board needs, not at the learner's first question
     if missing:
         logger.warn(BackendEvent.SERVER_STARTUP, "Scene mode is on but cannot draw: " + "; ".join(missing), data={"missing": missing})
@@ -286,8 +291,9 @@ def get_notebook(notebook_id: str, session: SessionDep):
 def _lesson_state(nb, pages, turns) -> dict:
     """What the learner sees of the current lesson: its checklist, its final check, and the course goal."""
     plan, records = current_lesson(nb, pages, turns)
+    known = known_steps(engine, nb.id, plan)
     goal = next((line.split(":", 1)[1].strip() for line in (nb.course or "").splitlines() if line.startswith("COURSE GOAL:")), None)
-    return {"lesson_path": lesson_path(plan, records), "lesson_final": lesson_final(plan, records), "goal": goal or None}
+    return {"lesson_path": lesson_path(plan, records, known=known), "lesson_final": lesson_final(plan, records, known), "goal": goal or None}
 
 
 def time_away(last, now=None) -> str:
@@ -337,19 +343,22 @@ def lessons_taught(pages) -> str:
     return "\n".join(lines)
 
 
-def lesson_final(plan, records) -> dict:
+def lesson_final(plan, records, known=()) -> dict:
     """The end-of-lesson check's state (engine/lesson_plan.final_check): which step to check next, then the final problem, then done."""
     n = len(path_titles(plan or ""))
-    state = final_check(n, records)
-    state["asked"] = final_check(n, records[:-1])["next"] if state["active"] and records else None   # what the last turn was told to ask
+    state = final_check(n, records, known)
+    state["asked"] = final_check(n, records[:-1], known)["next"] if state["active"] and records else None   # what the last turn was told to ask
     return state
 
 
-def lesson_path(plan, records, away: bool = False) -> list:
+def lesson_path(plan, records, away: bool = False, known=()) -> list:
     """The learner's checklist: the plan's step titles (nothing else of the private plan), each with the level it has earned from what
-    the tutor recorded (engine/lesson_plan.step_levels) and whether a surprise review of it is due."""
+    the tutor recorded (engine/lesson_plan.step_levels) and whether a surprise review of it is due. known: 0-based steps the learner understood
+    in earlier lessons (Mindprint); those show as understood with "from_memory": true unless this lesson's records already earned a level."""
     titles = path_titles(plan or "")
-    return [{"title": t, **lv} for t, lv in zip(titles, step_levels(len(titles), records, away))]
+    earned = step_levels(len(titles), records, away)
+    return [{"title": t, **lv, "from_memory": i in known and not earned[i]["level"] in ("understood", "remembered")}
+            for i, (t, lv) in enumerate(zip(titles, step_levels(len(titles), records, away, known)))]
 
 
 def _chat_turns_json(turns) -> list:
@@ -915,6 +924,7 @@ class _ChatTurnState:
         self.active = {"page_id": page_id}  # the agent may switch pages mid-turn (start_new_page)
         self.tool_log: list = []            # filled by the agent: one record per tool call of this turn
         self.user_turn_id = ""
+        self.plan_note = ""                 # Mindprint: the learner note for lesson-plan writers (engine/mindprint.learner_note)
 
     async def emit(self, event_type: str, payload: dict):
         await emit_notebook_event(self.notebook_id, event_type, payload)
@@ -941,7 +951,7 @@ class _ChatTurnState:
             return ""
         with Session(engine) as db:
             pages = db.exec(select(Page).where(Page.notebook_id == self.notebook_id, Page.id != self.active["page_id"])).all()
-        plan = await write_next_plan(self.nb.course, lessons_taught(pages), self.message_text)
+        plan = await write_next_plan(self.nb.course, lessons_taught(pages), self.message_text, self.plan_note)
         if plan:
             with Session(engine) as db:
                 new_page = db.get(Page, self.active["page_id"])
@@ -952,6 +962,7 @@ class _ChatTurnState:
                         new_page.title = lesson.group(1).strip()[:100]
                     db.add(new_page)
                     db.commit()
+            schedule_mapping(engine, self.notebook_id, self.active["page_id"], plan)   # Mindprint: background, never fails the turn
         return plan
 
     async def load_board(self, page_id: str):
@@ -1010,11 +1021,11 @@ async def _cancel_previous_agent(notebook_id: str):
             pass
 
 
-def _lesson_args(planned: bool, plan_now: str, records: list, away_for: str):
+def _lesson_args(planned: bool, plan_now: str, records: list, away_for: str, known=()):
     """The lesson path and final for the agent (None, None without a lesson plan)."""
     if not planned:
         return None, None
-    return lesson_path(plan_now, records, bool(away_for)), lesson_final(plan_now, records)
+    return lesson_path(plan_now, records, bool(away_for), known), lesson_final(plan_now, records, known)
 
 
 async def _save_first_plan(plan_task, notebook_id: str, page_id: str, tool_log: list):
@@ -1035,6 +1046,7 @@ async def _save_first_plan(plan_task, notebook_id: str, page_id: str, tool_log: 
                 first_page.lesson_plan = plan
                 db.add(first_page)
             db.commit()
+    schedule_mapping(engine, notebook_id, page_id, plan)   # Mindprint: background, never fails the turn
     if path_titles(plan):   # this first answer gave the short answer to the whole question, which is step 1 (live: never
         # recorded, because the plan did not exist yet, so the next page taught step 1 again)
         tool_log.append({"tool": "record_step", "status": "ok", "iteration": 0, "element_id": "1", "event": "taught", "page_id": page_id})
@@ -1118,20 +1130,23 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     turn = _ChatTurnState(nb, message_text, page.id)
     turn.user_turn_id = await _store_learner_turn(session, notebook_id, page, req, retry_turn, valid_selected_ids)
 
+    await _cancel_previous_agent(notebook_id)
+
     # Scene mode: the first learning question gets a private lesson plan (engine/lesson_plan.py), written WHILE the tutor gives its first
     # answer and used from the next turn: written first, it was 8 of the 12 s before anything appeared (the first answer's main gain from
     # it, answering the whole question, is in the tutor's own rules). Saved when this turn ends.
     # The first plan also sets the course (goal and roadmap); each new page the tutor starts gets the next lesson's plan (_plan_next_lesson).
-    plan_task = asyncio.create_task(write_plan(nb.topic, message_text)) if not nb.lesson_plan else None
-
-    await _cancel_previous_agent(notebook_id)
-
+    # Mindprint: what earlier lessons showed about the learner goes to the plan writers and the tutor (computed first: the plan is written concurrently).
     planned = nb.lesson_plan
     past = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id)).all() if planned else []
     plan_now, records = current_lesson(nb, session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), past) if planned else ("", [])
+    turn_note, turn.plan_note = await asyncio.to_thread(note_for_turn, engine, notebook_id, plan_now, message_text, nb.topic)
+    known = known_steps(engine, notebook_id, plan_now)
+
+    plan_task = asyncio.create_task(write_plan(nb.topic, message_text, turn.plan_note)) if not nb.lesson_plan else None
 
     async def _run_agent_wrapper():
-        path, final = _lesson_args(planned, plan_now, records, away_for)
+        path, final = _lesson_args(planned, plan_now, records, away_for, known)
         return await run_whiteboard_author(
             notebook_id=notebook_id,
             page_id=page.id,
@@ -1152,6 +1167,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
             plan_page_fn=turn.plan_next_lesson,
             tool_log=turn.tool_log,
             load_board_fn=turn.load_board,
+            learner_note=turn_note,
         )
 
     current_task = asyncio.create_task(_run_agent_wrapper())
@@ -1160,7 +1176,12 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     response_text, early = await _await_agent(turn, current_task, plan_task, page)
     if early is not None:
         return early
-    return await _store_reply(turn, response_text)
+    reply = await _store_reply(turn, response_text)
+    # Mindprint: the records are saved, so a separate grader checks the answers in the background (never fails the turn). The plan is read again
+    # because the turn may have started a new page; records of an earlier page are left out inside.
+    plan, _ = current_lesson(session.get(Notebook, notebook_id), session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), [])
+    schedule_grading(engine, notebook_id, plan, turn.active["page_id"], turn.user_turn_id, message_text, last_question(history), turn.tool_log)
+    return reply
 
 
 @app.post("/api/notebooks/{notebook_id}/interrupt")

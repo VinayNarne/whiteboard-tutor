@@ -9,6 +9,7 @@ import type { ChatTurn, LearnerIntent } from '../types';
 import { useVoiceInput } from '../hooks/useVoiceInput';
 import { Menu } from './Menu';
 import { debug } from '../utils/debug';
+import * as api from '../services/api';
 
 interface Props {
   notebookId: string;
@@ -26,6 +27,7 @@ interface Props {
   activeLearnerIntent?: LearnerIntent | null;
   onClearLearnerIntent?: () => void;
   layout?: 'wide' | 'compact' | 'phone';
+  onOpenLearnerPanel?: () => void;
 }
 
 const MAX_MESSAGE_CHARS = 4000;   // same limit the server enforces
@@ -54,6 +56,7 @@ export function ChatPanel({
   activeLearnerIntent,
   onClearLearnerIntent,
   layout = 'wide',
+  onOpenLearnerPanel,
 }: Readonly<Props>) {
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -130,7 +133,7 @@ export function ChatPanel({
   useEffect(() => {
     const handleBargeInEvent = () => {
       if (isAgentThinking) {
-        fetch(`/api/notebooks/${notebookId}/interrupt`, { method: 'POST' }).catch(() => {});
+        api.interruptChat(notebookId).catch(() => {});
         setBargeInNotice(true);
         setTimeout(() => setBargeInNotice(false), 2500);
       }
@@ -149,7 +152,7 @@ export function ChatPanel({
   const tutorReplies = chatHistory.filter(t => t.role === 'assistant').length;
   useEffect(() => {
     let live = true;
-    fetch(`/api/notebooks/${notebookId}`).then(r => (r.ok ? r.json() : null)).then(d => { if (live && d) { setPath(d.lesson_path ?? []); setFinal(d.lesson_final ?? null); setGoal(d.goal ?? null); } }).catch(() => {});
+    api.getNotebook(notebookId).then(r => (r.ok ? r.json() : null)).then(d => { if (live && d) { setPath(d.lesson_path ?? []); setFinal(d.lesson_final ?? null); setGoal(d.goal ?? null); } }).catch(() => {});
     return () => { live = false; };
   }, [notebookId, tutorReplies]);
 
@@ -187,11 +190,7 @@ export function ChatPanel({
         payload.match_score = intentToUse.topScore;
       }
 
-      const res = await fetch(`/api/notebooks/${notebookId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = await api.sendChat(notebookId, payload);
       if (res.ok) {
         const data = await res.json();
         onAgentResponse(data.response, data.page_id);
@@ -437,6 +436,9 @@ export function ChatPanel({
         <Menu label="More" align="left" items={quickMore.map(q => ({
           label: q.label, onSelect: () => { if (!busy) sendQuery(q.prompt); },
         }))} />
+        {onOpenLearnerPanel && (
+          <button type="button" onClick={onOpenLearnerPanel} style={{ ...linkBtn, color: 'var(--ink-2)', fontSize: '12px' }}>Teaching style</button>
+        )}
       </div>
 
       {/* One consistent strip for every transient status */}
@@ -504,6 +506,7 @@ export function ChatPanel({
           <button onClick={() => onClearLearnerIntent?.()} style={linkBtn} aria-label="Remove the selection from my question">Remove</button>
         </div>
       )}
+
 
       {/* Input */}
       <div style={{ padding: '10px 12px 14px', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>

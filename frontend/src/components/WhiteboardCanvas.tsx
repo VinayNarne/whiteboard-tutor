@@ -21,6 +21,7 @@ import type {
 } from '../types';
 import { roughifySvgFragment } from '../services/roughRenderer';
 import { fitTextInFragments } from '../services/textFit';
+import * as api from '../services/api';
 import { getElementBounds, type ElementBounds } from '../utils/svgBounds';
 import { renderRoughAnnotation, type RenderedAnnotationNodes } from '../utils/roughAnnotations';
 import {
@@ -574,7 +575,7 @@ export function WhiteboardCanvas({
     }
 
     try {
-      const res = await fetch(`/api/notebooks/${notebookId}/pages/${pageId}/events`);
+      const res = await api.getPageEvents(notebookId, pageId);
       if (!res.ok) return;
       const data = await res.json();
 
@@ -857,7 +858,7 @@ export function WhiteboardCanvas({
   const handleUndo = useCallback(async () => {
     if (!notebookId || !pageId) return;
     try {
-      const res = await fetch(`/api/notebooks/${notebookId}/pages/${pageId}/undo`, { method: 'POST' });
+      const res = await api.undoPage(notebookId, pageId);
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: '' }));
         showToast(typeof err.detail === 'string' && err.detail ? err.detail : 'Could not undo that.');

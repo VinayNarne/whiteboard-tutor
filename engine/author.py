@@ -620,7 +620,7 @@ def last_question_note(asked: str, lesson_final: Optional[dict], path: list) -> 
 
 
 def build_messages(prior_pages_summary, course, lesson_plan, page_state, chat_history, lesson_path, lesson_final,
-                   path, away_for, learner_message) -> list:
+                   path, away_for, learner_message, learner_note: str = "") -> list:
     """Everything the model is sent before its first reply, in order."""
     messages = [{"role": "system", "content": SCENE_SYSTEM_PROMPT},
                 context_message(prior_pages_summary, course, lesson_plan, page_state)]
@@ -631,6 +631,8 @@ def build_messages(prior_pages_summary, course, lesson_plan, page_state, chat_hi
         messages.append({"role": "system", "content": welcome_back_note(away_for)})
     if asked := last_question(chat_history):
         messages.append({"role": "system", "content": last_question_note(asked, lesson_final, path)})
+    if learner_note:   # Mindprint: placed right before the learner's message, where the phase-0 evaluation measured it
+        messages.append({"role": "system", "content": f"LEARNER NOTES (from earlier lessons; follow them): {learner_note}"})
     messages.append({"role": "user", "content": learner_message})
     return messages
 
@@ -1100,6 +1102,7 @@ async def run_whiteboard_author(
     course: str = "",                  # scene mode: the learner's goal and roadmap (engine/lesson_plan.split_course), "" for none
     plan_page_fn=None,  # scene mode: async callable() -> the next lesson's plan for the page start_new_page just made, "" for none
     load_board_fn=None,  # scene mode: async callable(page_id) -> ({step id: stored fragment}, {block n: latest record}), for replace_block
+    learner_note: str = "",            # Mindprint: what earlier lessons showed about this learner (engine/mindprint.learner_note), "" for none
 ) -> str:
     """
     Main entry point. Runs the LLM tool-use loop and returns the assistant's
@@ -1115,7 +1118,7 @@ async def run_whiteboard_author(
     tools = SCENE_TOOLS + ([STEP_TOOL] if path else [])   # the checklist tool only when the plan has steps
 
     messages = build_messages(prior_pages_summary, course, lesson_plan, page_state, chat_history, lesson_path, lesson_final,
-                              path, away_for, learner_message)
+                              path, away_for, learner_message, learner_note)
 
     logger.info(EngineEvent.DRAW_STARTED, "WhiteboardAuthor loop started",
                 data={"notebook_id": notebook_id, "page_id": page_id})

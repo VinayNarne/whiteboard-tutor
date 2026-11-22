@@ -51,7 +51,10 @@ class BackendEvent:
     PAGE_SUMMARY_FAILED = "page_summary_failed"   # it could not (timeout, error, empty reply): the page is saved without a summary
     LESSON_PLANNED = "lesson_planned"         # scene mode: the private lesson plan was written (or the message was not a learning request: chars 0)
     LESSON_PLAN_FAILED = "lesson_plan_failed" # it could not be written: the tutor teaches without one, the next question tries again
-    DB_CONNECTED = "db_connected"
+    MINDPRINT_MAPPED = "mindprint_mapped"     # a lesson plan's steps were mapped onto the learner's concepts (new and reused counts)
+    MINDPRINT_FAILED = "mindprint_failed"     # mapping failed (embeddings, model, database): the plan stays unmapped, the lesson is unaffected
+    MINDPRINT_GRADED = "mindprint_graded"     # the separate grader graded a learner's answer to a check (grade, step, concept, the tutor's own event)
+    DB_CONNECTED ="db_connected"
     DB_DISCONNECTED = "db_disconnected"
     CHAT_RECEIVED = "chat_received"
     CHAT_COMPLETED = "chat_completed"

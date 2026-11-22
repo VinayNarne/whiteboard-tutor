@@ -203,3 +203,11 @@ export interface LearnerIntent {
   selectionCenter: { x: number; y: number };
   relationshipLabel?: string;
 }
+
+// What the tutor remembers about the learner (GET /api/learner and every change to it return this card)
+export interface LearnerCard {
+  known: { id: string; name: string; description: string; level: string }[];
+  misconceptions: { id: string; belief: string; corrected: boolean }[];
+  preferences: { kind: string; label: string }[];
+  available_preferences: { kind: string; label: string }[];
+}

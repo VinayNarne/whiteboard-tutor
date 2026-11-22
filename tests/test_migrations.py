@@ -23,7 +23,7 @@ def _head():
 
 
 HEAD = _head()      # the newest migration, so this file does not need an edit for every new one
-MODEL_TABLES = {"learners", "notebooks", "pages", "page_events", "chat_turns"}
+MODEL_TABLES = {"learners", "notebooks", "pages", "page_events", "chat_turns", "concepts", "learner_prefs"}
 
 
 def _url(tmp_path, name="m.db"):

@@ -8,6 +8,8 @@ import { WhiteboardCanvas } from './components/WhiteboardCanvas';
 import { ChatPanel } from './components/ChatPanel';
 import { PageSidebar } from './components/PageSidebar';
 import { Menu } from './components/Menu';
+import { LearnerPanel } from './components/LearnerPanel';
+import { useLearner } from './hooks/useLearner';
 import { THEME_CHOICES, useThemePref } from './utils/theme';
 import { useMediaQuery } from './utils/useMediaQuery';
 import { useNotebookWebSocket } from './hooks/useNotebookWebSocket';
@@ -17,6 +19,7 @@ import type {
   LearnerIntent,
 } from './types';
 import { debug } from './utils/debug';
+import * as api from './services/api';
 
 const STARTER_TOPICS = [
   'How vaccines train the immune system',
@@ -59,7 +62,7 @@ function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => 
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
 
   useEffect(() => {
-    fetch(`/api/notebooks`)
+    api.listNotebooks()
       .then(r => r.json())
       .then(setNotebooks)
       .catch(() => {});
@@ -75,11 +78,7 @@ function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => 
       : `[${level.charAt(0).toUpperCase() + level.slice(1)}] ${rawTopic}`;
 
     try {
-      const res = await fetch(`/api/notebooks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: formattedTopic }),
-      });
+      const res = await api.createNotebook(formattedTopic);
       if (res.ok) {
         const nb = await res.json();
         onCreate(nb);
@@ -92,7 +91,7 @@ function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => 
   const handleDeleteNotebook = async (nb: Notebook) => {
     if (!confirm(`Delete "${parseTopic(nb.topic).text}"? This can't be undone.`)) return;
     try {
-      const res = await fetch(`/api/notebooks/${nb.id}`, { method: 'DELETE' });
+      const res = await api.deleteNotebook(nb.id);
       if (res.ok) setNotebooks(prev => prev.filter(n => n.id !== nb.id));
     } catch (err) {
       console.error('Failed to delete notebook', err);
@@ -401,6 +400,8 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
 
   // Pass 3 Modals & Inline edits
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showLearner, setShowLearner] = useState(false);
+  const learner = useLearner();
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const summaryDialogRef = useDialogFocus(showSummaryModal);
   const shortcutsDialogRef = useDialogFocus(showShortcuts);
@@ -433,7 +434,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
   // -------------------------------------------------------------------------
   const [lessonBoard, setLessonBoard] = useState(false);   // scene mode: a page never fills up, so no fullness meter
   const fetchPages = useCallback(async () => {
-    const res = await fetch(`/api/notebooks/${notebook.id}`);
+    const res = await api.getNotebook(notebook.id);
     if (res.ok) {
       const data = await res.json();
       const ps: PageSummary[] = data.pages ?? [];
@@ -576,10 +577,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
   };
 
   const handleNewPage = async () => {
-    const res = await fetch(
-      `/api/notebooks/${notebook.id}/pages`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }
-    );
+    const res = await api.createPage(notebook.id);
     if (res.ok) {
       const p = await res.json();
       await fetchPages();
@@ -589,10 +587,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
 
   const handleSavePage = async () => {
     if (!activePageId) return;
-    await fetch(
-      `/api/notebooks/${notebook.id}/pages/${activePageId}/save`,
-      { method: 'POST' }
-    );
+    await api.savePage(notebook.id, activePageId);
     setPages(prev => prev.map(p =>
       p.id === activePageId ? { ...p, status: 'saved' } : p
     ));
@@ -601,11 +596,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
   const handleRenamePage = async (pageId: string, newTitle: string) => {
     setPages(prev => prev.map(p => p.id === pageId ? { ...p, title: newTitle } : p));
     try {
-      await fetch(`/api/notebooks/${notebook.id}/pages/${pageId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle }),
-      });
+      await api.renamePage(notebook.id, pageId, newTitle);
     } catch (err) {
       console.warn('Failed to persist page title', err);
     }
@@ -613,7 +604,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
 
   const handleDeletePage = async (pageId: string) => {
     try {
-      await fetch(`/api/notebooks/${notebook.id}/pages/${pageId}`, { method: 'DELETE' });
+      await api.deletePage(notebook.id, pageId);
       const remaining = pages.filter(p => p.id !== pageId);
       setPages(remaining);
       if (activePageId === pageId && remaining.length > 0) {
@@ -630,11 +621,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
       return;
     }
     try {
-      await fetch(`/api/notebooks/${notebook.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: notebookTopic.trim(), title: notebookTopic.trim() }),
-      });
+      await api.updateNotebook(notebook.id, { topic: notebookTopic.trim(), title: notebookTopic.trim() });
     } catch (err) {
       console.warn('Failed to update notebook topic', err);
     }
@@ -645,9 +632,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
   const handleReplay = async (fromId?: string) => {
     if (!activePageId || (isReplaying && !fromId)) return;
     if (fromId) globalThis.dispatchEvent(new CustomEvent('tutor_barge_in'));   // stop live narration / a running replay's clip first
-    const res = await fetch(
-      `/api/notebooks/${notebook.id}/pages/${activePageId}/events`
-    );
+    const res = await api.getPageEvents(notebook.id, activePageId);
     if (!res.ok) return;
     const data = await res.json();
     const replayableEvents = (data.events ?? []).filter((e: any) =>
@@ -771,6 +756,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
           <Menu label="Notebook" items={[
             { label: 'Overview and export', onSelect: () => setShowSummaryModal(true) },
             { label: 'Rename notebook', onSelect: () => setIsEditingNotebook(true) },
+            { label: 'What I know about you', onSelect: () => setShowLearner(true) },
             { label: 'Keyboard shortcuts', onSelect: () => setShowShortcuts(true) },
             { heading: 'Appearance' },
             ...THEME_CHOICES.map(t => ({
@@ -833,6 +819,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
 
         <Pane id="chat" active={tab === 'chat'} phone={phone}>
         <ChatPanel
+          onOpenLearnerPanel={() => setShowLearner(true)}
           layout={layout}
           notebookId={notebook.id}
           pageId={activePageId}
@@ -958,6 +945,8 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
         </div>
       )}
 
+      {showLearner && <LearnerPanel learner={learner} onClose={() => setShowLearner(false)} />}
+
       {/* Keyboard Shortcuts Modal */}
       {showShortcuts && (
         <div style={{
@@ -1065,7 +1054,7 @@ export default function App() {
     const params = new URLSearchParams(globalThis.location.search);
     const nbId = params.get('notebook_id') || localStorage.getItem('last_active_notebook_id');
     if (nbId) {
-      fetch(`/api/notebooks/${nbId}`)
+      api.getNotebook(nbId)
         .then(r => r.json())
         .then(nb => {
           if (nb?.id) {

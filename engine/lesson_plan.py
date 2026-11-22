@@ -103,11 +103,15 @@ LEVELS = ("", "taught", "understood", "remembered")
 REVIEW_AFTER = 3
 
 
-def step_levels(n: int, turns: list, away: bool = False) -> list:
+def step_levels(n: int, turns: list, away: bool = False, known=()) -> list:
     """turns: each tutor turn's tool records, oldest first. -> [{"level", "due", "misses"}] for steps 1..n; due = ask a surprise review
     now; misses = wrong answers in a row since the last right one (the tutor hints after the first, explains after the second).
-    'mark_step_done' records (before levels existed) count as taught."""
+    'mark_step_done' records (before levels existed) count as taught. known: 0-based steps the learner already understood in earlier lessons
+    (Mindprint): they start as understood (never due for a review), and a wrong answer sends them back to taught like any step."""
     level, taught_at, first_right, misses = [0] * n, [None] * n, [None] * n, [0] * n
+    for i in known:
+        if 0 <= i < n:
+            level[i] = 2
     for k, i, event in _records(turns, n):
         if i == n:
             continue                                                   # the final problem (final_check)
@@ -116,14 +120,14 @@ def step_levels(n: int, turns: list, away: bool = False) -> list:
             taught_at[i] = k if taught_at[i] is None else taught_at[i]
         elif event == "answered_right" and taught_at[i] != k:      # taught in this very turn: the learner has not answered yet
             misses[i] = 0
-            if level[i] >= 2 and k - first_right[i] >= REVIEW_AFTER:
+            if level[i] >= 2 and first_right[i] is not None and k - first_right[i] >= REVIEW_AFTER:
                 level[i] = 3
             elif level[i] < 2:
                 level[i], first_right[i] = 2, k
         elif event == "answered_wrong":
             level[i], first_right[i], misses[i] = 1, None, misses[i] + 1
     now = len(turns)
-    return [{"level": LEVELS[lv], "due": lv == 2 and (away or now - first_right[i] >= REVIEW_AFTER), "misses": misses[i]} for i, lv in enumerate(level)]
+    return [{"level": LEVELS[lv], "due": lv == 2 and first_right[i] is not None and (away or now - first_right[i] >= REVIEW_AFTER), "misses": misses[i]} for i, lv in enumerate(level)]
 
 
 def _records(turns: list, n: int):
@@ -140,12 +144,12 @@ def _records(turns: list, n: int):
                 yield k, i, (r.get("event") if r.get("tool") == "record_step" else "taught")
 
 
-def final_check(n: int, turns: list) -> dict:
+def final_check(n: int, turns: list, known=()) -> dict:
     """The end-of-lesson check (Jane Street socratic-tutor skill): once every step is taught, one question per step from memory, weakest
     first, then one problem that needs them together, recorded as step n+1. -> {"active", "next": a step number, "problem" or None,
     "checked", "of", "weak": step numbers to review, "passed"}. A step's first answer during the check is the one that counts."""
     # ponytail: replays the record once per turn to find when every step was taught (lessons are tens of turns); keep a start marker if not
-    start = next((k for k in range(len(turns)) if n and all(s["level"] for s in step_levels(n, turns[:k + 1]))), None)
+    start = next((k for k in range(len(turns)) if n and all(s["level"] for s in step_levels(n, turns[:k + 1], known=known))), None)
     if start is None:
         return {"active": False, "next": None, "checked": 0, "of": n, "weak": [], "passed": False}
     checked, weak, passed = {}, set(), False
@@ -158,7 +162,7 @@ def final_check(n: int, turns: list) -> dict:
         checked.setdefault(i, event)
         if event == "answered_wrong":
             weak.add(i)
-    levels = step_levels(n, turns)
+    levels = step_levels(n, turns, known=known)
     weak |= {i for i, s in enumerate(levels) if s["level"] == "taught"}
     order = sorted(range(n), key=lambda i: (LEVELS.index(levels[i]["level"]), -levels[i]["misses"], i))
     nxt = next((i + 1 for i in order if i not in checked), None)
@@ -190,9 +194,15 @@ def path_titles(plan: str) -> list:
     return titles[:6]
 
 
-def build_messages(topic: str, question: str) -> list:
+def with_note(user: str, note: str) -> str:
+    """Mindprint: what earlier lessons showed about the learner, appended to the request (where the phase-0 evaluation measured it)."""
+    return f"{user}\n\nLEARNER NOTES (from earlier lessons; plan around them): {note}" if note else user
+
+
+def build_messages(topic: str, question: str, note: str = "") -> list:
     user = (f"NOTEBOOK TOPIC: {_clean_text(topic, 200) or 'none'}\n\n"
             f"<learner_question>\n{_clean_text(question, QUESTION_CHARS)}\n</learner_question>")
+    user = with_note(user, note)
     return [{"role": "system", "content": PLAN_INSTRUCTION}, {"role": "user", "content": user}]
 
 
@@ -202,10 +212,11 @@ def clean_plan(text: str) -> str:
     return "" if re.fullmatch(r"\W*NONE\W*", text, re.I) else text[:PLAN_CHARS].rstrip()
 
 
-def build_next_messages(course: str, taught: str, message: str) -> list:
+def build_next_messages(course: str, taught: str, message: str, note: str = "") -> list:
     user = (f"<course>\n{clean_plan(course)}\n</course>\n\n"          # the stored course, written by the planner: keep its lines
             f"<lessons_taught>\n{_clean_text(taught, 2000) or 'none'}\n</lessons_taught>\n\n"
             f"<learner_message>\n{_clean_text(message, QUESTION_CHARS)}\n</learner_message>")
+    user = with_note(user, note)
     return [{"role": "system", "content": NEXT_PLAN_INSTRUCTION}, {"role": "user", "content": user}]
 
 
@@ -217,14 +228,14 @@ def split_course(text: str) -> tuple:
     return head.strip(), (sep + rest).strip()
 
 
-async def write_plan(topic: str, question: str) -> str:
+async def write_plan(topic: str, question: str, note: str = "") -> str:
     """The notebook's first plan: course goal, roadmap and lesson 1 (split_course separates them), or ""."""
-    return await _write(build_messages(topic, question), "Lesson plan")
+    return await _write(build_messages(topic, question, *([note] if note else [])), "Lesson plan")
 
 
-async def write_next_plan(course: str, taught: str, message: str) -> str:
+async def write_next_plan(course: str, taught: str, message: str, note: str = "") -> str:
     """The next lesson's plan, for a new page of a notebook that has a course, or "" (the tutor goes on without a new plan)."""
-    return await _write(build_next_messages(course, taught, message), "Next lesson plan")
+    return await _write(build_next_messages(course, taught, message, *([note] if note else [])), "Next lesson plan")
 
 
 async def _write(messages: list, what: str) -> str:

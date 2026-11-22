@@ -14,11 +14,11 @@ from pydantic import AfterValidator, StringConstraints
 from core.events import EngineEvent
 from core.log import get_logger
 from engine.sanitiser import _CONTROL_CHARS, CONTROL_PLACEHOLDER
+from engine.summary import MAX_CHAT_CHARS  # defined in the engine, which must not import the backend
 
 logger = get_logger("backend")
 
 # --- size limits -----------------------------------------------------------
-MAX_CHAT_CHARS = 4000
 MAX_TOPIC_CHARS = 300
 MAX_TITLE_CHARS = 200
 MAX_SUMMARY_CHARS = 2000

@@ -1,0 +1,44 @@
+{
+ "session1": {
+  "topic": "How the internet works",
+  "turns": [
+   "How does my browser find the server for a website?",
+   "ok",
+   "Can you give me concrete examples first? Abstract definitions lose me.",
+   "I think DNS is what actually carries my data to the server, like a router.",
+   "ok"
+  ]
+ },
+ "note_template": "Already understood (answered correctly twice): what an IP address is; that DNS turns a name into an IP address. Do not re-teach these; build on them. Known misconception (stated in an earlier lesson, still open): believes DNS carries the data to the server like a router. Address it briefly if DNS comes up. {analogy}Stated preference: concrete examples before definitions.",
+ "analogy_sentence": "Earlier you explained DNS with this analogy: {a}; reuse it, do not contradict it. ",
+ "later": [
+  {
+   "id": "S2",
+   "topic": "Web security",
+   "turns": [
+    "How does DNS spoofing trick my browser?",
+    "ok",
+    "ok"
+   ]
+  },
+  {
+   "id": "S3",
+   "topic": "Email",
+   "turns": [
+    "How does an email find the right mail server?",
+    "ok",
+    "ok"
+   ]
+  },
+  {
+   "id": "S4",
+   "topic": "Data structures",
+   "turns": [
+    "How does a hash table work?",
+    "ok",
+    "ok"
+   ]
+  }
+ ],
+ "plan_suffix": "\n\nLEARNER NOTES (from earlier lessons; plan around them): {note} Do not make steps for things the learner already understands; at most a one-line reminder inside another step. If the learner's known misconception is relevant to this lesson, include a short step that corrects it."
+}
