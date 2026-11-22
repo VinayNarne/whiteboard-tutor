@@ -72,6 +72,37 @@ def concept_text(name: str, description: str) -> str:
     return f"{name}: {description}"
 
 
+def _step_prompt(steps: List[str], live: List[int], cands: list, short: dict, concepts: List[dict]) -> str:
+    """The user message: the candidate concepts (short ids), then each live step with its own candidates."""
+    by_id = {c["id"]: c for c in concepts}
+    lines = [f"{short[cid]}: {by_id[cid]['name']} - {by_id[cid]['description']}" for cid in short]
+    return "CANDIDATE CONCEPTS:\n" + ("\n".join(lines) or "(none)") + "\n\nSTEPS:\n" + "\n".join(
+        f"{n + 1}. {steps[i]}\n   candidates: {', '.join(short[cid] for _, cid in cands[n]) or 'none'}" for n, i in enumerate(live))
+
+
+def _answers_by_step(reply: dict, live_count: int) -> dict:
+    """The model's answers keyed by 1-based live step: its "step" says which step an answer is for."""
+    by_step: dict = {}
+    for pos, a in enumerate(reply.get("steps", [])):
+        if not isinstance(a, dict):
+            continue
+        try:
+            n = int(a.get("step"))
+        except (TypeError, ValueError):
+            n = pos + 1                                           # no usable "step": fall back to its position
+        by_step.setdefault(n if 1 <= n <= live_count else pos + 1, a)
+    return by_step
+
+
+def _reuse_or_new(a: dict, step: str, cand: list, back: dict):
+    """An accepted existing concept id, else a new concept dict (without its embedding yet)."""
+    cid = back.get(a.get("choice"))                              # NEW, or an id the model invented: no candidate, so a new concept
+    cos = {k: c for c, k in cand}.get(cid, 0.0)
+    if cid and cid in [k for _, k in cand[:TOP_K]] and cos >= MIN_COSINE:
+        return cid
+    return {"name": str(a.get("name") or step)[:60], "description": str(a.get("description") or step)}
+
+
 def map_steps(steps: List[str], concepts: List[dict], embed: Callable, chat: Callable) -> List[Union[str, dict, None]]:
     """concepts: [{"id", "name", "description", "embedding"}] of ONE learner. A new concept is {"name", "description", "embedding"}."""
     live = [i for i, s in enumerate(steps) if not RECAP.search(s)]
@@ -85,28 +116,12 @@ def map_steps(steps: List[str], concepts: List[dict], embed: Callable, chat: Cal
     for cs in cands:
         for _, cid in cs:
             short.setdefault(cid, f"c{len(short) + 1}")
-    by_id = {c["id"]: c for c in concepts}
-    lines = [f"{short[cid]}: {by_id[cid]['name']} - {by_id[cid]['description']}" for cid in short]
-    user = "CANDIDATE CONCEPTS:\n" + ("\n".join(lines) or "(none)") + "\n\nSTEPS:\n" + "\n".join(
-        f"{n + 1}. {steps[i]}\n   candidates: {', '.join(short[cid] for _, cid in cands[n]) or 'none'}" for n, i in enumerate(live))
-    by_step: dict = {}                                            # the model's "step" (1-based among the live steps) says which step an answer is for
-    for pos, a in enumerate(chat(SYSTEM, user).get("steps", [])):
-        if not isinstance(a, dict):
-            continue
-        try:
-            n = int(a.get("step"))
-        except (TypeError, ValueError):
-            n = pos + 1                                           # no usable "step": fall back to its position
-        by_step.setdefault(n if 1 <= n <= len(live) else pos + 1, a)
+    by_step = _answers_by_step(chat(SYSTEM, _step_prompt(steps, live, cands, short, concepts)), len(live))
     back = {v: k for k, v in short.items()}
     fresh = []
     for n, i in enumerate(live):
-        a = by_step.get(n + 1, {})
-        cid = back.get(a.get("choice"))                          # NEW, or an id the model invented: no candidate, so a new concept
-        cos = dict((k, c) for c, k in cands[n]).get(cid, 0.0)
-        out[i] = cid if cid and cid in [k for _, k in cands[n][:TOP_K]] and cos >= MIN_COSINE else None
-        if out[i] is None:
-            out[i] = {"name": str(a.get("name") or steps[i])[:60], "description": str(a.get("description") or steps[i])}
+        out[i] = _reuse_or_new(by_step.get(n + 1, {}), steps[i], cands[n], back)
+        if isinstance(out[i], dict):
             fresh.append(out[i])
     if fresh:
         for d, v in zip(fresh, embed([concept_text(d["name"], d["description"]) for d in fresh])):
@@ -141,10 +156,14 @@ def plan_step_text(plan: str, n: int) -> str:
 
 def plan_misconceptions(plan: str) -> str:
     """The MYTHS and MISCONCEPTIONS sections of a plan: the wrong ideas a grader may name."""
-    text = plan or ""
-    myths = re.search(r"^MYTHS:(.*?)(?=^FACTS:|^STEPS:|\Z)", text, re.M | re.S)
-    miscs = re.search(r"^MISCONCEPTIONS:(.*?)(?=^TRAPS:|\Z)", text, re.M | re.S)
-    return "\n".join(x.group(0).strip() for x in (myths, miscs) if x)
+    sections, current = {}, None                      # plain line scan: a heading line starts a section, the next heading ends it
+    for line in (plan or "").splitlines():
+        head = line.split(":", 1)[0].strip()
+        if head.isupper() and ":" in line and not line.startswith((" ", "\t")):
+            current = head
+        if current in ("MYTHS", "MISCONCEPTIONS"):
+            sections.setdefault(current, []).append(line)
+    return "\n".join("\n".join(sections[k]).strip() for k in ("MYTHS", "MISCONCEPTIONS") if k in sections)
 
 
 def grade_answer(step_text: str, question_asked: str, misconceptions_text: str, answer: str, chat: Callable) -> dict:

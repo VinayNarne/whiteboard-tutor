@@ -83,17 +83,22 @@ def board_text(http, nb, seen):
     return "\n".join(out)
 
 
+def post_chat(http, nb, msg):
+    """One chat turn, retried once after 10 s when it did not answer 200. -> (response, seconds of the last try)."""
+    for attempt in range(2):
+        t0 = time.time()
+        r = http.post(f"/api/notebooks/{nb}/chat", json={"message": msg})
+        if r.status_code == 200 or attempt:
+            break
+        time.sleep(10)
+    return r, round(time.time() - t0, 1)
+
+
 def session(http, topic, turns):
     nb = http.post("/api/notebooks", json={"topic": topic}).json()["id"]
     res, seen, plan = [], set(), []
     for msg in turns:
-        for attempt in range(2):
-            t0 = time.time()
-            r = http.post(f"/api/notebooks/{nb}/chat", json={"message": msg})
-            if r.status_code == 200 or attempt:
-                break
-            time.sleep(10)
-        sec = round(time.time() - t0, 1)
+        r, sec = post_chat(http, nb, msg)
         book = http.get(f"/api/notebooks/{nb}").json()
         plan = [s["title"] for s in book.get("lesson_path") or []] or plan
         tut = [t for t in book["chat_turns"] if t["role"] == "assistant"]
@@ -108,13 +113,26 @@ def norm(s):
     return re.sub(r"\s+", " ", s or "").strip().lower()
 
 
+def quote_after_marker(out):
+    """The text of the line after "QUOTE:" without surrounding quote marks; "" when absent. String methods, not a regex: a lazy
+    quantifier next to optional quotes backtracks on long judge output."""
+    if "QUOTE:" not in out:
+        return ""
+    rest = out.split("QUOTE:", 1)[1].lstrip()
+    line = rest.splitlines()[0].strip() if rest else ""
+    if line[:1] in ("\"", "“", "'"):
+        line = line[1:]
+    if line[-1:] in ("\"", "”", "'"):
+        line = line[:-1]
+    return line.strip()
+
+
 def judge(q, scored, quote_needed=True):
     """YES needs an exact quote found in the scored text, else it is downgraded to NO (downgraded=True)."""
     ask = " If YES, the second line must be QUOTE: followed by an exact, verbatim quote from the tutor text (one sentence)." if quote_needed else ""
     out = llm("You grade a tutor's replies strictly. Answer YES or NO on the first line, then give the reason." + ask, f"{q}\n\nTutor text:\n{scored}") or ""
     v = out.split()[0].strip(".,:").upper() if out.split() else "?"
-    m = re.search(r"QUOTE:\s*[\"“']?(.+?)[\"”']?\s*$", out, re.S | re.M)
-    quote = m.group(1).strip() if m else ""
+    quote = quote_after_marker(out)
     down = False
     if v == "YES" and quote_needed:
         q = norm(quote)
@@ -125,6 +143,24 @@ def judge(q, scored, quote_needed=True):
 
 def full(s):
     return "\n\n".join(f"[Reply {i + 1}]\n{t['reply']}\n[Board {i + 1}]\n{t['board']}" for i, t in enumerate(s))
+
+
+JSON_SUFFIX = ".json"
+
+
+def later_measures(l, s, analogy):
+    """The judged measures of one later session s (lesson l); M1, M2, M4 and M5 only for the DNS sessions."""
+    txt = full(s)
+    m = {}
+    if l["id"] in ("S2", "S3"):
+        m["M1"] = judge("Does the tutor teach the basics of DNS again: explaining what DNS is or that it turns names into IP addresses in two or more sentences, OR asking the learner a question about why/how browsers use DNS? A single reminder clause is NO.", txt)
+        m["M2"] = judge("Does the tutor explicitly state that DNS does NOT carry, route or deliver the data itself (or explicitly that something else, e.g. routers/TCP, carries the data)? Merely describing a DNS lookup is NO.", txt)
+        m["M5"] = judge(f"Is there a sentence that is factually incompatible with: '{analogy or 'DNS is like a phone book'}' or 'DNS translates names into IP addresses'? Adding detail (MX records, spoofing, caching) is NOT a contradiction. Quote the incompatible sentence.", txt)
+        if analogy:
+            m["M4"] = judge(f"Does the tutor reuse this analogy: {analogy}?", txt)
+    first = f"[First reply]\n{s[0]['reply']}\n[Board]\n{s[0]['board']}"
+    m["M3"] = judge("Does the FIRST reply open with a concrete example or scenario before any definition?", first)
+    return m
 
 
 def main():
@@ -150,22 +186,13 @@ def main():
             for l in later:
                 print(f" {cond} {l['id']}", flush=True)
                 s, plan = session(http, l["topic"], l["turns"])
-                txt = full(s)
-                m = {}
-                if l["id"] in ("S2", "S3"):
-                    m["M1"] = judge("Does the tutor teach the basics of DNS again: explaining what DNS is or that it turns names into IP addresses in two or more sentences, OR asking the learner a question about why/how browsers use DNS? A single reminder clause is NO.", txt)
-                    m["M2"] = judge("Does the tutor explicitly state that DNS does NOT carry, route or deliver the data itself (or explicitly that something else, e.g. routers/TCP, carries the data)? Merely describing a DNS lookup is NO.", txt)
-                    m["M5"] = judge(f"Is there a sentence that is factually incompatible with: '{analogy or 'DNS is like a phone book'}' or 'DNS translates names into IP addresses'? Adding detail (MX records, spoofing, caching) is NOT a contradiction. Quote the incompatible sentence.", txt)
-                    if analogy:
-                        m["M4"] = judge(f"Does the tutor reuse this analogy: {analogy}?", txt)
-                first = f"[First reply]\n{s[0]['reply']}\n[Board]\n{s[0]['board']}"
-                m["M3"] = judge("Does the FIRST reply open with a concrete example or scenario before any definition?", first)
+                m = later_measures(l, s, analogy)
                 item["runs"].append({"cond": cond, "id": l["id"], "plan": plan, "turns": s, "measures": m})
         data.append(item)
-        out.with_suffix(".json").write_text(json.dumps(data, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
+        out.with_suffix(JSON_SUFFIX).write_text(json.dumps(data, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
         if rep == 0:
             print("PLAN MESSAGES CARRY NOTE:", bool(PLAN_SEEN) and note in PLAN_SEEN[0], "| count", len(PLAN_SEEN), flush=True)
-    print("raw:", out.with_suffix(".json"))
+    print("raw:", out.with_suffix(JSON_SUFFIX))
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------
@@ -214,7 +241,7 @@ def answerer(reply):
                "Reply with the answer only.", f"Tutor said:\n{reply}") or "ok"
 
 
-def session_real(http, topic, turns, adaptive=None):
+def session_real(http, topic, turns):
     """turns: fixed learner messages; a None entry is answered by the answerer. Waits for Mindprint background work after every turn."""
     nb = http.post("/api/notebooks", json={"topic": topic}).json()["id"]
     res, seen = [], set()
@@ -223,13 +250,7 @@ def session_real(http, topic, turns, adaptive=None):
         if msg is None:
             msg = answerer(last)
         CAPTURED.clear()
-        for attempt in range(2):
-            t0 = time.time()
-            r = http.post(f"/api/notebooks/{nb}/chat", json={"message": msg})
-            if r.status_code == 200 or attempt:
-                break
-            time.sleep(10)
-        sec = round(time.time() - t0, 1)
+        r, sec = post_chat(http, nb, msg)
         settled = wait_tasks()
         book = http.get(f"/api/notebooks/{nb}").json()
         tut = [t for t in book["chat_turns"] if t["role"] == "assistant"]
@@ -264,20 +285,11 @@ def main_real(a):
             for l in later:
                 print(f" real {l['id']}", flush=True)
                 s = session_real(http, l["topic"], l["turns"])
-                txt = full(s)
-                m = {}
-                if l["id"] in ("S2", "S3"):
-                    m["M1"] = judge("Does the tutor teach the basics of DNS again: explaining what DNS is or that it turns names into IP addresses in two or more sentences, OR asking the learner a question about why/how browsers use DNS? A single reminder clause is NO.", txt)
-                    m["M2"] = judge("Does the tutor explicitly state that DNS does NOT carry, route or deliver the data itself (or explicitly that something else, e.g. routers/TCP, carries the data)? Merely describing a DNS lookup is NO.", txt)
-                    m["M5"] = judge(f"Is there a sentence that is factually incompatible with: '{analogy or 'DNS is like a phone book'}' or 'DNS translates names into IP addresses'? Adding detail (MX records, spoofing, caching) is NOT a contradiction. Quote the incompatible sentence.", txt)
-                    if analogy:
-                        m["M4"] = judge(f"Does the tutor reuse this analogy: {analogy}?", txt)
-                first = f"[First reply]\n{s[0]['reply']}\n[Board]\n{s[0]['board']}"
-                m["M3"] = judge("Does the FIRST reply open with a concrete example or scenario before any definition?", first)
+                m = later_measures(l, s, analogy)
                 item["runs"].append({"cond": "real", "id": l["id"], "turns": s, "measures": m})
             data.append(item)
-            out.with_suffix(".json").write_text(json.dumps(data, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
-    print("raw:", out.with_suffix(".json"))
+            out.with_suffix(JSON_SUFFIX).write_text(json.dumps(data, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
+    print("raw:", out.with_suffix(JSON_SUFFIX))
 
 
 if __name__ == "__main__":

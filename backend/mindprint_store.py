@@ -77,21 +77,85 @@ def apply_grade(c: Concept, grade, misconception, answer: str, turn_id: str, pla
     that marks it corrected; only a right answer in a later lesson (another plan) clears it."""
     lesson = hashlib.sha256((plan or "").encode("utf-8")).hexdigest()[:16]
     if grade == "right":
-        if turn_id not in c.right_turns:
-            c.right_turns = [*c.right_turns, turn_id]                  # a new list: the JSON column does not see in-place changes
-        if c.misconception and not c.misconception_corrected:
-            c.misconception_corrected, c.misconception_lesson = True, lesson
-        elif c.misconception and c.misconception_lesson != lesson:
-            c.misconception, c.misconception_corrected, c.misconception_lesson = None, False, None
-        if c.level in ("new", "taught"):
-            c.level = "understood"
-        elif c.level == "understood" and len(c.right_turns) >= 2:      # a right answer in a different turn than the first
-            c.level = "remembered"
+        _apply_right(c, turn_id, lesson)
     elif grade in ("wrong", "partial"):
-        if grade == "wrong":
-            c.last_wrong = answer[:500]                                # last_wrong stays wrong-only
-        if misconception:                                              # a partial answer can state a (quote-checked) wrong belief too
-            c.misconception, c.misconception_corrected, c.misconception_lesson = misconception, False, lesson
+        _apply_miss(c, grade, misconception, answer, lesson)
+
+
+def _apply_right(c: Concept, turn_id: str, lesson: str) -> None:
+    """The misconception rules and the level rules for a right answer."""
+    if turn_id not in c.right_turns:
+        c.right_turns = [*c.right_turns, turn_id]                  # a new list: the JSON column does not see in-place changes
+    if c.misconception and not c.misconception_corrected:
+        c.misconception_corrected, c.misconception_lesson = True, lesson
+    elif c.misconception and c.misconception_lesson != lesson:
+        c.misconception, c.misconception_corrected, c.misconception_lesson = None, False, None
+    if c.level in ("new", "taught"):
+        c.level = "understood"
+    elif c.level == "understood" and len(c.right_turns) >= 2:      # a right answer in a different turn than the first
+        c.level = "remembered"
+
+
+def _apply_miss(c: Concept, grade: str, misconception, answer: str, lesson: str) -> None:
+    """A wrong or partial answer: remember the answer (wrong only) and any stated wrong belief."""
+    if grade == "wrong":
+        c.last_wrong = answer[:500]                                # last_wrong stays wrong-only
+    if misconception:                                              # a partial answer can state a (quote-checked) wrong belief too
+        c.misconception, c.misconception_corrected, c.misconception_lesson = misconception, False, lesson
+
+
+def _plan_row(db_engine, notebook_id: str, plan: str):
+    """The page or notebook whose plan is the one in force and already mapped, or None."""
+    with Session(db_engine) as db:
+        return next((r for r in [*db.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), db.get(Notebook, notebook_id)]
+                     if r is not None and r.lesson_plan == plan and r.step_concepts), None)
+
+
+def _is_ok_record(r, page_id: str) -> bool:
+    return isinstance(r, dict) and r.get("tool") == "record_step" and r.get("status") == "ok" and r.get("page_id") == page_id
+
+
+def _top_answered_step(records: list, page_id: str) -> int:
+    """The highest step the tutor recorded as answered on this page (0 for none)."""
+    return max((int(r["element_id"]) for r in records if _is_ok_record(r, page_id) and r.get("event") in ("answered_right", "answered_wrong")
+                and str(r.get("element_id")).isdigit()), default=0)
+
+
+def _step_number(r):
+    try:
+        return int(r.get("element_id"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _store_record(db_engine, cid: str, event: str, g, n: int, answer: str, user_turn_id: str, plan: str, page_id: str) -> None:
+    """Apply one record (taught, or a grade g) to its concept and save it."""
+    with Session(db_engine) as db:
+        c = db.get(Concept, cid)
+        if c is None:
+            return
+        if event == "taught":
+            if c.level == "new":
+                c.level = "taught"
+        else:
+            apply_grade(c, g["grade"], g["misconception"], answer, user_turn_id, plan)
+        c.updated_at = utc_now()                               # the beliefs ranking (relevant_concepts) sorts by it
+        db.add(c)
+        db.commit()
+        if event != "taught":
+            logger.info(BackendEvent.MINDPRINT_GRADED, f"Graded step {n}: {g['grade']} (tutor: {event})",
+                        data={"grade": g["grade"], "step": n, "concept_id": cid, "tutor_event": event, "misconception": g["misconception"],
+                              "level": c.level, "turn_id": user_turn_id}, page_id=page_id)
+
+
+def _record_target(r, page_id: str, concepts: list) -> tuple:
+    """(step number, concept id, event) for an accepted step record of this page whose step has a concept; (None, None, None) otherwise."""
+    n = _step_number(r) if _is_ok_record(r, page_id) else None
+    cid = concepts[n - 1] if n is not None and 1 <= n <= len(concepts) else None
+    event = r.get("event") if cid else None
+    if event not in ("taught", "answered_right", "answered_wrong"):
+        return None, None, None
+    return n, cid, event
 
 
 def grade_and_store(db_engine, notebook_id: str, plan: str, page_id: str, user_turn_id: str, answer: str, asked: str, records: list,
@@ -99,9 +163,7 @@ def grade_and_store(db_engine, notebook_id: str, plan: str, page_id: str, user_t
     """Blocking (model calls): run it in a thread. Never raises. records: the tutor's tool records of the finished turn. Each accepted
     answered_right/answered_wrong on this page gets one grading (a skip never does); "taught" only lifts a new concept to taught."""
     try:
-        with Session(db_engine) as db:
-            row = next((r for r in [*db.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), db.get(Notebook, notebook_id)]
-                        if r is not None and r.lesson_plan == plan and r.step_concepts), None)    # same plan as the one in force
+        row = _plan_row(db_engine, notebook_id, plan)    # same plan as the one in force
         if row is None:
             return
         concepts = row.step_concepts
@@ -109,41 +171,18 @@ def grade_and_store(db_engine, notebook_id: str, plan: str, page_id: str, user_t
         # the lower one. Per-step grading needs the tutor to say which question each part answers.
         # Note: the first turn's "taught" for step 1 arrives before the concept mapping finishes, so it is not applied (harmless: the
         # first right answer lifts the concept to taught).
-        answered = [int(r["element_id"]) for r in records if isinstance(r, dict) and r.get("tool") == "record_step" and r.get("status") == "ok"
-                    and r.get("page_id") == page_id and r.get("event") in ("answered_right", "answered_wrong") and str(r.get("element_id")).isdigit()]
-        top = max(answered, default=0)
+        top = _top_answered_step(records, page_id)
         for r in records:
-            if not (isinstance(r, dict) and r.get("tool") == "record_step" and r.get("status") == "ok" and r.get("page_id") == page_id):
+            n, cid, event = _record_target(r, page_id, concepts)
+            if cid is None:
                 continue
-            try:
-                n = int(r.get("element_id"))
-            except (TypeError, ValueError):
-                continue
-            event = r.get("event")
-            cid = concepts[n - 1] if 1 <= n <= len(concepts) else None
-            if not cid or event not in ("taught", "answered_right", "answered_wrong"):
-                continue
+            g = None
             if event != "taught":
                 if is_skip(answer) or n != top:
                     continue
                 top = 0                                                # one grading per turn, even when the step was recorded twice
                 g = grade_answer(plan_step_text(plan, n), asked, plan_misconceptions(plan), answer, chat)
-            with Session(db_engine) as db:
-                c = db.get(Concept, cid)
-                if c is None:
-                    continue
-                if event == "taught":
-                    if c.level == "new":
-                        c.level = "taught"
-                else:
-                    apply_grade(c, g["grade"], g["misconception"], answer, user_turn_id, plan)
-                c.updated_at = utc_now()                               # the beliefs ranking (relevant_concepts) sorts by it
-                db.add(c)
-                db.commit()
-                if event != "taught":
-                    logger.info(BackendEvent.MINDPRINT_GRADED, f"Graded step {n}: {g['grade']} (tutor: {event})",
-                                data={"grade": g["grade"], "step": n, "concept_id": cid, "tutor_event": event, "misconception": g["misconception"],
-                                      "level": c.level, "turn_id": user_turn_id}, page_id=page_id)
+            _store_record(db_engine, cid, event, g, n, answer, user_turn_id, plan, page_id)
     except Exception as e:
         logger.warn(BackendEvent.MINDPRINT_FAILED, f"Grading failed: {type(e).__name__}: {e}"[:300], data={"notebook_id": notebook_id})
 

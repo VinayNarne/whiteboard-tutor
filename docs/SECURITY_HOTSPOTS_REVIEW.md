@@ -1,6 +1,6 @@
 # SonarQube security hotspots review
 
-13 hotspots reviewed. 3 files had real polynomial-backtracking problems (measured: 15 s to 70 s on a 50k-character input); fixed with tests in `tests/test_regex_dos.py`. The rest are safe.
+14 hotspots reviewed. 3 files had real polynomial-backtracking problems (measured: 15 s to 70 s on a 50k-character input); fixed with tests in `tests/test_regex_dos.py`. The rest are safe.
 
 | Key | File:line | Category | Decision | Reason |
 |---|---|---|---|---|
@@ -13,6 +13,7 @@
 | 99cdfa31 | engine/scene.py:483 | dos | SAFE | Runs once on our own MathJax SVG output (not model or learner text). |
 | 36bb9f9c, f377d365 | scripts/lesson_eval.py:52 | dos | SAFE | Dev-only eval script over our own recorded replies, never reachable from a request. |
 | 25ded8a4 | frontend WhiteboardCanvas.tsx:782 | weak-cryptography | SAFE | `Math.random` only makes a client-side stroke id suffix next to `Date.now()`; nothing security-relevant depends on it. |
+| (new) | scripts/memory_eval.py:116 | dos | FIXED | Lazy `.+?` plus optional quotes before `\s*$` rewritten with string methods (`quote_after_marker`); same quote on normal judge output. Dev-only script. |
 | 1bb31878 | engine/fonts.py:19 | encrypt-data | SAFE | `http://www.w3.org/2000/svg` is an XML namespace identifier, never fetched. |
 | e19fce62 | engine/sanitiser.py:28 | encrypt-data | SAFE | Same SVG namespace identifier passed to `register_namespace`. |
 

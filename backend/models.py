@@ -22,6 +22,7 @@ def utc_now() -> datetime:
 
 
 DEFAULT_LEARNER_ID = "default"
+LEARNERS_ID = "learners.id"      # the foreign key target of every learner_id column
 
 
 class Learner(SQLModel, table=True):
@@ -37,7 +38,7 @@ class Notebook(SQLModel, table=True):
     __tablename__ = "notebooks"
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    learner_id: str = Field(default=DEFAULT_LEARNER_ID, foreign_key="learners.id", index=True)
+    learner_id: str = Field(default=DEFAULT_LEARNER_ID, foreign_key=LEARNERS_ID, index=True)
     title: str = Field(index=True)
     topic: str
     created_at: datetime = Field(default_factory=utc_now)
@@ -165,7 +166,7 @@ class Concept(SQLModel, table=True):
     __tablename__ = "concepts"
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    learner_id: str = Field(foreign_key="learners.id", index=True)
+    learner_id: str = Field(foreign_key=LEARNERS_ID, index=True)
     name: str
     description: str = Field(sa_column=Column(Text, nullable=False))
     embedding: List[float] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
@@ -187,6 +188,6 @@ class LearnerPref(SQLModel, table=True):
     __table_args__ = (Index("uq_learner_prefs_learner_kind", "learner_id", "kind", unique=True),)
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    learner_id: str = Field(foreign_key="learners.id", index=True)
+    learner_id: str = Field(foreign_key=LEARNERS_ID, index=True)
     kind: str
     created_at: datetime = Field(default_factory=utc_now)

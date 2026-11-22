@@ -32,7 +32,10 @@ export function LearnerPanel({ learner, onClose }: Readonly<{ learner: Learner; 
     const opener = document.activeElement as HTMLElement | null;
     if (!el.open) el.showModal();                            // already open under React StrictMode's second run
     el.querySelector<HTMLElement>('button')?.focus();
-    return () => { if (el.open) el.close(); opener?.focus?.(); };   // close first: an open modal keeps the page behind inert, so focus() there would fail
+    return () => {
+      if (el.open) { el.close(); }       // close first: an open modal keeps the page behind inert, so focus() there would fail
+      opener?.focus?.();
+    };
   }, []);
 
   // A removed row takes its button with it: focus goes to the next row's button, else to the section heading, never to <body>.
@@ -70,7 +73,7 @@ export function LearnerPanel({ learner, onClose }: Readonly<{ learner: Learner; 
         </div>
 
         {error && <p role="alert" style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '8px' }}>{error}</p>}
-        {!card ? <p style={{ ...empty, marginTop: '12px' }}>Loading…</p> : (
+        {card ? (
           <>
             <div data-sec="known">
             <h4 style={h4} tabIndex={-1}>Understood</h4>
@@ -128,7 +131,7 @@ export function LearnerPanel({ learner, onClose }: Readonly<{ learner: Learner; 
               )}
             </div>
           </>
-        )}
+        ) : <p style={{ ...empty, marginTop: '12px' }}>Loading…</p>}
       </dialog>
   );
 }

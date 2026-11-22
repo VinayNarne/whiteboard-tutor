@@ -16,6 +16,7 @@ from engine.mindprint import EXCLUSIVE_PREFERENCES, PREFERENCES
 router = APIRouter(prefix="/api/learner")
 SessionDep = Annotated[Session, Depends(get_session)]
 CONCEPT_NOT_FOUND = "Concept not found"
+NOT_FOUND = {404: {"description": CONCEPT_NOT_FOUND}}      # OpenAPI `responses` like backend/main.py (not imported from it: main imports this module)
 
 
 class PrefRequest(BaseModel):
@@ -50,7 +51,7 @@ def get_card(db: SessionDep):
     return card(db)
 
 
-@router.post("/preferences")
+@router.post("/preferences", responses={422: {"description": "Unknown preference"}})
 def add_preference(req: PrefRequest, db: SessionDep):
     if req.kind not in PREFERENCES:
         raise HTTPException(status_code=422, detail=f"Unknown preference: {req.kind}")
@@ -73,7 +74,7 @@ def remove_preference(kind: str, db: SessionDep):
     return card(db)
 
 
-@router.delete("/concepts/{concept_id}/known")
+@router.delete("/concepts/{concept_id}/known", responses=NOT_FOUND)
 def not_known(concept_id: str, db: SessionDep):
     c = _concept(db, concept_id)
     c.level, c.right_turns, c.updated_at = "taught", [], utc_now()      # the learner says they do not know it yet: earlier right answers no longer count
@@ -82,7 +83,7 @@ def not_known(concept_id: str, db: SessionDep):
     return card(db)
 
 
-@router.delete("/concepts/{concept_id}/misconception")
+@router.delete("/concepts/{concept_id}/misconception", responses=NOT_FOUND)
 def clear_misconception(concept_id: str, db: SessionDep):
     c = _concept(db, concept_id)
     c.misconception, c.misconception_corrected, c.misconception_lesson, c.updated_at = None, False, None, utc_now()
