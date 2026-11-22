@@ -290,7 +290,7 @@ export function ChatPanel({
   const groundedLabel = activeLearnerIntent?.relationshipLabel || activeLearnerIntent?.candidates[0]?.label;
 
   return (
-    <div role="complementary" aria-label="AI tutor chat" style={{
+    <aside aria-label="AI tutor chat" style={{
       width: layout === 'phone' ? '100%' : layout === 'compact' ? '320px' : '380px',
       minWidth: layout === 'phone' ? 0 : layout === 'compact' ? '280px' : '320px',
       flex: layout === 'phone' ? 1 : undefined, minHeight: 0, display: 'flex', flexDirection: 'column',
@@ -306,7 +306,7 @@ export function ChatPanel({
           {isAgentThinking && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 400, color: 'var(--ink-2)' }}>
               <span aria-hidden="true" style={dot('var(--accent)', true)} />
-              Working…
+              {' '}Working…
             </span>
           )}
         </span>
@@ -321,9 +321,9 @@ export function ChatPanel({
       </div>
 
       {voiceUnavailable && (
-        <div role="status" style={{ ...strip, background: 'var(--warn-soft)', color: 'var(--warn)', fontWeight: 500 }}>
+        <output style={{ ...strip, background: 'var(--warn-soft)', color: 'var(--warn)', fontWeight: 500 }}>
           Voice is unavailable right now, so this explanation is text only. The drawing and chat still work.
-        </div>
+        </output>
       )}
 
       {path.length > 0 && (
@@ -414,7 +414,7 @@ export function ChatPanel({
         {isAgentThinking && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ink-2)', fontSize: '13px' }}>
             <span aria-hidden="true" style={dot('var(--accent)', true)} />
-            Drawing and preparing the voice…
+            {' '}Drawing and preparing the voice…
           </div>
         )}
 
@@ -441,11 +441,11 @@ export function ChatPanel({
 
       {/* One consistent strip for every transient status */}
       {bargeInNotice && (
-        <div role="status" style={{ ...strip, marginTop: '8px' }}>
+        <output style={{ ...strip, marginTop: '8px' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
             <span aria-hidden="true" style={dot('var(--violet)')} />Tutor interrupted. Listening to your question…
           </span>
-        </div>
+        </output>
       )}
 
       {sendError && (
@@ -463,19 +463,19 @@ export function ChatPanel({
       )}
 
       {isTranscribing && (
-        <div role="status" style={strip}>
+        <output style={strip}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--ink)' }}>
             <span aria-hidden="true" style={dot('var(--accent)', true)} />Transcribing your recording…
           </span>
-        </div>
+        </output>
       )}
 
       {isListening && (
         <div style={{ ...strip, marginTop: '8px', flexWrap: 'wrap' }}>
-          <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--ink)' }}>
+          <output style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--ink)' }}>
             <span aria-hidden="true" style={dot('var(--danger)', true)} />
             {isHandsFree ? 'Listening. I will send when you pause.' : 'Listening. Press Done when finished.'}
-          </span>
+          </output>
           <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', gap: '3px', height: '16px' }}>
             {[0.4, 0.9, 1.2, 0.7, 0.5, 1, 0.6].map((mult, idx) => (
               <span key={idx} style={{
@@ -486,7 +486,7 @@ export function ChatPanel({
           </span>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', minHeight: '28px' }}>
             <input type="checkbox" checked={isHandsFree} onChange={e => toggleHandsFree(e.target.checked)} />
-            Send when I pause
+            {' '}Send when I pause
           </label>
           <button type="button" onClick={() => stopListening()} style={linkBtn}>Done</button>
         </div>
@@ -562,7 +562,7 @@ export function ChatPanel({
           {isSending ? '…' : 'Send'}
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
 

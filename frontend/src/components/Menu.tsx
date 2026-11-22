@@ -87,6 +87,7 @@ export function Menu({ label, items, align = 'right', icon }: Readonly<{
         <div
           id={menuId}
           role="menu"
+          tabIndex={-1}
           aria-label={label}
           onKeyDown={onMenuKey}
           style={{

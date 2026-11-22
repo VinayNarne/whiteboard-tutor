@@ -162,6 +162,7 @@ function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '14px', flexWrap: 'wrap' }}>
           <div
             role="radiogroup"
+            tabIndex={-1}
             aria-label="Learning depth"
             onKeyDown={e => {
               const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
@@ -284,7 +285,7 @@ function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => 
 const FOCUSABLE = 'button,[href],input,textarea,select,[tabindex]:not([tabindex="-1"])';
 
 function useDialogFocus(open: boolean) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!open || !el) return;
@@ -329,7 +330,7 @@ function PhoneTabs({ tab, onChange, unread }: Readonly<{
     document.getElementById(`tab-${next.id}`)?.focus();
   };
   return (
-    <div role="tablist" aria-label="Sections" onKeyDown={onKey} style={{
+    <div role="tablist" tabIndex={-1} aria-label="Sections" onKeyDown={onKey} style={{
       display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg)', flexShrink: 0,
     }}>
       {PANE_TABS.map(t => (
@@ -744,22 +745,20 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
             }}
           />
         ) : (
-          <span
-            role="heading" aria-level={1}
+          <h1
             onDoubleClick={() => setIsEditingNotebook(true)}
             title="Double-click to rename"
             style={{
-              color: 'var(--ink)', fontSize: '15px', fontWeight: 600, letterSpacing: '-0.01em',
+              margin: 0, color: 'var(--ink)', fontSize: '15px', fontWeight: 600, letterSpacing: '-0.01em',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '50vw',
             }}
           >
             {parseTopic(notebookTopic).text}
-          </span>
+          </h1>
         )}
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span
-            role="status"
+          <output
             title={isConnected ? 'Connected' : 'Reconnecting…'}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--ink-2)', fontSize: '12px' }}
           >
@@ -768,7 +767,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
               background: isConnected ? 'var(--ok)' : 'var(--danger)',
             }} />
             {isConnected ? <span className="sr-only">Connected</span> : 'Reconnecting…'}
-          </span>
+          </output>
           <Menu label="Notebook" items={[
             { label: 'Overview and export', onSelect: () => setShowSummaryModal(true) },
             { label: 'Rename notebook', onSelect: () => setIsEditingNotebook(true) },
@@ -861,7 +860,8 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 100, backdropFilter: 'blur(5px)',
         }}>
-          <div ref={summaryDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Notebook summary" style={{
+          <dialog open ref={summaryDialogRef} tabIndex={-1} aria-modal="true" aria-label="Notebook summary" style={{
+            position: 'static', margin: 0, color: 'inherit',
             background: 'var(--panel)',
             border: '1px solid var(--border)',
             borderRadius: '16px',
@@ -954,7 +954,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
                 Save as PDF
               </button>
             </div>
-          </div>
+          </dialog>
         </div>
       )}
 
@@ -966,7 +966,8 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 100, backdropFilter: 'blur(4px)',
         }}>
-          <div ref={shortcutsDialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" style={{
+          <dialog open ref={shortcutsDialogRef} tabIndex={-1} aria-modal="true" aria-label="Keyboard shortcuts" style={{
+            position: 'static', margin: 0, color: 'inherit',
             background: 'var(--panel)',
             border: '1px solid var(--border)',
             borderRadius: '16px',
@@ -1026,7 +1027,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
                 Got it
               </button>
             </div>
-          </div>
+          </dialog>
         </div>
       )}
     </div>

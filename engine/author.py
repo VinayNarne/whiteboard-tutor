@@ -144,7 +144,7 @@ def drop_praise(text: str) -> str:
 def last_question(history) -> str:
     """The last question the tutor asked in its latest reply, or "" (scene mode reminds the tutor of it so it moves on)."""
     reply = next((m.get("content") or "" for m in reversed(history or []) if m.get("role") == "assistant"), "")
-    asked = re.findall(r"[^.!?\n]*\?", re.sub(r"\S+://\S+", "", reply))   # a link's "?" is not a question
+    asked = re.findall(r"[^.!?\n]*\?", re.sub(r"\S+://\S+", "", reply[-2000:]))   # a link's "?" is not a question
     return asked[-1].strip()[:300] if asked else ""
 
 

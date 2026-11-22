@@ -79,7 +79,7 @@ export function PageSidebar({
 
   if (isCollapsed && !phone) {
     return (
-      <div role="navigation" aria-label="Notebook pages" style={{
+      <nav aria-label="Notebook pages" style={{
         width: '52px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
         background: 'var(--bg)', borderRight: '1px solid var(--border)', padding: '12px 0',
       }}>
@@ -107,12 +107,12 @@ export function PageSidebar({
           ))}
         </div>
         <button onClick={onNewPage} aria-label="New page" title="New page" style={{ ...textButton, fontSize: '18px', padding: '2px 8px', color: 'var(--accent)' }}>+</button>
-      </div>
+      </nav>
     );
   }
 
   return (
-    <div role="navigation" aria-label="Notebook pages" style={{
+    <nav aria-label="Notebook pages" style={{
       width: phone ? '100%' : '240px', minWidth: phone ? 0 : '210px', display: 'flex', flexDirection: 'column', flex: phone ? 1 : undefined,
       background: 'var(--bg)', borderRight: phone ? 'none' : '1px solid var(--border)',
     }}>
@@ -159,7 +159,7 @@ export function PageSidebar({
               key={page.id}
               id={`page-btn-${i + 1}`}
               className="page-row"
-              role="group"
+              role="button"
               tabIndex={0}
               aria-label={`Page ${i + 1}: ${page.title || 'Untitled'} (${page.status})`}
               aria-current={isActive ? 'page' : undefined}
@@ -215,7 +215,7 @@ export function PageSidebar({
               )}
 
               {editingPageId !== page.id && (
-                <span className="row-actions" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                <span className="row-actions" role="presentation" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                   <Menu label={`Actions for page ${i + 1}`} icon="dots" items={[
                     { label: 'Rename', onSelect: () => startEditing(page) },
                     ...(pages.length > 1 ? [{ label: 'Delete page', onSelect: () => askDelete(page, i) }] : []),
@@ -240,9 +240,9 @@ export function PageSidebar({
             <div style={{ width: `${fullness * 100}%`, height: '100%', background: fullnessColor, borderRadius: '1px', transition: 'width 0.3s ease' }} />
           </div>
           {elementCount >= SOFT_CAP && (
-            <div role="status" style={{ fontSize: '12px', color: 'var(--warn)', marginTop: '6px' }}>
+            <output style={{ display: 'block', fontSize: '12px', color: 'var(--warn)', marginTop: '6px' }}>
               This page is getting full. A new page would give the next idea room.
-            </div>
+            </output>
           )}
         </div>
       )}
@@ -272,6 +272,6 @@ export function PageSidebar({
           New page
         </button>
       </div>
-    </div>
+    </nav>
   );
 }

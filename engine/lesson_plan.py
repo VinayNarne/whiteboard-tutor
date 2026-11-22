@@ -181,7 +181,7 @@ def path_titles(plan: str) -> list:
     (facts, expected answers, misconceptions) stays private."""
     steps = (plan or "").split("STEPS:", 1)[-1].split("MISCONCEPTIONS:", 1)[0] if "STEPS:" in (plan or "") else ""
     titles = []
-    for m in re.finditer(r"^\s*(?:Step\s+)?(\d+)\s*[.):]\s*(.+)$", steps, re.M | re.I):   # gpt-4.1-mini writes "Step 1: ..."
+    for m in re.finditer(r"^[ \t]*(?:Step\s+)?(\d+)\s*[.):]\s*(.+)$", steps[:20000], re.M | re.I):   # gpt-4.1-mini writes "Step 1: ..."
         text = re.sub(r"^\s*(Idea|Title|Step \d+)\s*[:\-–—]\s*", "", m.group(2), flags=re.I)   # "Idea: ..." → "..."
         title = re.split(r"\s[-–—]\s|:|;", text, maxsplit=1)[0].strip()   # not at ". ": "Early Saving vs. Late Saving" was cut
         words = title.split()

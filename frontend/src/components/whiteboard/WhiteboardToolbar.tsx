@@ -107,8 +107,8 @@ export function WhiteboardToolbar({
         ))}
 
         {(learnerTool === 'pen' || learnerTool === 'highlighter') && (
-          <div role="group" aria-label="Ink colour" style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
+          <fieldset aria-label="Ink colour" style={{
+            display: 'flex', alignItems: 'center', gap: '6px', borderTop: 0, borderRight: 0, borderBottom: 0, margin: 0, minInlineSize: 0,
             borderLeft: '1px solid var(--border)', padding: '0 8px', marginLeft: '4px',
           }}>
             {[
@@ -130,7 +130,7 @@ export function WhiteboardToolbar({
                 }}
               />
             ))}
-          </div>
+          </fieldset>
         )}
 
         {[

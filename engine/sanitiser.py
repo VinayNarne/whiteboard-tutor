@@ -155,8 +155,8 @@ _KNOWN_TAGS = {t.lower() for t in ALLOWED_TAGS | DISALLOWED_TAGS_CONFIRMED | {
 _XML_ENTITIES = {"amp", "lt", "gt", "quot", "apos"}
 _NAMED_ENTITY = re.compile(r"&([A-Za-z][A-Za-z0-9]{1,31});")
 # HTML habits the model brings into board text: <br/> is a line break; inline tags only style the words inside them.
-_LINE_BREAK = re.compile(r"<\s*/?\s*br\s*/?\s*>", re.IGNORECASE)
-_INLINE_HTML = re.compile(r"</?(?:b|i|u|em|strong|sub|sup|small|span|p|code)(?:\s+[^<>]*)?/?>", re.IGNORECASE)
+_LINE_BREAK = re.compile(r"<\s*(?:/\s*)?br\s*(?:/\s*)?>", re.IGNORECASE)
+_INLINE_HTML = re.compile(r"</?(?:b|i|u|em|strong|sub|sup|small|span|p|code)(?:\s[^<>]*)?/?>", re.IGNORECASE)
 _STRAY_AMP = re.compile(r"&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)")
 _STRAY_LT = re.compile(r"<(?!(?:/?(?:" + "|".join(sorted(_KNOWN_TAGS, key=len, reverse=True)) + r")(?=[\s/>])|[!?]))", re.IGNORECASE)
 

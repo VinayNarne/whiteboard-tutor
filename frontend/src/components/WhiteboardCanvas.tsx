@@ -1018,7 +1018,7 @@ export function WhiteboardCanvas({
 
       {/* Short confirmation / error message */}
       {toast && (
-        <div role="status" style={{
+        <output style={{
           position: 'absolute', top: 60, right: 16,
           background: 'var(--ink)', color: 'var(--panel)',
           padding: '6px 14px', borderRadius: '8px',
@@ -1028,7 +1028,7 @@ export function WhiteboardCanvas({
           animation: 'fadeIn 0.2s',
         }}>
           {toast}
-        </div>
+        </output>
       )}
 
       {/* Whiteboard surface */}
