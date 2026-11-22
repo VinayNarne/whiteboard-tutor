@@ -1,5 +1,5 @@
 # Project brief
-Last updated: 2026-11-20, getting ready for the first public push: the lesson board (scene mode) is the default tutor (`LP_SCENE_MODE=0` for the older raw-SVG one), on gpt-4.1-mini.
+Last updated: 2026-11-22. Public at github.com/VinayNarne/whiteboard-tutor; the lesson board is the only tutor (the older raw-SVG tutor was retired on 2026-11-21), on gpt-4.1-mini.
 
 ## Goal
 A one-on-one AI whiteboard tutor: it speaks and draws on an SVG board while explaining; the learner asks by chat or voice. Built for one local learner. Phase 2 (notebook memory beyond the foundations) has NOT started.

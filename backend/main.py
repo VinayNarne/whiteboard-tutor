@@ -728,111 +728,101 @@ async def remove_annotation_on_page(notebook_id: str, page_id: str, req: RemoveA
 # Chat endpoint — triggers WhiteboardAuthor
 # ---------------------------------------------------------------------------
 
-@app.post("/api/notebooks/{notebook_id}/chat", responses=_responses({404: "Notebook, page or question not found", 409: "That question already has an answer, or a newer question was asked", 429: "Too many messages; retry after the Retry-After seconds"}))
-async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
-    """
-    Receives a learner message and runs the WhiteboardAuthor agent.
-    Returns the assistant's final text response.
-    The WhiteboardAuthor emits WS events for each draw action during its run.
-    """
-    nb = session.get(Notebook, notebook_id)
-    if not nb:
-        raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
-    CHAT_LIMITER.prune()
-    wait = CHAT_LIMITER.check(notebook_id)
-    if wait:
-        raise HTTPException(status_code=429, detail=TOO_FAST, headers={"Retry-After": str(wait)})
+def _check_retry_turn(session, notebook_id: str, retry_turn_id: Optional[str]):
+    """"Try again": only the learner's latest question, and only while it has no answer. Returns that turn, or None for a fresh question."""
+    if not retry_turn_id:
+        return None
+    retry_turn = session.get(ChatTurn, retry_turn_id)
+    if not retry_turn or retry_turn.notebook_id != notebook_id or retry_turn.role != "user":
+        raise HTTPException(status_code=404, detail="That question was not found.")
+    later = session.exec(select(ChatTurn).where(
+        ChatTurn.notebook_id == notebook_id, ChatTurn.seq > retry_turn.seq,
+        ((ChatTurn.role == "user") | ((ChatTurn.role == "assistant") & (ChatTurn.status == "ok"))))).first()
+    if later:
+        raise HTTPException(status_code=409, detail="That question already has an answer, or a newer question was asked.")
+    return retry_turn
 
-    # "Try again": only the learner's latest question, and only while it has no answer
-    retry_turn = None
-    if req.retry_turn_id:
-        retry_turn = session.get(ChatTurn, req.retry_turn_id)
-        if not retry_turn or retry_turn.notebook_id != notebook_id or retry_turn.role != "user":
-            raise HTTPException(status_code=404, detail="That question was not found.")
-        later = session.exec(select(ChatTurn).where(
-            ChatTurn.notebook_id == notebook_id, ChatTurn.seq > retry_turn.seq,
-            ((ChatTurn.role == "user") | ((ChatTurn.role == "assistant") & (ChatTurn.status == "ok"))))).first()
-        if later:
-            raise HTTPException(status_code=409, detail="That question already has an answer, or a newer question was asked.")
-    message_text = retry_turn.content if retry_turn else req.message
 
-    # Resolve target page
-    if req.page_id:
-        page = session.get(Page, req.page_id)
+def _resolve_chat_page(session, notebook_id: str, page_id: Optional[str]):
+    """The page a chat message is about: the named one, else the active one (created when the notebook has none)."""
+    if page_id:
+        page = session.get(Page, page_id)
         if not page or page.notebook_id != notebook_id:
             raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
         # A learner may ask about a saved lesson board: the tutor answers, and any new block goes to a fresh page (engine/author.add_block).
-    else:
-        page = session.exec(
-            select(Page)
-            .where(Page.notebook_id == notebook_id)
-            .where(Page.status == "active")
-            .order_by(Page.page_number.desc())
-        ).first()
-        if not page:
-            # Auto-create first page
-            existing = session.exec(
-                select(Page).where(Page.notebook_id == notebook_id).order_by(Page.page_number.desc())
-            ).first()
-            next_number = (existing.page_number + 1) if existing else 1
-            page = Page(notebook_id=notebook_id, page_number=next_number, status="active")
-            session.add(page)
-            session.commit()
-            session.refresh(page)
+        return page
+    page = session.exec(
+        select(Page)
+        .where(Page.notebook_id == notebook_id)
+        .where(Page.status == "active")
+        .order_by(Page.page_number.desc())
+    ).first()
+    if page:
+        return page
+    # Auto-create first page
+    existing = session.exec(
+        select(Page).where(Page.notebook_id == notebook_id).order_by(Page.page_number.desc())
+    ).first()
+    next_number = (existing.page_number + 1) if existing else 1
+    page = Page(notebook_id=notebook_id, page_number=next_number, status="active")
+    session.add(page)
+    session.commit()
+    session.refresh(page)
+    return page
 
-    # Collect existing element IDs across ALL events (draw + modify)
-    all_existing_events = session.exec(
-        select(PageEvent).where(PageEvent.page_id == page.id)
-    ).all()
-    existing_element_ids = {e.element_id for e in all_existing_events if e.kind in ("draw", "modify")}
+
+def _existing_element_ids(session, page) -> set:
+    """Element IDs across ALL events (draw + modify), plus the nodes inside a lesson board's steps."""
+    events = session.exec(select(PageEvent).where(PageEvent.page_id == page.id)).all()
+    ids = {e.element_id for e in events if e.kind in ("draw", "modify")}
     if board_blocks(page.current_svg):   # a lesson board: the learner may point at a node or group inside a step
-        existing_element_ids |= set(SCENE_ID_RE.findall(page.current_svg))
+        ids |= set(SCENE_ID_RE.findall(page.current_svg))
+    return ids
 
-    # Strictly validate selected_element_ids against authoritative elements on this page
-    valid_selected_ids = []
-    pointed_at = (retry_turn.about_element_ids if retry_turn else req.selected_element_ids) or []
-    if pointed_at:
-        valid_selected_ids = [eid for eid in pointed_at if eid in existing_element_ids]
 
+def _friendly_title(eid: str) -> str:
+    eid = re.sub(r"^b\d+_(?!s\d+$)", "", eid)   # a lesson-board node: 'b2_load_balancer' reads 'Load Balancer'
+    return eid.replace("_", " ").replace("-", " ").title()
+
+
+def _spatial_message(req: ChatRequest, valid_selected_ids: list, message_text: str, page_id: str) -> str:
+    """The learner's message, prefixed with what they pointed at (empty selection: unchanged)."""
+    if not valid_selected_ids:
+        return message_text
     allowed_gestures = {"circle", "underline", "point", "scribble"}
     gesture = req.gesture_type if req.gesture_type in allowed_gestures else "circle"
+    score_desc = f" ({req.match_score:.2f} match)" if req.match_score is not None else ""
+    if len(valid_selected_ids) == 2:
+        t1 = f"'{valid_selected_ids[0]}' ({_friendly_title(valid_selected_ids[0])})"
+        t2 = f"'{valid_selected_ids[1]}' ({_friendly_title(valid_selected_ids[1])})"
+        spatial_context = f"[Learner {gesture}d relationship between diagram elements: {t1} and {t2}{score_desc}]"
+    else:
+        targets = ", ".join(f"'{eid}' ({_friendly_title(eid)})" for eid in valid_selected_ids)
+        spatial_context = f"[Learner {gesture}d diagram element(s): {targets}{score_desc}]"
+    logger.info(
+        BackendEvent.CHAT_RECEIVED,
+        f"Spatial grounding attached for page {page_id}: {valid_selected_ids} (gesture: {gesture}, relationship={len(valid_selected_ids) == 2})"
+    )
+    return f"{spatial_context}\nLearner Question: {message_text}"
 
-    augmented_message = message_text
-    if valid_selected_ids:
-        def _friendly_title(eid: str) -> str:
-            eid = re.sub(r"^b\d+_(?!s\d+$)", "", eid)   # a lesson-board node: 'b2_load_balancer' reads 'Load Balancer'
-            return eid.replace("_", " ").replace("-", " ").title()
 
-        score_desc = f" ({req.match_score:.2f} match)" if req.match_score is not None else ""
-        if len(valid_selected_ids) == 2:
-            t1 = f"'{valid_selected_ids[0]}' ({_friendly_title(valid_selected_ids[0])})"
-            t2 = f"'{valid_selected_ids[1]}' ({_friendly_title(valid_selected_ids[1])})"
-            spatial_context = f"[Learner {gesture}d relationship between diagram elements: {t1} and {t2}{score_desc}]"
-        else:
-            targets = ", ".join(f"'{eid}' ({_friendly_title(eid)})" for eid in valid_selected_ids)
-            spatial_context = f"[Learner {gesture}d diagram element(s): {targets}{score_desc}]"
-
-        augmented_message = f"{spatial_context}\nLearner Question: {message_text}"
-        logger.info(
-            BackendEvent.CHAT_RECEIVED,
-            f"Spatial grounding attached for page {page.id}: {valid_selected_ids} (gesture: {gesture}, relationship={len(valid_selected_ids) == 2})"
-        )
-
-    # A question asked on a saved lesson board (pointing included, checked above against that board) is answered on the notebook's
-    # active board, so new blocks continue the current lesson. Drawing from the saved board would have opened a page, and opening a
-    # page saves the active one: asking about an old board locked the current lesson (code review). With no active board the tutor
-    # opens one itself (engine/author.add_block).
+def _answer_page(session, notebook_id: str, page, existing_element_ids: set):
+    """A question asked on a saved lesson board (pointing included, checked above against that board) is answered on the notebook's
+    active board, so new blocks continue the current lesson. Drawing from the saved board would have opened a page, and opening a
+    page saves the active one: asking about an old board locked the current lesson (code review). With no active board the tutor
+    opens one itself (engine/author.add_block)."""
     if page.status == "saved":
         current = session.exec(select(Page).where(Page.notebook_id == notebook_id, Page.status == "active")
                                .order_by(Page.page_number.desc())).first()
         if current:
-            page = current
-            existing_element_ids = set(SCENE_ID_RE.findall(page.current_svg or ""))
+            return current, set(SCENE_ID_RE.findall(current.current_svg or ""))
+    return page, existing_element_ids
 
-    # Build page state
+
+def _page_state(page, notebook_id: str) -> dict:
     from engine.validator import extract_element_bboxes, summarize_spatial_layout
     occupied = extract_element_bboxes(page.current_svg)
-    page_state = {
+    return {
         "current_svg": page.current_svg,
         "element_count": page.element_count,
         "notebook_id": notebook_id,
@@ -843,7 +833,9 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
         "available_space": summarize_spatial_layout(occupied),
     }
 
-    # Build prior pages summary
+
+def _tutor_context(session, notebook_id: str, page, retry_turn):
+    """What the tutor reads besides the board: (prior pages summary, chat history, how long the learner was away)."""
     all_pages = session.exec(
         select(Page)
         .where(Page.notebook_id == notebook_id)
@@ -864,86 +856,95 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     logger.info(BackendEvent.CONTEXT_BUILT, f"Context for the tutor: {len(all_pages)} earlier page(s), {summaries_in_context(all_pages)} with a summary, {len(history)} history turn(s)",
                 data={"prior_pages": len(all_pages), "with_summary": summaries_in_context(all_pages), "history_turns": len(history),
                       "summaries_off": os.getenv("LP_TEST_SUMMARIES_OFF") == "1", "history_limit": HISTORY_TURNS})
+    return prior_summary, history, away_for
 
+
+def _next_turn_seq(db, notebook_id: str) -> int:
+    return (db.exec(select(func.max(ChatTurn.seq)).where(ChatTurn.notebook_id == notebook_id)).one() or 0) + 1
+
+
+async def _store_learner_turn(session, notebook_id: str, page, req: ChatRequest, retry_turn, valid_selected_ids: list) -> str:
+    """Stores the learner's message (or, on a retry, drops the failed answer to it) and returns the learner turn's id."""
     if retry_turn:
         # The earlier failed answer to this question is replaced by this attempt (the learner's turn stays as it is, once)
-        user_turn = retry_turn
         for old in session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id, ChatTurn.role == "assistant",
                                                        ChatTurn.status == "failed", ChatTurn.seq > retry_turn.seq)).all():
             session.delete(old)
         session.commit()
-    else:
-        # Persist learner message as a ChatTurn
-        user_turn_seq = (session.exec(select(func.max(ChatTurn.seq)).where(ChatTurn.notebook_id == notebook_id)).one() or 0) + 1
-        user_turn = ChatTurn(
-            notebook_id=notebook_id,
-            page_id=page.id,
-            seq=user_turn_seq,
-            role="user",
-            content=req.message,
-            about_element_ids=valid_selected_ids or None,       # "ask about a drawing": which drawings the question is about
-        )
-        session.add(user_turn)
-        session.commit()
+        return retry_turn.id
+    # Persist learner message as a ChatTurn
+    user_turn = ChatTurn(
+        notebook_id=notebook_id,
+        page_id=page.id,
+        seq=_next_turn_seq(session, notebook_id),
+        role="user",
+        content=req.message,
+        about_element_ids=valid_selected_ids or None,       # "ask about a drawing": which drawings the question is about
+    )
+    session.add(user_turn)
+    session.commit()
 
-        # Emit learner message via WS so frontend shows it immediately
-        await emit_notebook_event(notebook_id, SessionEvent.CHAT_TURN, {
-            "role": "user", "content": req.message, "page_id": page.id
-        })
-    user_turn_id = user_turn.id
+    # Emit learner message via WS so frontend shows it immediately
+    await emit_notebook_event(notebook_id, SessionEvent.CHAT_TURN, {
+        "role": "user", "content": req.message, "page_id": page.id
+    })
+    return user_turn.id
 
-    # Scene mode: the first learning question gets a private lesson plan (engine/lesson_plan.py), written WHILE the tutor gives its first
-    # answer and used from the next turn: written first, it was 8 of the 12 s before anything appeared (the first answer's main gain from
-    # it, answering the whole question, is in the tutor's own rules). Saved when this turn ends.
-    # The first plan also sets the course (goal and roadmap); each new page the tutor starts gets the next lesson's plan (_plan_next_lesson).
-    plan_task = asyncio.create_task(write_plan(nb.topic, message_text)) if not nb.lesson_plan else None
 
-    # -----------------------------------------------------------------------
-    # Closures for emit and persist passed into the agent
-    # -----------------------------------------------------------------------
+def _event_applier(kind: str, svg_fragment: str, old_svg_fragment: Optional[str]):
+    """The page update that goes with one stored event: composite SVG and element count."""
+    def apply(pg):
+        if kind == "draw":
+            pg.current_svg = (pg.current_svg or "") + "\n" + svg_fragment
+            pg.element_count += 1
+        elif kind == "modify":
+            # Replace old element in composite SVG
+            if pg.current_svg and old_svg_fragment:
+                pg.current_svg = pg.current_svg.replace(old_svg_fragment, svg_fragment, 1)
+    return apply
 
-    active = {"page_id": page.id}  # the agent may switch pages mid-turn (start_new_page)
 
-    async def _emit(event_type: str, payload: dict):
-        await emit_notebook_event(notebook_id, event_type, payload)
+class _ChatTurnState:
+    """The request state the agent's callbacks share: the notebook, the page the agent is on (it may switch mid-turn), the tool log
+    it fills, and the learner turn's id. Each method is passed to the agent or called when the turn ends."""
 
-    async def _persist(kind: str, element_id: str, svg_fragment: str,
-                       narration: Optional[str] = None,
-                       audio_path: Optional[str] = None,
-                       alignment_path: Optional[str] = None,
-                       old_svg_fragment: Optional[str] = None,
-                       block: Optional[dict] = None):
-        def apply(pg):
-            # Update page composite SVG and element count
-            if kind == "draw":
-                pg.current_svg = (pg.current_svg or "") + "\n" + svg_fragment
-                pg.element_count += 1
-            elif kind == "modify":
-                # Replace old element in composite SVG
-                if pg.current_svg and old_svg_fragment:
-                    pg.current_svg = pg.current_svg.replace(old_svg_fragment, svg_fragment, 1)
-        append_event(engine, active["page_id"], apply,       # None when the page was locked mid-session
+    def __init__(self, nb, message_text: str, page_id: str):
+        self.nb = nb
+        self.notebook_id = nb.id
+        self.message_text = message_text
+        self.active = {"page_id": page_id}  # the agent may switch pages mid-turn (start_new_page)
+        self.tool_log: list = []            # filled by the agent: one record per tool call of this turn
+        self.user_turn_id = ""
+
+    async def emit(self, event_type: str, payload: dict):
+        await emit_notebook_event(self.notebook_id, event_type, payload)
+
+    async def persist(self, kind: str, element_id: str, svg_fragment: str,
+                      narration: Optional[str] = None,
+                      audio_path: Optional[str] = None,
+                      alignment_path: Optional[str] = None,
+                      old_svg_fragment: Optional[str] = None,
+                      block: Optional[dict] = None):
+        append_event(engine, self.active["page_id"], _event_applier(kind, svg_fragment, old_svg_fragment),       # None when the page was locked mid-session
                      kind=kind, element_id=element_id, svg_fragment=svg_fragment, old_svg_fragment=old_svg_fragment,
                      narration=narration, audio_path=audio_path, alignment_path=alignment_path, block=block)
 
-    # -----------------------------------------------------------------------
-
-    async def _new_page(title: Optional[str]) -> str:
+    async def new_page(self, title: Optional[str]) -> str:
         with Session(engine) as db:
-            created = await start_page(notebook_id, StartPageRequest(title=title), db)
-        active["page_id"] = created["id"]
+            created = await start_page(self.notebook_id, StartPageRequest(title=title), db)
+        self.active["page_id"] = created["id"]
         return created["id"]
 
-    async def _plan_next_lesson() -> str:
+    async def plan_next_lesson(self) -> str:
         """start_new_page in a notebook with a course: the new page gets the next lesson's plan (the tutor waits for it), or "" to go on."""
-        if not nb.course:
+        if not self.nb.course:
             return ""
         with Session(engine) as db:
-            pages = db.exec(select(Page).where(Page.notebook_id == notebook_id, Page.id != active["page_id"])).all()
-        plan = await write_next_plan(nb.course, lessons_taught(pages), message_text)
+            pages = db.exec(select(Page).where(Page.notebook_id == self.notebook_id, Page.id != self.active["page_id"])).all()
+        plan = await write_next_plan(self.nb.course, lessons_taught(pages), self.message_text)
         if plan:
             with Session(engine) as db:
-                new_page = db.get(Page, active["page_id"])
+                new_page = db.get(Page, self.active["page_id"])
                 if new_page:
                     new_page.lesson_plan = plan
                     lesson = re.match(r"LESSON:\s*(?:\d+[.):]?\s*)?(.+)", plan)
@@ -953,8 +954,52 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
                     db.commit()
         return plan
 
-    # Run the agent (with live barge-in task tracking & cancellation)
-    # -----------------------------------------------------------------------
+    async def load_board(self, page_id: str):
+        """replace_block: every step of the page as it is stored now, and the latest record of each block (a replacement stores a newer one)."""
+        with Session(engine) as db:
+            events = db.exec(select(PageEvent).where(PageEvent.page_id == page_id).order_by(PageEvent.seq)).all()
+        frags = {e.element_id: e.svg_fragment for e in events if e.kind == "modify" or is_drawing(e)}
+        return frags, {e.block["n"]: e.block for e in events if e.block}
+
+    def keep_records(self):
+        """A turn with no reply to store (it only drew, or the learner interrupted it) still keeps what the tutor recorded: a hidden tutor
+        row (status "silent") that the checklist counts and the conversation, chat panel, summaries and export skip. Before this, those
+        records were lost (architecture review, 2026-11-16)."""
+        if not any(r.get("tool") == "record_step" for r in self.tool_log):
+            return
+        with Session(engine) as db:
+            last = db.exec(select(func.max(ChatTurn.seq)).where(ChatTurn.notebook_id == self.notebook_id)).one() or 0
+            db.add(ChatTurn(notebook_id=self.notebook_id, page_id=self.active["page_id"], seq=last + 1, role="assistant", content="",
+                            tool_calls_made=self.tool_log, status="silent"))
+            db.commit()
+
+    async def fail(self, status: int, code: str, text: str, exc: Exception):
+        """The turn has no answer: keep it as a failed tutor turn (shown with a retry button, never read by the tutor) and answer with a typed error."""
+        logger.error(BackendEvent.CHAT_FAILED, f"Chat turn failed ({code}): {type(exc).__name__}: {exc}",
+                     data={"error": code, "exception": f"{type(exc).__name__}: {exc}"[:300], "turn_id": self.user_turn_id}, exc_info=True)
+        with Session(engine) as db:
+            last = db.exec(select(func.max(ChatTurn.seq)).where(ChatTurn.notebook_id == self.notebook_id)).one() or 0
+            db.add(ChatTurn(notebook_id=self.notebook_id, page_id=self.active["page_id"], seq=last + 1, role="assistant", content=text,
+                            tool_calls_made=self.tool_log, status="failed"))
+            db.commit()
+        await emit_notebook_event(self.notebook_id, SessionEvent.CHAT_TURN, {
+            "role": "assistant", "content": text, "page_id": self.active["page_id"], "status": "failed", "retry_turn_id": self.user_turn_id})
+        return JSONResponse(status_code=status, content={"error": code, "retryable": True, "turn_id": self.user_turn_id, "detail": text})
+
+    async def fail_from(self, exc: Exception):
+        """Map an exception that broke the turn to its typed error."""
+        if isinstance(exc, ModelUnreachable):
+            return await self.fail(503, "model_unreachable", MODEL_UNREACHABLE_MESSAGE, exc)
+        if isinstance(exc, EmptyReply):
+            return await self.fail(503, "empty_reply", EMPTY_REPLY_MESSAGE, exc)
+        # anything else that broke the turn: the learner still gets an answer they can retry
+        if not model_configured():
+            return await self.fail(503, "model_not_configured", MODEL_NOT_CONFIGURED_MESSAGE, exc)
+        return await self.fail(500, "turn_failed", "Something went wrong while the tutor was working on that. Please try again.", exc)
+
+
+async def _cancel_previous_agent(notebook_id: str):
+    """Live barge-in: a new message cancels the notebook's agent task that is still running."""
     prev_task = ACTIVE_AGENT_TASKS.get(notebook_id)
     if prev_task and not prev_task.done():
         logger.info(f"Barge-in: Cancelling existing agent task for notebook {notebook_id}")
@@ -964,19 +1009,129 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
         except (asyncio.CancelledError, Exception):
             pass
 
-    tool_log: list = []                                       # filled by the agent: one record per tool call of this turn
+
+def _lesson_args(planned: bool, plan_now: str, records: list, away_for: str):
+    """The lesson path and final for the agent (None, None without a lesson plan)."""
+    if not planned:
+        return None, None
+    return lesson_path(plan_now, records, bool(away_for)), lesson_final(plan_now, records)
+
+
+async def _save_first_plan(plan_task, notebook_id: str, page_id: str, tool_log: list):
+    """Saves the plan written alongside the first answer (write_plan never raises; "" = no plan: greeting or failure)."""
+    if plan_task is None:
+        return
+    plan = await plan_task
+    if not plan:
+        return
+    course, plan = split_course(plan)
+    with Session(engine) as db:
+        fresh = db.get(Notebook, notebook_id)
+        if fresh and not fresh.lesson_plan:
+            fresh.lesson_plan, fresh.course = plan, course or None
+            db.add(fresh)
+            first_page = db.get(Page, page_id)
+            if first_page and course:
+                first_page.lesson_plan = plan
+                db.add(first_page)
+            db.commit()
+    if path_titles(plan):   # this first answer gave the short answer to the whole question, which is step 1 (live: never
+        # recorded, because the plan did not exist yet, so the next page taught step 1 again)
+        tool_log.append({"tool": "record_step", "status": "ok", "iteration": 0, "element_id": "1", "event": "taught", "page_id": page_id})
+
+
+async def _await_agent(turn: _ChatTurnState, current_task, plan_task, page):
+    """Waits for the agent. Returns (reply text, None), or (None, the response to send now) when the turn was interrupted or failed.
+    The first lesson plan is saved when the turn ends, however it ends."""
+    notebook_id = turn.notebook_id
+    try:
+        return await current_task, None
+    except asyncio.CancelledError:
+        logger.info(f"Agent turn cancelled via barge-in for notebook {notebook_id}")
+        turn.keep_records()
+        return None, {"response": "[Interrupted by learner]", "page_id": page.id, "interrupted": True}
+    except Exception as e:
+        return None, await turn.fail_from(e)
+    finally:
+        if ACTIVE_AGENT_TASKS.get(notebook_id) is current_task:
+            ACTIVE_AGENT_TASKS.pop(notebook_id, None)
+        await _save_first_plan(plan_task, notebook_id, page.id, turn.tool_log)
+
+
+async def _store_reply(turn: _ChatTurnState, response_text: str) -> dict:
+    """Stores and sends the tutor's reply; no reply (the board is the answer) stores no empty tutor turn."""
+    # Strip any [[MARK:...]] tokens from assistant response before persisting and emitting
+    response_text = strip_markers(response_text).strip()
+    page_id = turn.active["page_id"]
+    if not response_text:
+        # The model wrote nothing after drawing or annotating (an empty reply with nothing drawn raised EmptyReply above): the board is the answer. No empty
+        # tutor turn is stored or sent, so no empty bubble and no wasted history slot; the empty_reply event in the log has the details.
+        turn.keep_records()
+        return {"response": "", "page_id": page_id}
+
+    with Session(engine) as db:
+        db.add(ChatTurn(
+            notebook_id=turn.notebook_id,
+            page_id=page_id,
+            seq=_next_turn_seq(db, turn.notebook_id),
+            role="assistant",
+            content=response_text,
+            tool_calls_made=turn.tool_log,                         # [] for a reply that drew nothing
+        ))
+        db.commit()
+
+    await emit_notebook_event(turn.notebook_id, SessionEvent.CHAT_TURN, {
+        "role": "assistant", "content": response_text, "page_id": page_id
+    })
+    return {"response": response_text, "page_id": page_id}
+
+
+@app.post("/api/notebooks/{notebook_id}/chat", responses=_responses({404: "Notebook, page or question not found", 409: "That question already has an answer, or a newer question was asked", 429: "Too many messages; retry after the Retry-After seconds"}))
+async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
+    """
+    Receives a learner message and runs the WhiteboardAuthor agent.
+    Returns the assistant's final text response.
+    The WhiteboardAuthor emits WS events for each draw action during its run.
+    """
+    nb = session.get(Notebook, notebook_id)
+    if not nb:
+        raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
+    CHAT_LIMITER.prune()
+    wait = CHAT_LIMITER.check(notebook_id)
+    if wait:
+        raise HTTPException(status_code=429, detail=TOO_FAST, headers={"Retry-After": str(wait)})
+
+    retry_turn = _check_retry_turn(session, notebook_id, req.retry_turn_id)
+    message_text = retry_turn.content if retry_turn else req.message
+    page = _resolve_chat_page(session, notebook_id, req.page_id)
+    existing_element_ids = _existing_element_ids(session, page)
+
+    # Strictly validate selected_element_ids against authoritative elements on this page
+    pointed_at = (retry_turn.about_element_ids if retry_turn else req.selected_element_ids) or []
+    valid_selected_ids = [eid for eid in pointed_at if eid in existing_element_ids]
+    augmented_message = _spatial_message(req, valid_selected_ids, message_text, page.id)
+
+    page, existing_element_ids = _answer_page(session, notebook_id, page, existing_element_ids)
+    page_state = _page_state(page, notebook_id)
+    prior_summary, history, away_for = _tutor_context(session, notebook_id, page, retry_turn)
+
+    turn = _ChatTurnState(nb, message_text, page.id)
+    turn.user_turn_id = await _store_learner_turn(session, notebook_id, page, req, retry_turn, valid_selected_ids)
+
+    # Scene mode: the first learning question gets a private lesson plan (engine/lesson_plan.py), written WHILE the tutor gives its first
+    # answer and used from the next turn: written first, it was 8 of the 12 s before anything appeared (the first answer's main gain from
+    # it, answering the whole question, is in the tutor's own rules). Saved when this turn ends.
+    # The first plan also sets the course (goal and roadmap); each new page the tutor starts gets the next lesson's plan (_plan_next_lesson).
+    plan_task = asyncio.create_task(write_plan(nb.topic, message_text)) if not nb.lesson_plan else None
+
+    await _cancel_previous_agent(notebook_id)
+
     planned = nb.lesson_plan
     past = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id)).all() if planned else []
     plan_now, records = current_lesson(nb, session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), past) if planned else ("", [])
 
-    async def _load_board(page_id: str):
-        """replace_block: every step of the page as it is stored now, and the latest record of each block (a replacement stores a newer one)."""
-        with Session(engine) as db:
-            events = db.exec(select(PageEvent).where(PageEvent.page_id == page_id).order_by(PageEvent.seq)).all()
-        frags = {e.element_id: e.svg_fragment for e in events if e.kind == "modify" or is_drawing(e)}
-        return frags, {e.block["n"]: e.block for e in events if e.block}
-
     async def _run_agent_wrapper():
+        path, final = _lesson_args(planned, plan_now, records, away_for)
         return await run_whiteboard_author(
             notebook_id=notebook_id,
             page_id=page.id,
@@ -988,105 +1143,24 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
             lesson_plan=plan_now,
             course=nb.course or "",
             away_for=away_for,
-            lesson_path=lesson_path(plan_now, records, bool(away_for)) if planned else None,
-            lesson_final=lesson_final(plan_now, records) if planned else None,
+            lesson_path=path,
+            lesson_final=final,
             existing_element_ids=existing_element_ids,
-            emit_fn=_emit,
-            persist_fn=_persist,
-            new_page_fn=_new_page,
-            plan_page_fn=_plan_next_lesson,
-            tool_log=tool_log,
-            load_board_fn=_load_board,
+            emit_fn=turn.emit,
+            persist_fn=turn.persist,
+            new_page_fn=turn.new_page,
+            plan_page_fn=turn.plan_next_lesson,
+            tool_log=turn.tool_log,
+            load_board_fn=turn.load_board,
         )
-
-    def keep_records():
-        """A turn with no reply to store (it only drew, or the learner interrupted it) still keeps what the tutor recorded: a hidden tutor
-        row (status "silent") that the checklist counts and the conversation, chat panel, summaries and export skip. Before this, those
-        records were lost (architecture review, 2026-11-16)."""
-        if not any(r.get("tool") == "record_step" for r in tool_log):
-            return
-        with Session(engine) as db:
-            last = db.exec(select(func.max(ChatTurn.seq)).where(ChatTurn.notebook_id == notebook_id)).one() or 0
-            db.add(ChatTurn(notebook_id=notebook_id, page_id=active["page_id"], seq=last + 1, role="assistant", content="",
-                            tool_calls_made=tool_log, status="silent"))
-            db.commit()
 
     current_task = asyncio.create_task(_run_agent_wrapper())
     ACTIVE_AGENT_TASKS[notebook_id] = current_task
 
-    async def fail(status: int, code: str, text: str, exc: Exception):
-        """The turn has no answer: keep it as a failed tutor turn (shown with a retry button, never read by the tutor) and answer with a typed error."""
-        logger.error(BackendEvent.CHAT_FAILED, f"Chat turn failed ({code}): {type(exc).__name__}: {exc}",
-                     data={"error": code, "exception": f"{type(exc).__name__}: {exc}"[:300], "turn_id": user_turn_id}, exc_info=True)
-        with Session(engine) as db:
-            last = db.exec(select(func.max(ChatTurn.seq)).where(ChatTurn.notebook_id == notebook_id)).one() or 0
-            db.add(ChatTurn(notebook_id=notebook_id, page_id=active["page_id"], seq=last + 1, role="assistant", content=text,
-                            tool_calls_made=tool_log, status="failed"))
-            db.commit()
-        await emit_notebook_event(notebook_id, SessionEvent.CHAT_TURN, {
-            "role": "assistant", "content": text, "page_id": active["page_id"], "status": "failed", "retry_turn_id": user_turn_id})
-        return JSONResponse(status_code=status, content={"error": code, "retryable": True, "turn_id": user_turn_id, "detail": text})
-
-    try:
-        response_text = await current_task
-    except asyncio.CancelledError:
-        logger.info(f"Agent turn cancelled via barge-in for notebook {notebook_id}")
-        keep_records()
-        return {"response": "[Interrupted by learner]", "page_id": page.id, "interrupted": True}
-    except ModelUnreachable as e:
-        return await fail(503, "model_unreachable", MODEL_UNREACHABLE_MESSAGE, e)
-    except EmptyReply as e:
-        return await fail(503, "empty_reply", EMPTY_REPLY_MESSAGE, e)
-    except Exception as e:                                    # anything else that broke the turn: the learner still gets an answer they can retry
-        if not model_configured():
-            return await fail(503, "model_not_configured", MODEL_NOT_CONFIGURED_MESSAGE, e)
-        return await fail(500, "turn_failed", "Something went wrong while the tutor was working on that. Please try again.", e)
-    finally:
-        if ACTIVE_AGENT_TASKS.get(notebook_id) is current_task:
-            ACTIVE_AGENT_TASKS.pop(notebook_id, None)
-        if plan_task is not None and (plan := await plan_task):   # write_plan never raises; "" = no plan (greeting or failure)
-            course, plan = split_course(plan)
-            with Session(engine) as db:
-                fresh = db.get(Notebook, notebook_id)
-                if fresh and not fresh.lesson_plan:
-                    fresh.lesson_plan, fresh.course = plan, course or None
-                    db.add(fresh)
-                    first_page = db.get(Page, page.id)
-                    if first_page and course:
-                        first_page.lesson_plan = plan
-                        db.add(first_page)
-                    db.commit()
-            if path_titles(plan):   # this first answer gave the short answer to the whole question, which is step 1 (live: never
-                # recorded, because the plan did not exist yet, so the next page taught step 1 again)
-                tool_log.append({"tool": "record_step", "status": "ok", "iteration": 0, "element_id": "1", "event": "taught", "page_id": page.id})
-
-    # Strip any [[MARK:...]] tokens from assistant response before persisting and emitting
-    response_text = strip_markers(response_text).strip()
-    if not response_text:
-        # The model wrote nothing after drawing or annotating (an empty reply with nothing drawn raised EmptyReply above): the board is the answer. No empty
-        # tutor turn is stored or sent, so no empty bubble and no wasted history slot; the empty_reply event in the log has the details.
-        keep_records()
-        return {"response": "", "page_id": active["page_id"]}
-
-    # Persist assistant response
-    with Session(engine) as db:
-        asst_seq = (db.exec(select(func.max(ChatTurn.seq)).where(ChatTurn.notebook_id == notebook_id)).one() or 0) + 1
-        asst_turn = ChatTurn(
-            notebook_id=notebook_id,
-            page_id=active["page_id"],
-            seq=asst_seq,
-            role="assistant",
-            content=response_text,
-            tool_calls_made=tool_log,                         # [] for a reply that drew nothing
-        )
-        db.add(asst_turn)
-        db.commit()
-
-    await emit_notebook_event(notebook_id, SessionEvent.CHAT_TURN, {
-        "role": "assistant", "content": response_text, "page_id": active["page_id"]
-    })
-
-    return {"response": response_text, "page_id": active["page_id"]}
+    response_text, early = await _await_agent(turn, current_task, plan_task, page)
+    if early is not None:
+        return early
+    return await _store_reply(turn, response_text)
 
 
 @app.post("/api/notebooks/{notebook_id}/interrupt")

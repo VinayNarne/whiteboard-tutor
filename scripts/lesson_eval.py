@@ -6,7 +6,7 @@ Runs the fixed lesson set (tests/lesson_eval/lessons.json) against a running bac
 transcripts to docs/lesson_evals/, so a change can be measured against the last run instead of judged from one lesson.
 
 Start a backend first, without voice so no ElevenLabs credits are spent (the tutor falls back to silent clips):
-    $env:LP_SCENE_MODE = "1"; $env:LP_VOICE = "0"; python -m uvicorn backend.main:app --host 127.0.0.1 --port 8102
+    $env:LP_VOICE = "0"; python -m uvicorn backend.main:app --host 127.0.0.1 --port 8102
 turn_failed counts 503s too: when they cluster in time, check the backend log for model timeouts (an Azure outage) first.
 Then:
     python scripts/lesson_eval.py --url http://127.0.0.1:8102 --label baseline [--only sky,dns] [--judge]
