@@ -55,7 +55,7 @@ from backend.ws import manager, emit_notebook_event
 from engine.markers import strip_markers
 from backend.event_store import append_event
 from engine.validator import compute_coverage
-from backend.mindprint_store import known_steps, note_for_turn, schedule_grading, schedule_mapping, warm_up
+from backend.mindprint_store import known_steps, memory_for_turn, schedule_grading, schedule_mapping, warm_up
 from backend.page_summary import summarise_saved_page
 from backend.page_state import is_drawing, rebuild_page_svg, annotation_target_ids, prior_pages_summary, summaries_in_context
 from backend.limits import no_control_chars
@@ -357,7 +357,8 @@ def lesson_path(plan, records, away: bool = False, known=()) -> list:
     in earlier lessons (Mindprint); those show as understood with "from_memory": true unless this lesson's records already earned a level."""
     titles = path_titles(plan or "")
     earned = step_levels(len(titles), records, away)
-    return [{"title": t, **lv, "from_memory": i in known and not earned[i]["level"] in ("understood", "remembered")}
+    # from_memory only while the final level is still the one memory gave: a known step answered wrong here shows taught, not remembered.
+    return [{"title": t, **lv, "from_memory": i in known and lv["level"] == "understood" and earned[i]["level"] not in ("understood", "remembered")}
             for i, (t, lv) in enumerate(zip(titles, step_levels(len(titles), records, away, known)))]
 
 
@@ -1140,8 +1141,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     planned = nb.lesson_plan
     past = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id)).all() if planned else []
     plan_now, records = current_lesson(nb, session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), past) if planned else ("", [])
-    turn_note, turn.plan_note = await asyncio.to_thread(note_for_turn, engine, notebook_id, plan_now, message_text, nb.topic)
-    known = known_steps(engine, notebook_id, plan_now)
+    turn_note, turn.plan_note, known = await asyncio.to_thread(memory_for_turn, engine, notebook_id, plan_now, message_text, nb.topic)
 
     plan_task = asyncio.create_task(write_plan(nb.topic, message_text, turn.plan_note)) if not nb.lesson_plan else None
 

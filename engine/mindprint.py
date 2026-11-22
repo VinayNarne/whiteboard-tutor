@@ -18,7 +18,6 @@ as right; research_notes/Mindprint/experiments/grading_reliability.md), so a sec
 
     grade_answer(step_text, question_asked, misconceptions_text, answer, chat) -> {"grade": "right"|"partial"|"wrong"|None, "misconception": belief|None}
 """
-import functools
 import json
 import math
 import os
@@ -27,6 +26,7 @@ from typing import Callable, List, Optional, Union
 
 from engine.author import AUTHOR_DEPLOYMENT, get_azure_client
 from engine.lesson_plan import path_titles
+from engine.summary import _clean_text      # the one place learner text is made safe for a prompt
 
 EMBED_DEPLOYMENT = os.getenv("MINDPRINT_EMBED_DEPLOYMENT", "text-embedding-3-small")
 CANDIDATES = 15          # nearest concepts shown to the model per step
@@ -50,10 +50,8 @@ def cosine(a: List[float], b: List[float]) -> float:
     return sum(x * y for x, y in zip(a, b))
 
 
-@functools.lru_cache(maxsize=1)
 def _client():
-    """One client for every Mindprint call: a new one per call paid a new TLS connection each time (1.2-1.6 s per embedding, 7 s cold,
-    against 0.1-0.4 s on a reused one)."""
+    """The shared client of engine.author (one connection for every call: a new client paid a new TLS handshake each time)."""
     return get_azure_client()
 
 
@@ -91,11 +89,19 @@ def map_steps(steps: List[str], concepts: List[dict], embed: Callable, chat: Cal
     lines = [f"{short[cid]}: {by_id[cid]['name']} - {by_id[cid]['description']}" for cid in short]
     user = "CANDIDATE CONCEPTS:\n" + ("\n".join(lines) or "(none)") + "\n\nSTEPS:\n" + "\n".join(
         f"{n + 1}. {steps[i]}\n   candidates: {', '.join(short[cid] for _, cid in cands[n]) or 'none'}" for n, i in enumerate(live))
-    answers = chat(SYSTEM, user).get("steps", [])
+    by_step: dict = {}                                            # the model's "step" (1-based among the live steps) says which step an answer is for
+    for pos, a in enumerate(chat(SYSTEM, user).get("steps", [])):
+        if not isinstance(a, dict):
+            continue
+        try:
+            n = int(a.get("step"))
+        except (TypeError, ValueError):
+            n = pos + 1                                           # no usable "step": fall back to its position
+        by_step.setdefault(n if 1 <= n <= len(live) else pos + 1, a)
     back = {v: k for k, v in short.items()}
     fresh = []
     for n, i in enumerate(live):
-        a = answers[n] if n < len(answers) and isinstance(answers[n], dict) else {}
+        a = by_step.get(n + 1, {})
         cid = back.get(a.get("choice"))                          # NEW, or an id the model invented: no candidate, so a new concept
         cos = dict((k, c) for c, k in cands[n]).get(cid, 0.0)
         out[i] = cid if cid and cid in [k for _, k in cands[n][:TOP_K]] and cos >= MIN_COSINE else None
@@ -144,8 +150,11 @@ def plan_misconceptions(plan: str) -> str:
 def grade_answer(step_text: str, question_asked: str, misconceptions_text: str, answer: str, chat: Callable) -> dict:
     """One model call. grade is None when the reply is not one of right/partial/wrong (no grade: nothing changes). "misconception" is the
     learner's wrong belief, kept only when its quote is found in the answer: a belief the learner never said would be stored as theirs."""
-    user = (f"STEP:\n{step_text}\n\nQUESTION ASKED: {question_asked or '(unknown)'}\n\nMISCONCEPTIONS:\n{misconceptions_text or '(none)'}\n\n"
-            f"<learner_answer>\n{answer}\n</learner_answer>")
+    # Learner text (and the tutor's question, which may echo it) goes in with < > escaped and control characters gone, so it cannot close the
+    # <learner_answer> tag; the plan's own lines keep their line breaks.
+    safe = lambda t, n: "\n".join(_clean_text(line, n) for line in (t or "").splitlines())
+    user = (f"STEP:\n{safe(step_text, 2000)}\n\nQUESTION ASKED: {_clean_text(question_asked, 1000) or '(unknown)'}\n\n"
+            f"MISCONCEPTIONS:\n{safe(misconceptions_text, 2000) or '(none)'}\n\n<learner_answer>\n{_clean_text(answer, 4000)}\n</learner_answer>")
     reply = chat(GRADE_SYSTEM, user)
     reply = reply if isinstance(reply, dict) else {}
     grade = str(reply.get("grade") or "").strip().lower()
@@ -153,7 +162,7 @@ def grade_answer(step_text: str, question_asked: str, misconceptions_text: str, 
     b = b if isinstance(b, dict) else {}
     belief, quote = b.get("belief"), b.get("quote")
     keep = (grade in ("wrong", "partial") and isinstance(belief, str) and belief.strip() and isinstance(quote, str)
-            and len(_squash(quote)) >= 8 and _squash(quote) in _squash(answer))        # the quote proves the learner said it
+            and len(_squash(quote)) >= 8 and _squash(quote) in _squash(_clean_text(answer, 4000)) + " " + _squash(answer))        # the quote proves the learner said it
     return {"grade": grade if grade in ("right", "partial", "wrong") else None, "misconception": belief.strip()[:200] if keep else None}
 
 
@@ -191,7 +200,9 @@ EXCLUSIVE_PREFERENCES = {"simpler": "deeper", "deeper": "simpler"}
 def learner_note(concepts: List[dict], prefs: Optional[List[str]] = None) -> tuple:
     """concepts: dicts with name, description, level, misconception. prefs: the learner's chosen preference kinds (always included).
     -> (turn_note, plan_note), both "" when there is nothing to say."""
-    known = [c for c in concepts if c.get("level") in ("understood", "remembered")][:MAX_UNDERSTOOD]
+    # An open belief means not understood (a wrong answer never lowers the level): no "do not re-teach" line for it, only the belief note.
+    known = [c for c in concepts if c.get("level") in ("understood", "remembered")
+             and not (c.get("misconception") and not c.get("misconception_corrected"))][:MAX_UNDERSTOOD]
     wrong = [c for c in concepts if c.get("misconception")][:MAX_MISCONCEPTIONS]
     parts = []
     if known:

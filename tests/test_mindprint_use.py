@@ -153,3 +153,21 @@ def test_misconception_concepts_use_a_lower_threshold(tmp_path, monkeypatch):
         db.commit()
     got = relevant_concepts(db_engine, nb, PLAN, "q", "topic", lambda t: [X] + [[0.0, -1.0]] * (len(t) - 1))     # cosine 0.40 to the query
     assert "wrong" in names(got) and "plain" not in names(got)
+
+
+def test_known_step_answered_wrong_here_is_not_from_memory():
+    path = lesson_path(PLAN, [[rec(1, "answered_wrong")]], known={0})
+    assert path[0]["level"] == "taught" and path[0]["from_memory"] is False
+
+
+def test_open_belief_means_not_known_but_a_corrected_one_still_is():
+    c = {"name": "N", "description": "d", "level": "understood", "misconception": "believes x", "misconception_corrected": False}
+    assert "Already understood" not in learner_note([c])[0] and "still open" in learner_note([c])[0]
+    assert "Already understood" in learner_note([{**c, "misconception_corrected": True}])[0]
+
+
+def test_partial_grade_stores_the_belief_but_not_last_wrong():
+    from backend.mindprint_store import apply_grade
+    c = Concept(learner_id="l", name="n", description="d")
+    apply_grade(c, "partial", "believes x", "ans", "t1", "plan")
+    assert c.misconception == "believes x" and c.misconception_corrected is False and c.misconception_lesson and not c.last_wrong

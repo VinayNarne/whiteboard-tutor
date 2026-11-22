@@ -91,6 +91,9 @@ textarea:focus-visible {
   }
 }
 
+.learner-dialog { margin: auto; }   /* the global margin reset above would pin the native modal to the top-left corner */
+.learner-dialog::backdrop { background: color-mix(in srgb, var(--ink) 45%, transparent); }   /* the native modal's backdrop (LearnerPanel) */
+
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;

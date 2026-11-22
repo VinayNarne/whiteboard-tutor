@@ -12,7 +12,7 @@ import threading
 
 from sqlmodel import Session, select
 
-from backend.models import Concept, LearnerPref, Notebook, Page
+from backend.models import Concept, LearnerPref, Notebook, Page, utc_now
 from core.events import BackendEvent
 from core.log import get_logger
 from engine.author import is_skip
@@ -87,9 +87,10 @@ def apply_grade(c: Concept, grade, misconception, answer: str, turn_id: str, pla
             c.level = "understood"
         elif c.level == "understood" and len(c.right_turns) >= 2:      # a right answer in a different turn than the first
             c.level = "remembered"
-    elif grade == "wrong":
-        c.last_wrong = answer[:500]
-        if misconception:
+    elif grade in ("wrong", "partial"):
+        if grade == "wrong":
+            c.last_wrong = answer[:500]                                # last_wrong stays wrong-only
+        if misconception:                                              # a partial answer can state a (quote-checked) wrong belief too
             c.misconception, c.misconception_corrected, c.misconception_lesson = misconception, False, lesson
 
 
@@ -136,6 +137,7 @@ def grade_and_store(db_engine, notebook_id: str, plan: str, page_id: str, user_t
                         c.level = "taught"
                 else:
                     apply_grade(c, g["grade"], g["misconception"], answer, user_turn_id, plan)
+                c.updated_at = utc_now()                               # the beliefs ranking (relevant_concepts) sorts by it
                 db.add(c)
                 db.commit()
                 if event != "taught":
@@ -198,7 +200,9 @@ def known_steps(db_engine, notebook_id: str, plan: str) -> set:
         with Session(db_engine) as db:
             ids, same = _plan_context(db, notebook_id, plan)
             by_id = {c.id: c for c in db.exec(select(Concept).where(Concept.id.in_([i for i in ids if i]))).all()} if ids else {}
+        # An open belief means not known: a wrong answer never lowers the level, so a concept can be understood and still hold one.
         return {i for i, cid in enumerate(ids) if cid in by_id and by_id[cid].level in ("understood", "remembered")
+                and not (by_id[cid].misconception and not by_id[cid].misconception_corrected)
                 and by_id[cid].created_from_page_id not in same}
     except Exception as e:
         logger.warn(BackendEvent.MINDPRINT_FAILED, f"Known steps failed: {type(e).__name__}: {e}"[:300], data={"notebook_id": notebook_id})
@@ -234,6 +238,11 @@ def relevant_concepts(db_engine, notebook_id: str, plan: str, message: str, topi
                              for c in cands if c["id"] not in ids), key=lambda t: -t[0])
             chosen += [c for sim, c in scored[:TOP_SIMILAR] if sim >= (MIN_SIMILARITY_MISCONCEPTION if c["misconception"] else MIN_SIMILARITY)]
     return chosen
+
+
+def memory_for_turn(db_engine, notebook_id: str, plan: str, message: str, topic: str, embed=azure_embed) -> tuple:
+    """Blocking: run it in a thread. -> (turn_note, plan_note, known_steps): both reads in one thread hop so the event loop never waits on the database."""
+    return (*note_for_turn(db_engine, notebook_id, plan, message, topic, embed), known_steps(db_engine, notebook_id, plan))
 
 
 def note_for_turn(db_engine, notebook_id: str, plan: str, message: str, topic: str, embed=azure_embed) -> tuple:

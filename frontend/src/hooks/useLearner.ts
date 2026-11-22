@@ -13,8 +13,10 @@ export function useLearner() {
       if (!res.ok) throw new Error(String(res.status));
       setCard(await res.json());
       setError(null);
+      return true;
     } catch {
       setError('That did not work. Please try again.');
+      return false;   // the panel announces and moves focus only after a change that worked
     }
   }, []);
 

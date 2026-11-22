@@ -437,7 +437,7 @@ export function ChatPanel({
           label: q.label, onSelect: () => { if (!busy) sendQuery(q.prompt); },
         }))} />
         {onOpenLearnerPanel && (
-          <button type="button" onClick={onOpenLearnerPanel} style={{ ...linkBtn, color: 'var(--ink-2)', fontSize: '12px' }}>Teaching style</button>
+          <button type="button" aria-haspopup="dialog" onClick={onOpenLearnerPanel} style={{ ...linkBtn, color: 'var(--ink-2)', fontSize: '12px' }}>Teaching style</button>
         )}
       </div>
 
