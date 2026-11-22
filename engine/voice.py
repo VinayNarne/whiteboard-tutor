@@ -68,6 +68,7 @@ def extract_markers_and_clean_text(narration: str):
 # ---------------------------------------------------------------------------
 # Fallback: silent MP3 with synthetic character timings (when EL is offline)
 # ---------------------------------------------------------------------------
+FALLBACK_TAIL_SECONDS = 0.5   # silence after the last word, so the clip does not end on the final character's timing
 
 def _generate_fallback_speech_alignment(clean_text: str):
     """
@@ -92,7 +93,7 @@ def _generate_fallback_speech_alignment(clean_text: str):
         wav.setnchannels(1)
         wav.setsampwidth(2)
         wav.setframerate(sample_rate)
-        wav.writeframes(b'\x00\x00' * int((duration + 0.5) * sample_rate))
+        wav.writeframes(b'\x00\x00' * int((duration + FALLBACK_TAIL_SECONDS) * sample_rate))
     buf.seek(0)
 
     if _PYDUB_AVAILABLE:

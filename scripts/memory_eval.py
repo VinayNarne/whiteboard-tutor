@@ -167,6 +167,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repeats", type=int, default=5)
     ap.add_argument("--only", default="")
+    ap.add_argument("--prefs", default="", help="with --real: POST this teaching preference (e.g. examples) after session 1, like the learner's toggle")
     ap.add_argument("--real", action="store_true", help="the real Mindprint condition (no patches, LP_MINDPRINT=1, one db per repeat)")
     ap.add_argument("--s1-from", default=str(ROOT / "docs" / "lesson_evals" / "2026-11-22-0010-memory-ceiling.json"))
     a = ap.parse_args()
@@ -271,7 +272,7 @@ def main_real(a):
     mps.warm_up()
     later = [x for x in COURSE["later"] if not a.only or x["id"] in a.only.split(",")]
     capture_notes()
-    out = ROOT / "docs" / "lesson_evals" / f"{datetime.now():%Y-%m-%d-%H%M}-memory-real"
+    out = ROOT / "docs" / "lesson_evals" / (f"{datetime.now():%Y-%m-%d-%H%M}-memory-" + ("prefs" if a.prefs else "real"))
     data = []
     with TestClient(bm.app, raise_server_exceptions=False) as http:     # one event loop for the whole run: background tasks must survive between requests
         for rep in range(a.repeats):
@@ -279,6 +280,9 @@ def main_real(a):
             wipe_db()
             analogy = prev[rep]["analogy"]
             s1 = session_real(http, COURSE["session1"]["topic"], S1_TURNS)
+            if a.prefs:
+                pr = http.post("/api/learner/preferences", json={"kind": a.prefs})
+                print("PREFERENCE POST:", pr.status_code, pr.text[:200], flush=True)
             rows = concept_rows()
             print("CONCEPTS after session 1:", json.dumps(rows, ensure_ascii=False), flush=True)
             item = {"rep": rep, "session1": s1, "concepts_after_s1": rows, "runs": []}

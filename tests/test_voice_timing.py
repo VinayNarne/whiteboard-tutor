@@ -110,7 +110,9 @@ def inspect_and_verify_alignment(alignment_path: Path, audio_path: Path):
         seg = AudioSegment.from_file(str(audio_path), format="mp3")
         mp3_duration = len(seg) / 1000.0
         print(f"  Physical MP3 duration: {mp3_duration:.3f}s, Alignment duration: {alignment_duration:.3f}s")
-        diff = abs(mp3_duration - alignment_duration)
+        from engine.voice import FALLBACK_TAIL_SECONDS
+        tail = FALLBACK_TAIL_SECONDS if provider == "synthetic_fallback" else 0.0   # the silent fallback clip ends with a deliberate tail
+        diff = abs(mp3_duration - tail - alignment_duration)
         assert diff < 0.35, f"Discrepancy between MP3 duration ({mp3_duration:.3f}s) and alignment duration ({alignment_duration:.3f}s): {diff:.3f}s"
         print(f"  PASS MP3 physical duration matches alignment within {diff:.3f}s")
     except ImportError:

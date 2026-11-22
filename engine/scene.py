@@ -56,7 +56,12 @@ ICON_ALIASES = {"person": "user", "people": "users", "learner": "user", "student
                 "computer": "monitor", "internet": "globe", "web": "globe", "website": "globe", "money": "banknote",
                 "plant": "sprout", "data": "database", "storage": "hard-drive", "memory": "memory-stick",
                 "cache": "zap", "email": "mail", "message": "message-square", "document": "file-text", "file": "file-text",
-                "idea": "lightbulb", "energy": "zap", "water": "droplet", "time": "clock", "security": "shield"}
+                "idea": "lightbulb", "energy": "zap", "water": "droplet", "time": "clock", "security": "shield",
+                # teaching words with a clear Lucide picture under another name (checked by hand 2026-11-22; a wrong icon misleads more than
+                # none, so metaphors like volcano->mountain are left out). Grow from: python scripts/logs_query.py --all --icon-misses
+                "ice": "snowflake", "snow": "snowflake", "farm": "tractor", "teacher": "graduation-cap", "electron": "atom",
+                "packet": "package", "parcel": "package", "neuron": "brain", "tax": "receipt", "invoice": "receipt", "loan": "hand-coins",
+                "debt": "hand-coins", "supplier": "truck", "delivery": "truck"}
 
 
 def match_icon(word) -> str | None:

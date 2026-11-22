@@ -8,6 +8,7 @@ Ask the structured log (JSON lines, logs/learning_platform.jsonl) a question wit
     python scripts/logs_query.py --session <notebook_id> --summary
     python scripts/logs_query.py --event content_lost --json
     python scripts/logs_query.py --all --event model_usage --count        # also the rotated .gz files of the same log
+    python scripts/logs_query.py --all --icon-misses                       # icon words that matched nothing: candidates for ICON_ALIASES
 
 Filters (all optional, all must match): --event (comma list), --level, --service, --session (the notebook id), --page, --since, --until (ISO, UTC),
 --grep (case-insensitive text in the message or the data). Output: one line per record (default), the raw JSON (--json), only the number (--count),
@@ -105,6 +106,7 @@ def build_parser():
     out.add_argument("--json", action="store_true", help="print the raw JSON lines")
     out.add_argument("--count", action="store_true", help="print only how many records match")
     out.add_argument("--summary", action="store_true", help="print counts by event and by level")
+    out.add_argument("--icon-misses", action="store_true", help="count the icon words that matched no Lucide icon (to grow ICON_ALIASES)")
     ap.add_argument("--head", type=int, help="only the first N matches")
     ap.add_argument("--tail", type=int, help="only the last N matches")
     return ap
@@ -124,6 +126,11 @@ def main(argv=None, out=None) -> int:
         found = found[-a.tail:]
     if a.count:
         print(len(found), file=out)
+    elif a.icon_misses:
+        words = Counter(str(w).lower() for r in found for w in ((r.get("data") or {}).get("icon_misses") or []))
+        print(f"{sum(words.values())} missed icon word(s)", file=out)
+        for word, n in words.most_common():
+            print(f"{n:6d}  {word}", file=out)
     elif a.summary:
         print(f"{len(found)} records", file=out)
         print("by level: " + ", ".join(f"{k} {v}" for k, v in Counter(str(r.get('level', '')) for r in found).most_common()), file=out)
