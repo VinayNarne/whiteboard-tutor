@@ -371,7 +371,7 @@ export function ChatPanel({
             const lastTurn = i === chatHistory.length - 1;
             const question = chatHistory.slice(0, i).reverse().find(t => t.role === 'user')?.content;
             return (
-              <div key={i} className="chat-turn-container" role="alert" style={{
+              <div key={i} className="chat-turn-container" style={{
                 display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px 12px', padding: '8px 12px', borderRadius: '10px',
                 background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: '13px', lineHeight: 1.5,
               }}>

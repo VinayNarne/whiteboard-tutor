@@ -24,7 +24,7 @@ export function ReplayBar({ isReplaying, replayStep, replayTotal, playbackSpeed,
           zIndex: 20,
           backdropFilter: 'blur(10px)',
         }}>
-          <span style={{ color: 'var(--accent)', fontSize: '12px', fontWeight: 600 }}>
+          <span role="status" style={{ color: 'var(--accent)', fontSize: '12px', fontWeight: 600 }}>
             ▶ Replaying: Step {replayStep} / {replayTotal}
           </span>
           <div style={{

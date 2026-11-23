@@ -25,6 +25,7 @@
   --danger: #B91C1C;
   --danger-soft: #FDECEC;
   --warn-soft: #FEF3C7;
+  --cyan: #0E7490;         /* cyan ink swatch, 5.4:1 on panel */
   --violet: #5B21B6;
   --violet-soft: #EFEAFB;
   --rose: #9D174D;
@@ -104,9 +105,9 @@ textarea:focus-visible {
 .page-row .row-actions { opacity: 0; transition: opacity 0.12s; }
 .page-row:hover .row-actions,
 .page-row:focus-within .row-actions,
-.page-row[aria-current="page"] .row-actions { opacity: 1; }
+.page-row[data-current] .row-actions { opacity: 1; }
 .page-row:hover { background: var(--panel-2); }
-.page-row[aria-current="page"]:hover { background: var(--panel); }
+.page-row[data-current]:hover { background: var(--panel); }
 
 
 /* Chat: plain quick-reply chips and hover-only message actions */
@@ -146,6 +147,7 @@ textarea:focus-visible {
   --warn: #FBBF24;
   --danger: #F87171;
   --danger-soft: #3A1F22;
+  --cyan: #22D3EE;
   --violet: #B79CFF;
   --violet-soft: #2A2342;
   --rose: #F58BB8;
@@ -195,7 +197,7 @@ textarea:focus-visible {
 /* The board moves with drag, wheel and keys (WhiteboardCanvas); when the learner has moved it, "Follow tutor" hands the camera back */
 .wb-paper:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .wb-follow {
-  position: absolute; bottom: 16px; left: 0; right: 0; margin: 0 auto; width: max-content; z-index: 10;   /* not translateX: the global button:active transform replaced it, the button jumped from under the pointer and the click missed */
+  position: absolute; bottom: 64px; left: 0; right: 0; margin: 0 auto; width: max-content; z-index: 10;   /* above the replay bar (bottom 16px, z 20) so neither can cover the focused other */   /* not translateX: the global button:active transform replaced it, the button jumped from under the pointer and the click missed */
   background: var(--accent); color: var(--panel); border: none; border-radius: 20px;   /* readable in light and dark */
   padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow);
 }

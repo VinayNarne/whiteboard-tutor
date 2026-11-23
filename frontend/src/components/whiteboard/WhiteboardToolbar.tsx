@@ -113,7 +113,7 @@ export function WhiteboardToolbar({
           }}>
             {[
               { color: 'var(--warn)', title: 'Amber' },
-              { color: '#06b6d4', title: 'Cyan' },
+              { color: 'var(--cyan)', title: 'Cyan' },
               { color: 'var(--danger)', title: 'Red' },
               { color: 'var(--ok)', title: 'Green' },
             ].map(c => (
@@ -124,11 +124,15 @@ export function WhiteboardToolbar({
                 aria-label={`${c.title} ink`}
                 aria-pressed={learnerColor === c.color}
                 style={{
-                  width: '16px', height: '16px', minWidth: '16px', minHeight: '16px', borderRadius: '50%',
-                  background: c.color, cursor: 'pointer', padding: 0,
-                  border: learnerColor === c.color ? '2px solid var(--ink)' : '1px solid var(--border-strong)',
+                  width: '24px', height: '24px', minWidth: '24px', minHeight: '24px', padding: 0, background: 'transparent',
+                  border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                 }}
-              />
+              >
+                <span aria-hidden="true" style={{
+                  width: '16px', height: '16px', borderRadius: '50%', background: c.color,
+                  border: learnerColor === c.color ? '2px solid var(--ink)' : '1px solid var(--ink-2)',
+                }} />
+              </button>
             ))}
           </fieldset>
         )}

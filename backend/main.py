@@ -459,6 +459,19 @@ def update_notebook(notebook_id: str, req: UpdateNotebookRequest, session: Sessi
 
 @app.post("/api/notebooks/{notebook_id}/pages", status_code=201, responses=_responses({404: NOTEBOOK_NOT_FOUND, 409: "Another page was just created; retry"}))
 async def start_page(notebook_id: str, req: StartPageRequest, session: SessionDep):
+    # The database work runs in a thread so it does not block the event loop; the emits and summaries stay here.
+    response, payload, saved_ids, reused = await asyncio.to_thread(_open_page, session, notebook_id, req)
+    for page_id in saved_ids:
+        await emit_notebook_event(notebook_id, SessionEvent.PAGE_SAVED, {"page_id": page_id})
+        await summarise_saved_page(engine, page_id)          # one cheap model call per page that was just saved; best effort, never blocks the save
+    if not reused:
+        logger.info(BackendEvent.PAGE_CREATED, f"Page {response['page_number']} created for notebook {notebook_id}")
+    await emit_notebook_event(notebook_id, SessionEvent.PAGE_STARTED, payload)
+    return response
+
+
+def _open_page(session, notebook_id: str, req: StartPageRequest):
+    """start_page's database part. Returns (response, the page_started event payload, ids of the pages auto-saved, whether page 1 was reused)."""
     nb = session.get(Notebook, notebook_id)
     if not nb:
         raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
@@ -474,10 +487,8 @@ async def start_page(notebook_id: str, req: StartPageRequest, session: SessionDe
         session.add(p1)
         session.commit()
         session.refresh(p1)
-        await emit_notebook_event(notebook_id, SessionEvent.PAGE_STARTED, {
-            "page_id": p1.id, "page_number": p1.page_number, "status": p1.status
-        })
-        return {"id": p1.id, "page_number": 1, "status": "active", "created_at": p1.created_at.isoformat()}
+        return ({"id": p1.id, "page_number": 1, "status": "active", "created_at": p1.created_at.isoformat()},
+                {"page_id": p1.id, "page_number": p1.page_number, "status": p1.status}, [], True)
 
     # Cleanly auto-save any currently active pages in this notebook
     active_pages = session.exec(
@@ -507,20 +518,22 @@ async def start_page(notebook_id: str, req: StartPageRequest, session: SessionDe
         raise HTTPException(status_code=409, detail="Another page was just created; retry")
     session.refresh(page)
 
-    for ap in active_pages:
-        await emit_notebook_event(notebook_id, SessionEvent.PAGE_SAVED, {"page_id": ap.id})
-        await summarise_saved_page(engine, ap.id)          # one cheap model call per page that was just saved; best effort, never blocks the save
-    logger.info(BackendEvent.PAGE_CREATED, f"Page {next_number} created for notebook {notebook_id}")
-    await emit_notebook_event(notebook_id, SessionEvent.PAGE_STARTED, {
-        "page_id": page.id, "page_number": page.page_number, "status": page.status
-    })
-
-    return {"id": page.id, "page_number": page.page_number,
-            "status": page.status, "created_at": page.created_at.isoformat()}
+    return ({"id": page.id, "page_number": page.page_number, "status": page.status, "created_at": page.created_at.isoformat()},
+            {"page_id": page.id, "page_number": page.page_number, "status": page.status}, [ap.id for ap in active_pages], False)
 
 
 @app.post("/api/notebooks/{notebook_id}/pages/{page_id}/save", responses=_responses({404: PAGE_NOT_FOUND}))
 async def save_page(notebook_id: str, page_id: str, session: SessionDep, req: Optional[SavePageRequest] = None):
+    page_number = await asyncio.to_thread(_lock_page, session, notebook_id, page_id, req)   # database work off the event loop
+    logger.info(BackendEvent.PAGE_SAVED, f"Page {page_id} saved")
+    await emit_notebook_event(notebook_id, SessionEvent.PAGE_SAVED, {"page_id": page_id})
+    await summarise_saved_page(engine, page_id)           # one cheap model call; best effort: the page is saved already, a failure only leaves the summary empty
+
+    return {"status": "saved", "page_id": page_id, "page_number": page_number}
+
+
+def _lock_page(session, notebook_id: str, page_id: str, req: Optional[SavePageRequest]) -> int:
+    """save_page's database part: saves the page and returns its number."""
     page = session.get(Page, page_id)
     if not page or page.notebook_id != notebook_id:
         raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
@@ -538,12 +551,7 @@ async def save_page(notebook_id: str, page_id: str, session: SessionDep, req: Op
     session.add(page)
     session.commit()
     session.refresh(page)
-
-    logger.info(BackendEvent.PAGE_SAVED, f"Page {page_id} saved")
-    await emit_notebook_event(notebook_id, SessionEvent.PAGE_SAVED, {"page_id": page.id})
-    await summarise_saved_page(engine, page.id)           # one cheap model call; best effort: the page is saved already, a failure only leaves the summary empty
-
-    return {"status": "saved", "page_id": page_id, "page_number": page.page_number}
+    return page.page_number
 
 
 @app.patch("/api/notebooks/{notebook_id}/pages/{page_id}", responses=_responses({404: PAGE_NOT_FOUND}))
@@ -616,6 +624,15 @@ async def undo_last_drawing(notebook_id: str, page_id: str, session: SessionDep)
     annotations on it, and its audio files. The page's cached SVG and element count are recomputed from the
     remaining events, so replay, reload and export all agree.
     """
+    target, annotation_ids, element_count = await asyncio.to_thread(_undo_db, session, notebook_id, page_id)   # database and file work off the event loop
+    await emit_notebook_event(notebook_id, SessionEvent.ELEMENT_REMOVED, {
+        "page_id": page_id, "element_id": target, "annotation_ids": annotation_ids,
+    })
+    return {"status": "ok", "removed_element_id": target, "element_count": element_count}
+
+
+def _undo_db(session, notebook_id: str, page_id: str):
+    """undo_last_drawing's database part: returns (removed element id, removed annotation ids, new element count)."""
     page = session.get(Page, page_id)
     if not page or page.notebook_id != notebook_id:
         raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
@@ -656,25 +673,20 @@ async def undo_last_drawing(notebook_id: str, page_id: str, session: SessionDep)
     page.updated_at = datetime.now(timezone.utc)
     session.add(page)
     session.commit()
-
-    await emit_notebook_event(notebook_id, SessionEvent.ELEMENT_REMOVED, {
-        "page_id": page_id, "element_id": target, "annotation_ids": annotation_ids,
-    })
-    return {"status": "ok", "removed_element_id": target, "element_count": page.element_count}
+    return target, annotation_ids, page.element_count
 
 
 @app.post("/api/notebooks/{notebook_id}/pages/{page_id}/annotate", responses=_responses({400: "Page is saved and locked, or the annotation was rejected", 404: PAGE_NOT_FOUND}))
 async def annotate_on_page(notebook_id: str, page_id: str, req: AnnotateElementRequest, session: SessionDep):
-    page = session.get(Page, page_id)
-    if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
-    if page.status == "saved":
-        raise HTTPException(status_code=400, detail="Page is saved and locked. Cannot annotate a saved page.")
-
-    existing_events = session.exec(
-        select(PageEvent).where(PageEvent.page_id == page.id)
-    ).all()
-    existing_element_ids = {e.element_id for e in existing_events if e.kind in ("draw", "modify")}
+    def read_page():
+        page = session.get(Page, page_id)
+        if not page or page.notebook_id != notebook_id:
+            raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
+        if page.status == "saved":
+            raise HTTPException(status_code=400, detail="Page is saved and locked. Cannot annotate a saved page.")
+        events = session.exec(select(PageEvent).where(PageEvent.page_id == page.id)).all()
+        return page.id, page.status, {e.element_id for e in events if e.kind in ("draw", "modify")}
+    page_id, page_status, existing_element_ids = await asyncio.to_thread(read_page)   # off the event loop; the handler below awaits, so the route stays async
 
     async def _emit(event_type: str, payload: dict):
         await emit_notebook_event(notebook_id, event_type, payload)
@@ -684,7 +696,7 @@ async def annotate_on_page(notebook_id: str, page_id: str, req: AnnotateElementR
                        audio_path: Optional[str] = None,
                        alignment_path: Optional[str] = None,
                        old_svg_fragment: Optional[str] = None):
-        append_event(engine, page.id, None,
+        append_event(engine, page_id, None,
                        kind=kind, element_id=element_id, svg_fragment=svg_fragment, old_svg_fragment=old_svg_fragment,
                        narration=narration, audio_path=audio_path, alignment_path=alignment_path)
 
@@ -692,7 +704,7 @@ async def annotate_on_page(notebook_id: str, page_id: str, req: AnnotateElementR
     res = await _handle_annotate_element(
         notebook_id=notebook_id,
         page_id=page_id,
-        page_status=page.status,
+        page_status=page_status,
         annotation_id=req.annotation_id,
         style=req.style,
         target_element_id=req.target_element_id,
@@ -713,11 +725,14 @@ async def annotate_on_page(notebook_id: str, page_id: str, req: AnnotateElementR
 
 @app.post("/api/notebooks/{notebook_id}/pages/{page_id}/remove-annotation", responses=_responses({400: "Page is saved and locked, or the removal was rejected", 404: PAGE_NOT_FOUND}))
 async def remove_annotation_on_page(notebook_id: str, page_id: str, req: RemoveAnnotationRequest, session: SessionDep):
-    page = session.get(Page, page_id)
-    if not page or page.notebook_id != notebook_id:
-        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
-    if page.status == "saved":
-        raise HTTPException(status_code=400, detail="Page is saved and locked. Cannot remove annotations from a saved page.")
+    def read_page():
+        page = session.get(Page, page_id)
+        if not page or page.notebook_id != notebook_id:
+            raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
+        if page.status == "saved":
+            raise HTTPException(status_code=400, detail="Page is saved and locked. Cannot remove annotations from a saved page.")
+        return page.status
+    page_status = await asyncio.to_thread(read_page)   # off the event loop; the handler below awaits, so the route stays async
 
     async def _emit(event_type: str, payload: dict):
         await emit_notebook_event(notebook_id, event_type, payload)
@@ -727,14 +742,14 @@ async def remove_annotation_on_page(notebook_id: str, page_id: str, req: RemoveA
                        audio_path: Optional[str] = None,
                        alignment_path: Optional[str] = None,
                        old_svg_fragment: Optional[str] = None):
-        append_event(engine, page.id, None,
+        append_event(engine, page_id, None,
                        kind=kind, element_id=element_id, svg_fragment=svg_fragment, old_svg_fragment=old_svg_fragment,
                        narration=narration, audio_path=audio_path, alignment_path=alignment_path)
 
     from engine.author import _handle_remove_annotation
     res = await _handle_remove_annotation(
         page_id=page_id,
-        page_status=page.status,
+        page_status=page_status,
         annotation_id=req.annotation_id,
         emit_fn=_emit,
         persist_fn=_persist,
@@ -883,8 +898,9 @@ def _next_turn_seq(db, notebook_id: str) -> int:
     return (db.exec(select(func.max(ChatTurn.seq)).where(ChatTurn.notebook_id == notebook_id)).one() or 0) + 1
 
 
-async def _store_learner_turn(session, notebook_id: str, page, req: ChatRequest, retry_turn, valid_selected_ids: list) -> str:
-    """Stores the learner's message (or, on a retry, drops the failed answer to it) and returns the learner turn's id."""
+def _store_learner_turn(session, notebook_id: str, page, req: ChatRequest, retry_turn, valid_selected_ids: list) -> str:
+    """Stores the learner's message (or, on a retry, drops the failed answer to it) and returns the learner turn's id.
+    The caller sends the chat_turn event (this runs in a thread)."""
     if retry_turn:
         # The earlier failed answer to this question is replaced by this attempt (the learner's turn stays as it is, once)
         for old in session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id, ChatTurn.role == "assistant",
@@ -903,12 +919,40 @@ async def _store_learner_turn(session, notebook_id: str, page, req: ChatRequest,
     )
     session.add(user_turn)
     session.commit()
-
-    # Emit learner message via WS so frontend shows it immediately
-    await emit_notebook_event(notebook_id, SessionEvent.CHAT_TURN, {
-        "role": "user", "content": req.message, "page_id": page.id
-    })
     return user_turn.id
+
+
+def _prepare_chat(session, notebook_id: str, req: ChatRequest):
+    """Everything the chat route reads or writes before the agent runs, in one thread hop. Returns the retried turn, the learner's message,
+    the page, the message with what the learner pointed at, the page's element ids, the page state, the tutor context and the learner turn's id."""
+    retry_turn = _check_retry_turn(session, notebook_id, req.retry_turn_id)
+    message_text = retry_turn.content if retry_turn else req.message
+    page = _resolve_chat_page(session, notebook_id, req.page_id)
+    existing_element_ids = _existing_element_ids(session, page)
+
+    # Strictly validate selected_element_ids against authoritative elements on this page
+    pointed_at = (retry_turn.about_element_ids if retry_turn else req.selected_element_ids) or []
+    valid_selected_ids = [eid for eid in pointed_at if eid in existing_element_ids]
+    augmented_message = _spatial_message(req, valid_selected_ids, message_text, page.id)
+
+    page, existing_element_ids = _answer_page(session, notebook_id, page, existing_element_ids)
+    page_state = _page_state(page, notebook_id)
+    context = _tutor_context(session, notebook_id, page, retry_turn)
+    user_turn_id = _store_learner_turn(session, notebook_id, page, req, retry_turn, valid_selected_ids)
+    return retry_turn, message_text, page, augmented_message, existing_element_ids, page_state, context, user_turn_id
+
+
+def _lesson_now(session, notebook_id: str, nb):
+    """The notebook's current lesson plan and its records ("", [] before a plan exists)."""
+    if not nb.lesson_plan:
+        return "", []
+    past = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id)).all()
+    return current_lesson(nb, session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), past)
+
+
+def _plan_after_turn(session, notebook_id: str) -> str:
+    """The plan read again after the turn: it may have started a new page; records of an earlier page are left out inside."""
+    return current_lesson(session.get(Notebook, notebook_id), session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), [])[0]
 
 
 def _event_applier(kind: str, svg_fragment: str, old_svg_fragment: Optional[str]):
@@ -1116,7 +1160,8 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     Returns the assistant's final text response.
     The WhiteboardAuthor emits WS events for each draw action during its run.
     """
-    nb = session.get(Notebook, notebook_id)
+    # The session work runs in threads (_prepare_chat, _lesson_now, _plan_after_turn) so it does not block the event loop.
+    nb = await asyncio.to_thread(session.get, Notebook, notebook_id)
     if not nb:
         raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
     CHAT_LIMITER.prune()
@@ -1124,22 +1169,14 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     if wait:
         raise HTTPException(status_code=429, detail=TOO_FAST, headers={"Retry-After": str(wait)})
 
-    retry_turn = _check_retry_turn(session, notebook_id, req.retry_turn_id)
-    message_text = retry_turn.content if retry_turn else req.message
-    page = _resolve_chat_page(session, notebook_id, req.page_id)
-    existing_element_ids = _existing_element_ids(session, page)
-
-    # Strictly validate selected_element_ids against authoritative elements on this page
-    pointed_at = (retry_turn.about_element_ids if retry_turn else req.selected_element_ids) or []
-    valid_selected_ids = [eid for eid in pointed_at if eid in existing_element_ids]
-    augmented_message = _spatial_message(req, valid_selected_ids, message_text, page.id)
-
-    page, existing_element_ids = _answer_page(session, notebook_id, page, existing_element_ids)
-    page_state = _page_state(page, notebook_id)
-    prior_summary, history, away_for = _tutor_context(session, notebook_id, page, retry_turn)
+    (retry_turn, message_text, page, augmented_message, existing_element_ids, page_state,
+     (prior_summary, history, away_for), user_turn_id) = await asyncio.to_thread(_prepare_chat, session, notebook_id, req)
 
     turn = _ChatTurnState(nb, message_text, page.id)
-    turn.user_turn_id = await _store_learner_turn(session, notebook_id, page, req, retry_turn, valid_selected_ids)
+    turn.user_turn_id = user_turn_id
+    if not retry_turn:
+        # Emit learner message via WS so frontend shows it immediately
+        await emit_notebook_event(notebook_id, SessionEvent.CHAT_TURN, {"role": "user", "content": req.message, "page_id": page.id})
 
     await _cancel_previous_agent(notebook_id)
 
@@ -1148,9 +1185,8 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     # it, answering the whole question, is in the tutor's own rules). Saved when this turn ends.
     # The first plan also sets the course (goal and roadmap); each new page the tutor starts gets the next lesson's plan (_plan_next_lesson).
     # Mindprint: what earlier lessons showed about the learner goes to the plan writers and the tutor (computed first: the plan is written concurrently).
+    plan_now, records = await asyncio.to_thread(_lesson_now, session, notebook_id, nb)   # also loads nb again after the commits above, off the loop
     planned = nb.lesson_plan
-    past = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id)).all() if planned else []
-    plan_now, records = current_lesson(nb, session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), past) if planned else ("", [])
     turn_note, turn.plan_note, known = await asyncio.to_thread(memory_for_turn, engine, notebook_id, plan_now, message_text, nb.topic)
     # Playbook: the teaching move for this turn and the intake sentence for the plan writer, appended to the Mindprint notes.
     move_line, intake = await asyncio.to_thread(playbook_for_turn, engine, notebook_id, plan_now, records, known, message_text, nb.topic, page.id, turn.user_turn_id)
@@ -1192,7 +1228,7 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     reply = await _store_reply(turn, response_text)
     # Mindprint: the records are saved, so a separate grader checks the answers in the background (never fails the turn). The plan is read again
     # because the turn may have started a new page; records of an earlier page are left out inside.
-    plan, _ = current_lesson(session.get(Notebook, notebook_id), session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), [])
+    plan = await asyncio.to_thread(_plan_after_turn, session, notebook_id)
     schedule_grading(engine, notebook_id, plan, turn.active["page_id"], turn.user_turn_id, message_text, last_question(history), turn.tool_log)
     return reply
 
@@ -1261,11 +1297,20 @@ async def transcribe_voice(request: Request):
 
     raw_content_type = request.headers.get("content-type", "audio/webm")
     content_type = raw_content_type.split(";")[0].strip() or "audio/webm"
-    audio_data = await request.body()
+    # Refuse by the declared size before reading anything, and count the bytes as they arrive: the header can lie or be missing
+    # (chunked upload), and request.body() would buffer the whole upload in memory before the limit was checked.
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > MAX_AUDIO_BYTES:
+        raise HTTPException(status_code=413, detail="Audio too large")
+    chunks, received = [], 0
+    async for chunk in request.stream():
+        received += len(chunk)
+        if received > MAX_AUDIO_BYTES:
+            raise HTTPException(status_code=413, detail="Audio too large")
+        chunks.append(chunk)
+    audio_data = b"".join(chunks)
     if not audio_data:
         raise HTTPException(status_code=400, detail="Empty audio payload")
-    if len(audio_data) > MAX_AUDIO_BYTES:
-        raise HTTPException(status_code=413, detail="Audio too large")
 
     headers = {
         "Authorization": f"Token {deepgram_key}",

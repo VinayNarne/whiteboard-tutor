@@ -4,9 +4,10 @@ interface Props {
   handleZoomIn: () => void;
   handleZoomOut: () => void;
   handleResetZoom: () => void;
+  onPan: (dx: number, dy: number) => void;   // direction, -1/0/1 (a button alternative to dragging)
 }
 
-export function ZoomControls({ zoom, handleZoomIn, handleZoomOut, handleResetZoom }: Readonly<Props>) {
+export function ZoomControls({ zoom, handleZoomIn, handleZoomOut, handleResetZoom, onPan }: Readonly<Props>) {
   return (
       <div style={{
         position: 'absolute', bottom: 16, left: 16,
@@ -61,6 +62,23 @@ export function ZoomControls({ zoom, handleZoomIn, handleZoomOut, handleResetZoo
         >
           +
         </button>
+        <span role="group" aria-label="Pan the board" style={{ display: "flex", alignItems: "center", gap: "2px", marginLeft: "4px", borderLeft: "1px solid var(--border)", paddingLeft: "6px" }}>
+          {([["Pan up", "↑", 0, -1], ["Pan down", "↓", 0, 1], ["Pan left", "←", -1, 0], ["Pan right", "→", 1, 0]] as const).map(([label, arrow, dx, dy]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => onPan(dx, dy)}
+              aria-label={label}
+              title={label}
+              style={{
+                background: "transparent", border: "none", color: "var(--ink-2)", fontSize: "14px", cursor: "pointer",
+                width: "28px", height: "28px", padding: 0, borderRadius: "12px",
+              }}
+            >
+              <span aria-hidden="true">{arrow}</span>
+            </button>
+          ))}
+        </span>
         {zoom !== 1 && (
           <button
             onClick={handleResetZoom}

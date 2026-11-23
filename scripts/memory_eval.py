@@ -170,7 +170,11 @@ def main():
     ap.add_argument("--prefs", default="", help="with --real: POST this teaching preference (e.g. examples) after session 1, like the learner's toggle")
     ap.add_argument("--real", action="store_true", help="the real Mindprint condition (no patches, LP_MINDPRINT=1, one db per repeat)")
     ap.add_argument("--s1-from", default=str(ROOT / "docs" / "lesson_evals" / "2026-11-22-0010-memory-ceiling.json"))
+    ap.add_argument("--report", action="store_true", help="no model calls: table of off / oracle / real from saved runs, with Wilson intervals and Fisher p")
+    ap.add_argument("--v2-from", default=str(ROOT / "docs" / "lesson_evals" / "2026-11-22-0027-memory-ceiling-v2.json"), help="--report: run file holding off and oracle")
     a = ap.parse_args()
+    if a.report:
+        return report(a)
     if a.real:
         return main_real(a)
     http = TestClient(bm.app, raise_server_exceptions=False)
@@ -294,6 +298,31 @@ def main_real(a):
             data.append(item)
             out.with_suffix(JSON_SUFFIX).write_text(json.dumps(data, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
     print("raw:", out.with_suffix(JSON_SUFFIX))
+
+
+def report(a):
+    """off vs oracle (--v2-from) and off vs real (latest *-memory-real.json). Every cell is k/n (95% Wilson); p is Fisher exact, two-sided."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import eval_stats as st
+    ev = ROOT / "docs" / "lesson_evals"
+    real_files = sorted(ev.glob("*-memory-real.json"))
+    runs = {"off": [], "oracle": [], "real": []}
+    for r in json.loads(Path(a.v2_from).read_text(encoding="utf-8")):
+        for x in r["runs"]:
+            runs[x["cond"]].append(x)
+    if real_files:
+        for r in json.loads(real_files[-1].read_text(encoding="utf-8")):
+            runs["real"] += r["runs"]
+    meas = sorted({k for rs in runs.values() for x in rs for k in x["measures"]})
+    cnt = lambda c, m: (sum(1 for x in runs[c] if m in x["measures"] and x["measures"][m]["verdict"] == "YES"), sum(1 for x in runs[c] if m in x["measures"]))
+    lines = ["# Memory eval (off vs oracle vs real)", "", "| Measure | off | oracle | p (off vs oracle) | real | p (off vs real) |", "|--|--|--|--|--|--|"]
+    for m in meas:
+        o, c, r = cnt("off", m), cnt("oracle", m), cnt("real", m)
+        pc = st.fmt_p(st.compare(*o, *c)["p"]) if o[1] and c[1] else "n/a"
+        pr = st.fmt_p(st.compare(*o, *r)["p"]) if o[1] and r[1] else "n/a"
+        lines.append(f"| {m} | {st.fmt(*o)} | {st.fmt(*c)} | {pc} | {st.fmt(*r)} | {pr} |")
+    lines += ["", st.LEGEND, f"(real from {real_files[-1].name if real_files else 'none'})"]
+    print(chr(10).join(lines))
 
 
 if __name__ == "__main__":

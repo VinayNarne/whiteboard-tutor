@@ -318,30 +318,20 @@ function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => 
 }
 
 // ---------------------------------------------------------------------------
-// Dialog keyboard support: move focus in, trap Tab, restore focus to the opener on close
+// Dialog support: native showModal() (inert page behind, Tab trap, Escape = "cancel"), focus moved in, restored to the opener on close
 // ---------------------------------------------------------------------------
-const FOCUSABLE = 'button,[href],input,textarea,select,[tabindex]:not([tabindex="-1"])';
-
 function useDialogFocus(open: boolean) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!open || !el) return;
     const opener = document.activeElement as HTMLElement | null;
-    (el.querySelector<HTMLElement>(FOCUSABLE) ?? el).focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-      const items = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)];
-      if (!items.length) { e.preventDefault(); return; }
-      const first = items[0], last = items.at(-1)!;
-      if (!el.contains(document.activeElement) || (e.shiftKey && document.activeElement === first)) {
-        e.preventDefault(); (e.shiftKey ? last : first).focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault(); first.focus();
-      }
+    if (!el.open) el.showModal();
+    (el.querySelector<HTMLElement>("button") ?? el).focus();
+    return () => {
+      if (el.open) el.close();   // close first: an open modal keeps the page behind inert, so focus() there would fail
+      opener?.focus?.();
     };
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('keydown', onKey); opener?.focus?.(); };
   }, [open]);
   return ref;
 }
@@ -714,7 +704,8 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+      const t = e.target instanceof Element ? e.target : null;   // WCAG 2.1.4: '?' is a shortcut only outside form fields and buttons (document/window targets: no element)
+      if (e.key === '?' && !t?.closest('input, textarea, select, button, [contenteditable], [role="button"], [role="textbox"]')) {
         e.preventDefault();
         setShowShortcuts(v => !v);
       }
@@ -880,14 +871,10 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
 
       {/* Notebook Summary Modal */}
       {showSummaryModal && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(31, 42, 55, 0.45)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 100, backdropFilter: 'blur(5px)',
-        }}>
-          <dialog open ref={summaryDialogRef} tabIndex={-1} aria-modal="true" aria-label="Notebook summary" style={{
-            position: 'static', margin: 0, color: 'inherit',
+        <>
+          <dialog ref={summaryDialogRef} className="learner-dialog" tabIndex={-1} aria-label="Notebook summary"
+                  onCancel={e => { e.preventDefault(); setShowSummaryModal(false); }} style={{
+            color: 'inherit', maxWidth: 'calc(100% - 24px)',
             background: 'var(--panel)',
             border: '1px solid var(--border)',
             borderRadius: '16px',
@@ -981,21 +968,17 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
               </button>
             </div>
           </dialog>
-        </div>
+        </>
       )}
 
       {showLearner && <LearnerPanel learner={learner} onClose={() => setShowLearner(false)} />}
 
       {/* Keyboard Shortcuts Modal */}
       {showShortcuts && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(31, 42, 55, 0.45)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 100, backdropFilter: 'blur(4px)',
-        }}>
-          <dialog open ref={shortcutsDialogRef} tabIndex={-1} aria-modal="true" aria-label="Keyboard shortcuts" style={{
-            position: 'static', margin: 0, color: 'inherit',
+        <>
+          <dialog ref={shortcutsDialogRef} className="learner-dialog" tabIndex={-1} aria-label="Keyboard shortcuts"
+                  onCancel={e => { e.preventDefault(); setShowShortcuts(false); }} style={{
+            color: 'inherit', maxWidth: 'calc(100% - 24px)',
             background: 'var(--panel)',
             border: '1px solid var(--border)',
             borderRadius: '16px',
@@ -1056,7 +1039,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
               </button>
             </div>
           </dialog>
-        </div>
+        </>
       )}
     </div>
   );

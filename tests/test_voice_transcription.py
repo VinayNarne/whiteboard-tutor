@@ -71,3 +71,46 @@ def test_interrupt_barge_in_endpoint():
     assert data["status"] == "interrupted"
     assert "was_active" in data
     assert data["notebook_id"] == "test-nb-bargein"
+
+
+def test_oversized_declared_length_is_refused_without_reading(monkeypatch):
+    import backend.main as bm
+    monkeypatch.setenv("DEEPGRAM_API_KEY", "placeholder-not-used")
+    monkeypatch.setattr(bm, "MAX_AUDIO_BYTES", 10)
+    read = []
+
+    def body():
+        read.append(1)
+        yield b"x"
+    # The declared length is over the limit: the stream is never touched.
+    res = client.post("/api/transcribe-voice", content=body(), headers={"content-type": "audio/webm", "content-length": "11"})
+    assert res.status_code == 413 and res.json()["detail"] == "Audio too large"
+    assert not read
+
+
+def test_oversized_stream_without_a_header_is_refused(monkeypatch):
+    import backend.main as bm
+    monkeypatch.setenv("DEEPGRAM_API_KEY", "placeholder-not-used")
+    monkeypatch.setattr(bm, "MAX_AUDIO_BYTES", 10)
+    monkeypatch.setattr(bm.requests, "post", lambda *a, **k: pytest.fail("must not reach Deepgram"))
+
+    def chunks():            # no content-length: sent chunked, so only the running count can catch it
+        yield b"12345"
+        yield b"678901"
+    res = client.post("/api/transcribe-voice", content=chunks(), headers={"content-type": "audio/webm"})
+    assert res.status_code == 413
+
+
+def test_small_upload_still_transcribes(monkeypatch):
+    import backend.main as bm
+    monkeypatch.setenv("DEEPGRAM_API_KEY", "placeholder-not-used")
+
+    class Resp:
+        status_code = 200
+        text = ""
+        def json(self):
+            return {"results": {"channels": [{"alternatives": [{"transcript": " hello ", "confidence": 0.9}]}]}}
+    seen = {}
+    monkeypatch.setattr(bm.requests, "post", lambda *a, **k: seen.update(data=k["data"]) or Resp())
+    res = client.post("/api/transcribe-voice", content=b"abc", headers={"content-type": "audio/webm"})
+    assert res.status_code == 200 and res.json()["transcript"] == "hello" and seen["data"] == b"abc"

@@ -1,0 +1,182 @@
+[
+ {
+  "rep": 0,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "off",
+   "on"
+  ],
+  "result": "tie"
+ },
+ {
+  "rep": 0,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "on",
+   "on"
+  ],
+  "result": "on"
+ },
+ {
+  "rep": 1,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "on",
+   "on"
+  ],
+  "result": "on"
+ },
+ {
+  "rep": 1,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "on",
+   "on"
+  ],
+  "result": "on"
+ },
+ {
+  "rep": 2,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "off",
+   "off"
+  ],
+  "result": "off"
+ },
+ {
+  "rep": 2,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "off",
+   "on"
+  ],
+  "result": "tie"
+ },
+ {
+  "rep": 3,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "off",
+   "on"
+  ],
+  "result": "tie"
+ },
+ {
+  "rep": 3,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "off",
+   "off"
+  ],
+  "result": "off"
+ },
+ {
+  "rep": 4,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "off",
+   "on"
+  ],
+  "result": "tie"
+ },
+ {
+  "rep": 4,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "off",
+   "on"
+  ],
+  "result": "tie"
+ },
+ {
+  "rep": 5,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "off",
+   "on"
+  ],
+  "result": "tie"
+ },
+ {
+  "rep": 5,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "on",
+   "on"
+  ],
+  "result": "on"
+ },
+ {
+  "rep": 6,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "on",
+   "NEITHER"
+  ],
+  "result": "tie"
+ },
+ {
+  "rep": 6,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "on",
+   "on"
+  ],
+  "result": "on"
+ },
+ {
+  "rep": 7,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "on",
+   "on"
+  ],
+  "result": "on"
+ },
+ {
+  "rep": 7,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "on",
+   "on"
+  ],
+  "result": "on"
+ },
+ {
+  "rep": 8,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "off",
+   "on"
+  ],
+  "result": "tie"
+ },
+ {
+  "rep": 8,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "on",
+   "on"
+  ],
+  "result": "on"
+ },
+ {
+  "rep": 9,
+  "topic": "How do Python for-loops work?",
+  "picks": [
+   "on",
+   "on"
+  ],
+  "result": "on"
+ },
+ {
+  "rep": 9,
+  "topic": "How does DNS resolution work?",
+  "picks": [
+   "off",
+   "off"
+  ],
+  "result": "off"
+ }
+]

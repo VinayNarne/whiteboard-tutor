@@ -152,79 +152,82 @@ export function PageSidebar({
         {pages.length === 0 && (
           <div style={{ padding: '16px', color: 'var(--ink-2)', fontSize: '13px' }}>No pages yet</div>
         )}
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {pages.map((page, i) => {
           const isActive = page.id === activePageId;
           return (
-            <div
+            <li
               key={page.id}
-              id={`page-btn-${i + 1}`}
               className="page-row"
-              role="button"
-              tabIndex={0}
-              aria-label={`Page ${i + 1}: ${page.title || 'Untitled'} (${page.status})`}
-              aria-current={isActive ? 'page' : undefined}
-              title={page.summary || undefined}
-              onClick={() => onSelectPage(page.id)}
-              onKeyDown={e => {
-                if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
-                  e.preventDefault();
-                  onSelectPage(page.id);
-                }
-              }}
+              data-current={isActive ? 'true' : undefined}
               style={{
-                display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '4px 6px 4px 14px', minHeight: '36px',
                 background: isActive ? 'var(--panel)' : undefined,
                 borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
               }}
             >
-              <span style={{ color: 'var(--ink-2)', fontSize: '12px', minWidth: '14px' }}>{i + 1}</span>
-
               {editingPageId === page.id ? (
-                <input
-                  value={editTitle}
-                  onChange={e => setEditTitle(e.target.value)}
-                  onBlur={() => commitTitle(page.id)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') commitTitle(page.id);
-                    if (e.key === 'Escape') setEditingPageId(null);
-                  }}
-                  onClick={e => e.stopPropagation()}
-                  aria-label="Page title"
-                  maxLength={200}
-                  autoFocus
-                  style={{
-                    flex: 1, minWidth: 0, background: 'var(--panel)', border: '1px solid var(--accent)',
-                    borderRadius: '6px', color: 'var(--ink)', fontSize: '13px', padding: '3px 8px',
-                  }}
-                />
+                <>
+                  <span style={{ color: 'var(--ink-2)', fontSize: '12px', minWidth: '14px' }}>{i + 1}</span>
+                  <input
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    onBlur={() => commitTitle(page.id)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') commitTitle(page.id);
+                      if (e.key === 'Escape') setEditingPageId(null);
+                    }}
+                    aria-label="Page title"
+                    maxLength={200}
+                    autoFocus
+                    style={{
+                      flex: 1, minWidth: 0, background: 'var(--panel)', border: '1px solid var(--accent)',
+                      borderRadius: '6px', color: 'var(--ink)', fontSize: '13px', padding: '3px 8px',
+                    }}
+                  />
+                </>
               ) : (
-                <span
-                  onDoubleClick={e => { e.stopPropagation(); startEditing(page); }}
-                  style={{
-                    flex: 1, minWidth: 0, fontSize: '13px', color: isActive ? 'var(--ink)' : 'var(--ink-2)',
-                    fontWeight: isActive ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}
-                >
-                  {page.title || `Page ${i + 1}`}
-                </span>
+                <>
+                  <button
+                    type="button"
+                    id={`page-btn-${i + 1}`}
+                    aria-label={`Page ${i + 1}: ${page.title || 'Untitled'} (${page.status})`}
+                    aria-current={isActive ? 'page' : undefined}
+                    title={page.summary || undefined}
+                    onClick={() => onSelectPage(page.id)}
+                    onDoubleClick={() => startEditing(page)}
+                    style={{
+                      flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left',
+                      background: 'transparent', border: 'none', padding: 0, margin: 0, font: 'inherit', cursor: 'pointer',
+                      minHeight: '28px',
+                    }}
+                  >
+                    <span style={{ color: 'var(--ink-2)', fontSize: '12px', minWidth: '14px' }}>{i + 1}</span>
+                    <span
+                      style={{
+                        flex: 1, minWidth: 0, fontSize: '13px', color: isActive ? 'var(--ink)' : 'var(--ink-2)',
+                        fontWeight: isActive ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {page.title || `Page ${i + 1}`}
+                    </span>
+                    {page.status === 'saved' && (
+                      <span title="Saved and locked" aria-hidden="true" style={{ color: 'var(--ink-2)', display: 'inline-flex' }}><LockIcon /></span>
+                    )}
+                  </button>
+                  <span className="row-actions">
+                    <Menu label={`Actions for page ${i + 1}`} icon="dots" items={[
+                      { label: 'Rename', onSelect: () => startEditing(page) },
+                      ...(pages.length > 1 ? [{ label: 'Delete page', onSelect: () => askDelete(page, i) }] : []),
+                    ]} />
+                  </span>
+                </>
               )}
-
-              {page.status === 'saved' && (
-                <span title="Saved and locked" aria-hidden="true" style={{ color: 'var(--ink-2)', display: 'inline-flex' }}><LockIcon /></span>
-              )}
-
-              {editingPageId !== page.id && (
-                <span className="row-actions" role="presentation" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
-                  <Menu label={`Actions for page ${i + 1}`} icon="dots" items={[
-                    { label: 'Rename', onSelect: () => startEditing(page) },
-                    ...(pages.length > 1 ? [{ label: 'Delete page', onSelect: () => askDelete(page, i) }] : []),
-                  ]} />
-                </span>
-              )}
-            </div>
+            </li>
           );
         })}
+        </ul>
       </div>
 
       {/* Page fullness: one quiet line */}

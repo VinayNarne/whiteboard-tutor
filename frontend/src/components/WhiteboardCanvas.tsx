@@ -661,6 +661,7 @@ export function WhiteboardCanvas({
   // ---------------------------------------------------------------------------
   // The zoom used to scale the paper card inside its frame and the pan worked only above 100%, while the tutor's camera kept moving
   // the view back: the board felt fixed (owner, 2026-11-05). Now every control moves the one camera (the SVG viewBox).
+  const PAN_STEP = 0.15;   // share of the view per arrow key or pan button
   const handleZoomIn = () => takeCamera(zoomAt(viewRef.current, 1.25));
   const handleZoomOut = () => takeCamera(zoomAt(viewRef.current, 1 / 1.25));
   const handleResetZoom = () => {
@@ -678,7 +679,7 @@ export function WhiteboardCanvas({
   const unitsPerPx = () => { const m = svgRef.current?.getScreenCTM(); return m?.a ? 1 / m.a : 1; };
   const handleBoardKeyDown = (e: React.KeyboardEvent) => {
     if (e.target !== e.currentTarget) return;   // keys typed into something inside the board are theirs
-    const v = viewRef.current, step = { ArrowLeft: [-0.15, 0], ArrowRight: [0.15, 0], ArrowUp: [0, -0.15], ArrowDown: [0, 0.15] }[e.key];
+    const v = viewRef.current, step = { ArrowLeft: [-PAN_STEP, 0], ArrowRight: [PAN_STEP, 0], ArrowUp: [0, -PAN_STEP], ArrowDown: [0, PAN_STEP] }[e.key];
     if (step) takeCamera(panBy(v, step[0] * v.w, step[1] * v.h));
     else if (e.key === '+' || e.key === '=') handleZoomIn();
     else if (e.key === '-') handleZoomOut();
@@ -886,10 +887,11 @@ export function WhiteboardCanvas({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
+      const el = e.target instanceof HTMLElement ? e.target : null;   // a key event can target document or window: treat as no element
       const typing = !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-      if (e.key === ' ' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey && narration.active
-          && !['BUTTON', 'SELECT', 'A'].includes(el?.tagName ?? '')) {
+      // WCAG 2.1.4: a bare Space toggles narration only from the board itself or the page body, never from a control that uses Space
+      const onBoardOrBody = !el || el === document.body || el.classList.contains('wb-paper');
+      if (e.key === ' ' && onBoardOrBody && !e.ctrlKey && !e.metaKey && !e.altKey && narration.active) {
         e.preventDefault();
         toggleNarrationPause();
         return;
@@ -1033,7 +1035,8 @@ export function WhiteboardCanvas({
       )}
 
       {/* Whiteboard surface */}
-      <div className={`wb-board-${theme} wb-paper`} tabIndex={0} onKeyDown={handleBoardKeyDown}
+      {/* role="group": the board takes arrow/+/-/0 keys but is not an ARIA application widget (screen readers keep their own browse keys) */}
+      <div className={`wb-board-${theme} wb-paper`} role="group" tabIndex={0} onKeyDown={handleBoardKeyDown}
            aria-label="Whiteboard. Arrow keys move the view, plus and minus zoom, 0 shows the whole board." style={{
         width: '100%',
         maxWidth: `${CANVAS_WIDTH}px`,
@@ -1215,7 +1218,8 @@ export function WhiteboardCanvas({
         )}
       </div>
 
-      <ZoomControls zoom={zoom} handleZoomIn={handleZoomIn} handleZoomOut={handleZoomOut} handleResetZoom={handleResetZoom} />
+      <ZoomControls zoom={zoom} handleZoomIn={handleZoomIn} handleZoomOut={handleZoomOut} handleResetZoom={handleResetZoom}
+                    onPan={(dx, dy) => { const v = viewRef.current; takeCamera(panBy(v, dx * PAN_STEP * v.w, dy * PAN_STEP * v.h)); }} />
       {isLessonBoard && !following && (
         <button type="button" onClick={followTutor} className="wb-follow"
                 title="The camera follows what the tutor is explaining again">
