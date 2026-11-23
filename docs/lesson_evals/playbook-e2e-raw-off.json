@@ -1,0 +1,1034 @@
+[
+ {
+  "cond": "off",
+  "rep": 0,
+  "learner": "L1",
+  "topic": "How does DNS resolution work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How does DNS resolution work?",
+    "status": 200,
+    "seconds": 11.0,
+    "reply": "What do you think would happen if the recursive resolver already has the IP address cached from a recent query?",
+    "board": " Let's start with what DNS means: Domain Name System.      1.  DNS stands for  Domain Name System.  \n DNS converts domain names, which are easy for humans to remember, into IP addresses that computers use.    2.  It translates  domain names  like example.com  to  IP addresses  like 93.184.216.34.  \n The process of converting domain names to IP addresses is called DNS resolution.    3.  This process is called  DNS resolution.  \n DNS resolution is not instant; it involves multiple steps and components working together.    4.  DNS resolution involves several steps and  components working together.  \n The key idea to remember is that DNS resolution maps domain names to IP addresses.    •   Remember: DNS resolution maps domain   names to IP addresses  \n The user starts by typing a domain name into their browser, which triggers the DNS resolution process.    DNS Resolution Process    User types domain   \n The recursive resolver receives the request and starts querying DNS servers to find the IP address.         Recursive Resolver  DNS client   \n First, the resolver asks a root DNS server for the top-level domain server responsible for the domain's extension.         Root DNS Server   \n Next, the resolver queries the TLD DNS server, which points it to the authoritative DNS server for the domain name.         TLD DNS Server  Top-Level Domain   \n The authoritative DNS server responds with the IP address of the domain.         Authoritative DNS Server  Domain owner   \n The recursive resolver returns the IP address to the user's device, completing the resolution.            IP Address returned   \n To recap, DNS resolution converts domain names into IP addresses so you can find websites.     Recap      DNS resolution converts domain names  to IP addresses to locate websites.  \n It involves several key components: the recursive resolver, root servers, TLD servers, and authoritative servers.        It involves the recursive resolver, root,  TLD, and authoritative servers.  \n The recursive resolver queries these servers step-by-step until it receives the IP address.        The recursive resolver queries servers  step-by-step until it gets the IP address.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "I think it might just use the cached IP address instead of asking again, but I'm not sure if it checks how old the cache is.",
+    "status": 200,
+    "seconds": 3.5,
+    "reply": "Right, the recursive resolver uses cached IP addresses from recent queries and checks the time-to-live (TTL) to ensure the cache is still valid. If the cache is valid, it returns the IP directly without querying other servers.\n\nNow, why does your computer need to ask multiple servers to find an IP instead of just one server?",
+    "board": " This is the recursive resolver, which can store cached IP addresses temporarily. {\"page_id\": \"861004df-f8b7-4471-86ed-c21cbb1aa730\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b2_n3\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This is the recursive resolver, which can store cached IP addresses temporarily.\"}\n Right, the recursive resolver uses cached IP addresses from recent queries to speed up resolution.    How Recursive Resolver Caching Works  •  Recursive resolver cache  stores IP addresses  from recent queries.  \n It also checks the time-to-live or TTL value to ensure the cached IP address is not too old.    •  It checks the  time-to-live (TTL)  to see if the  cache is still valid.  \n If the cache is valid, the resolver returns the cached IP address directly without querying other DNS servers.    •  If cache is valid, it returns the IP without  querying other servers.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "I think it’s because one server might not have all the information, so the computer has to ask different servers to get the full address.",
+    "status": 200,
+    "seconds": 4.1,
+    "reply": "Right, your computer asks multiple servers because no single server has all the domain information; the query moves through a hierarchy to find the IP address.\n\nWhat would happen if the recursive resolver did not cache the results it gets from other servers?",
+    "board": " Right, no single server knows all domain names, so the query moves through a hierarchy of servers to find the IP address. {\"page_id\": \"861004df-f8b7-4471-86ed-c21cbb1aa730\", \"annotation_id\": \"a1\", \"style\": \"tick\", \"target_element_id\": \"b1_s3\", \"from_element_id\": null, \"color\": \"#10b981\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Right, no single server knows all domain names, so the query moves through a hierarchy of servers to find the IP address.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "I think it would still work, but maybe it would take longer each time because it has to ask all the servers again instead of remembering the answers.",
+    "status": 200,
+    "seconds": 7.3,
+    "reply": "Right, without caching, the recursive resolver would ask the same queries repeatedly, slowing down the resolution process.\n\nNow, can you explain why the recursive resolver asks the root server before the TLD server?",
+    "board": " Right, without caching, the recursive resolver would ask the same queries repeatedly, slowing down the resolution process. {\"page_id\": \"861004df-f8b7-4471-86ed-c21cbb1aa730\", \"annotation_id\": \"a1\", \"style\": \"tick\", \"target_element_id\": \"b4_s1\", \"from_element_id\": null, \"color\": \"#10b981\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Right, without caching, the recursive resolver would ask the same queries repeatedly, slowing down the resolution process.\"}\n This line already explains that DNS resolution translates domain names into IP addresses. {\"page_id\": \"861004df-f8b7-4471-86ed-c21cbb1aa730\", \"annotation_id\": \"a2\", \"style\": \"circle\", \"target_element_id\": \"b1_s2\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 15562, \"audio_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a2_alignment.json\", \"narration\": \"[[MARK:a2]] This line already explains that DNS resolution translates domain names into IP addresses.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "I think the recursive resolver asks the root server first because it needs to find out which TLD server to ask next, but I'm not sure if that's exactly right.",
+    "status": 200,
+    "seconds": 2.4,
+    "reply": "Right, the recursive resolver asks the root server first because the root server tells it which TLD server to ask for the specific domain extension like .com or .org. Then the resolver queries that TLD server next.\n\nWhat is the role of the authoritative DNS server in this process?",
+    "board": " This is the root DNS server, which directs the query to the correct TLD server. {\"page_id\": \"861004df-f8b7-4471-86ed-c21cbb1aa730\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b2_n3\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This is the root DNS server, which directs the query to the correct TLD server.\"}\n This is the TLD DNS server, responsible for the top-level domain like .com or .org. {\"page_id\": \"861004df-f8b7-4471-86ed-c21cbb1aa730\", \"annotation_id\": \"a2\", \"style\": \"circle\", \"target_element_id\": \"b2_n4\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 15562, \"audio_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/a2_alignment.json\", \"narration\": \"[[MARK:a2]] This is the TLD DNS server, responsible for the top-level domain like .com or .org.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "I don't get it, can you explain it differently?",
+    "status": 200,
+    "seconds": 2.9,
+    "reply": "The authoritative server is the final source of truth; it stores the actual IP address linked to the domain name. When the recursive resolver asks it, the authoritative server returns the precise IP address. This answer completes the DNS lookup process, allowing your computer to connect to the right website. Remember this key point: the authoritative server provides the final IP address in DNS resolution.\n\nWhat would happen if the authoritative server had the wrong IP address stored?",
+    "board": " The authoritative server is the final source of truth; it stores the actual IP address linked to the domain name.    1.  The authoritative server holds the official IP  address for the domain.  \n When the recursive resolver asks it, the authoritative server returns the precise IP address.    2.  It responds to queries with the exact IP  address when asked.  \n This answer completes the DNS lookup process, allowing your computer to connect to the right website.    3.  It completes the DNS resolution by providing  the needed IP.  \n Remember this key point: the authoritative server provides the final IP address in DNS resolution.    •   The authoritative server provides the final IP   address in DNS resolution.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 6,
+    "learner": "I think if the authoritative server had the wrong IP, then maybe the computer would connect to a different website or not connect at all? I'm not totally sure.",
+    "status": 200,
+    "seconds": 4.9,
+    "reply": "I added notes explaining that if the authoritative server has the wrong IP address, users could reach the wrong website or fail to connect. The authoritative server must have the correct IP address.\n\nHow does caching help speed up the DNS resolution process?",
+    "board": " This line explains what happens if the authoritative server has the wrong IP address, causing connection errors or wrong sites. {\"page_id\": \"861004df-f8b7-4471-86ed-c21cbb1aa730\", \"annotation_id\": \"auth_wrong_ip\", \"style\": \"underline\", \"target_element_id\": \"b5_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 41584, \"audio_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/auth_wrong_ip_audio.mp3\", \"alignment_url\": \"/static/notebooks/7b3a22aa-192b-4360-b501-c96df3eec763/861004df-f8b7-4471-86ed-c21cbb1aa730/auth_wrong_ip_alignment.json\", \"narration\": \"[[MARK:auth_wrong_ip]] This line explains what happens if the authoritative server has the wrong IP address, causing connection errors or wrong sites.\"}\n Added notes about the importance of the authoritative server having the correct IP address.    3.  If the authoritative server has the wrong IP  address, users may reach the wrong website  or fail to connect.  \n   •   The authoritative server must have the   correct IP address  \n  \n  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 0,
+  "learner": "L1",
+  "topic": "How do Python for-loops work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How do Python for-loops work?",
+    "status": 200,
+    "seconds": 8.0,
+    "reply": "Now that you know how for-loops work in Python, can you explain why the variable changes its value each time through the loop?",
+    "board": " A for-loop in Python repeats a block of code for each item in a sequence.      1.  A  for-loop  repeats a block of code for each  item in a sequence.  \n The basic syntax is: for variable in sequence colon.    2.  The syntax is: for variable in sequence:  \n The variable takes each value from the sequence one by one.    3.  The variable takes each value from the  sequence one by one.  \n The indented block below runs for each value of the variable.    4.  The indented block below runs for each value  of the variable.  \n Common sequences you can loop over are lists, strings, or ranges.    5.  Common sequences are lists, strings, or  ranges.  \n Remember: for-loops automate repetitive tasks by iterating over sequences.    •   Remember: for-loops automate repetitive  tasks by iterating over sequences.  \n We start with a sequence, like a list, string, or range.    Python for-loop structure    Sequence  list, string, range   \n The variable takes each item from the sequence, one at a time.         Variable  takes each item   \n The code block runs for each item the variable holds.         Code block  runs for each item   \n After the code runs for one item, the variable gets the next item.       \n The loop ends after all items are processed.         End of loop   \n For-loops repeat code for each item in a sequence.     Recap      For-loops repeat code for each item in a  sequence.  \n The variable changes to each item in order.        The variable changes to each item in  order.  \n Indented code runs for every item automatically.        Indented code runs for every item  automatically.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "I think the variable changes because the loop kind of resets it or something, maybe it updates automatically but I'm not totally sure how.",
+    "status": 200,
+    "seconds": 13.5,
+    "reply": "I just showed a diagram to illustrate how the loop variable takes each value from the sequence in order, as that line already explains it clearly. Now, if the sequence is [1, 2, 3], what values does the loop variable get during the loop?",
+    "board": " The loop variable changes to each item in the sequence on every cycle. This means it takes the value of the next item automatically each time the loop runs.    •  The loop variable changes to each item in the  sequence on every cycle.  \n You do not reset the variable yourself; the for-loop mechanism does this automatically.    •  It is not reset manually by you, but by the  for-loop mechanism.  \n The key fact is that the variable updates automatically to the next item from the sequence each time the loop repeats.    •   The variable updates automatically to the   next item from the sequence each time the   loop repeats.  \n Here is a sequence with values 1, 2, and 3, and a loop variable x.    How the loop variable changes       Sequence: [1, 2, 3]     Loop variable x   \n The loop variable x takes the first value 1 and uses it in the loop body.         Uses value: 1   \n Next, x takes the second value 2 and uses it in the loop body.         Uses value: 2   \n Finally, x takes the last value 3 and uses it in the loop body.         Uses value: 3   \n This line already explains that the variable takes each value in order, so I will show a diagram to illustrate it. {\"page_id\": \"a3d6c07f-7f5e-4922-9ef6-d2e966274eed\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b1_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/d1da07c8-1818-47b7-b0e4-856cd1a50994/a3d6c07f-7f5e-4922-9ef6-d2e966274eed/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/d1da07c8-1818-47b7-b0e4-856cd1a50994/a3d6c07f-7f5e-4922-9ef6-d2e966274eed/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line already explains that the variable takes each value in order, so I will show a diagram to illustrate it.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "I think the loop variable gets values like 1, then maybe 3, and then 2, but I'm not totally sure about the order.",
+    "status": 200,
+    "seconds": 5.0,
+    "reply": "Now let's see how Python uses indentation to mark the loop body. The indented block of code below the for-loop line runs once for each item in the sequence. If that code is not indented, Python raises a syntax error. Why do you think indentation matters for Python in this way?",
+    "board": " The loop body is the part of the code that runs for each item in the sequence, and it must be indented.    5.  The loop body is the indented block below the  for-loop line.  \n Python uses indentation to mark which lines belong to the loop body.    6.  Indentation is required by Python to mark the  loop body.  \n If the code inside the loop is not indented, Python will give a syntax error.    7.  Without indentation, Python raises a syntax  error.  \n Each indented line runs once for every item the loop variable takes.    8.  Indented code runs once per item in the  sequence.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "Maybe indentation helps Python know where the loop starts and ends, like grouping the code together, but I'm not totally sure why it can't just use brackets or something.",
+    "status": 200,
+    "seconds": 6.4,
+    "reply": "Indentation helps Python group code into blocks visually and logically, which replaces the need for brackets or keywords. This is why Python requires the loop body to be indented so it knows exactly what to repeat each cycle.\n\nNow, if the code inside a for-loop is not indented, what do you think would happen when you try to run it?",
+    "board": " Python uses indentation to group code blocks visually and logically.    Why indentation matters  •  Python uses indentation to group code blocks  visually and logically.  \n This replaces the need for brackets or keywords to mark blocks.    •  This replaces the need for brackets or  keywords to mark blocks.  \n Indentation makes Python code clean and easy to read.    •  Indentation makes Python code clean and  easy to read.  \n Corrected block 6 to replace redundant lines.    3. Indentation and loop body  5.  The loop body is the indented block below the  for-loop line.  \n   6.  Indentation is required by Python to mark the  loop body.  \n   7.  Without indentation, Python raises a syntax  error.  \n  \n This line shows the indented block which is the loop body, essential for Python to know what repeats. {\"page_id\": \"a3d6c07f-7f5e-4922-9ef6-d2e966274eed\", \"annotation_id\": \"indentation1\", \"style\": \"underline\", \"target_element_id\": \"b6_s2\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 94615, \"audio_url\": \"/static/notebooks/d1da07c8-1818-47b7-b0e4-856cd1a50994/a3d6c07f-7f5e-4922-9ef6-d2e966274eed/indentation1_audio.mp3\", \"alignment_url\": \"/static/notebooks/d1da07c8-1818-47b7-b0e4-856cd1a50994/a3d6c07f-7f5e-4922-9ef6-d2e966274eed/indentation1_alignment.json\", \"narration\": \"[[MARK:indentation1]] This line shows the indented block which is the loop body, essential for Python to know what repeats.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "I think it might just ignore the loop or maybe give some kind of warning, but I'm not sure if it would stop the whole program.",
+    "status": 200,
+    "seconds": 2.7,
+    "reply": "If the code inside a for-loop is not indented, Python raises a syntax error and stops running the program. Indentation is mandatory to tell Python exactly what belongs to the loop body.\n\nWhat do you think happens if the sequence you loop over is empty? Will the loop body run or not?",
+    "board": " If the code in a for-loop is not indented, Python will raise a syntax error and stop running the program.    •  If code inside a for-loop is not indented,  Python raises a syntax error.  \n Indentation is mandatory to tell Python exactly which code is inside the loop body.    •  Indentation is mandatory to tell Python  what belongs to the loop body.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "I don't get it, can you explain it differently?",
+    "status": 200,
+    "seconds": 2.9,
+    "reply": "An empty sequence means there are no items to loop over. The for-loop body runs once for each item in the sequence. If there are no items at all, the loop body does not run even once. So, ==the loop body is skipped entirely if the sequence is empty.==\n\nWhat do you think the for-loop will do if the sequence has just one item?",
+    "board": " An empty sequence means no items to loop over.    •  An empty sequence means no items to loop  over.  \n The for-loop body runs once per item in the sequence.    •  The for-loop body runs once per item in the  sequence.  \n If there are no items, the loop body does not run at all.    •  If there are no items, the loop body does not  run at all.  \n The loop body is skipped entirely if the sequence is empty.    •   The loop body is skipped entirely if the   sequence is empty.  \n Here is where it says the loop repeats code for each item in the sequence, so no items means no loop cycles. {\"page_id\": \"a3d6c07f-7f5e-4922-9ef6-d2e966274eed\", \"annotation_id\": \"explanation_empty_seq\", \"style\": \"underline\", \"target_element_id\": \"b1_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 24355, \"audio_url\": \"/static/notebooks/d1da07c8-1818-47b7-b0e4-856cd1a50994/a3d6c07f-7f5e-4922-9ef6-d2e966274eed/explanation_empty_seq_audio.mp3\", \"alignment_url\": \"/static/notebooks/d1da07c8-1818-47b7-b0e4-856cd1a50994/a3d6c07f-7f5e-4922-9ef6-d2e966274eed/explanation_empty_seq_alignment.json\", \"narration\": \"[[MARK:explanation_empty_seq]] Here is where it says the loop repeats code for each item in the sequence, so no items means no loop cycles.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 6,
+    "learner": "I think the loop body might run twice if there is one item, but I'm not completely sure.",
+    "status": 200,
+    "seconds": 3.1,
+    "reply": "That line already explains the loop runs once per item, and it does not run twice for one item. So the loop body runs exactly once when the sequence has one item.\n\nNow, if the sequence is empty, will the loop body run at all?",
+    "board": " This line says the loop runs once per item. The loop body does not run twice for one item. {\"page_id\": \"a3d6c07f-7f5e-4922-9ef6-d2e966274eed\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b9_s2\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/d1da07c8-1818-47b7-b0e4-856cd1a50994/a3d6c07f-7f5e-4922-9ef6-d2e966274eed/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/d1da07c8-1818-47b7-b0e4-856cd1a50994/a3d6c07f-7f5e-4922-9ef6-d2e966274eed/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line says the loop runs once per item. The loop body does not run twice for one item.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 0,
+  "learner": "L2",
+  "topic": "How does DNS resolution work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How does DNS resolution work?",
+    "status": 200,
+    "seconds": 7.7,
+    "reply": "I've shown how DNS resolution works in steps and a diagram that traces the query from your computer to the DNS resolver, root servers, TLD servers, and authoritative servers, then back. What do you think would happen if the DNS resolver already had the IP cached?",
+    "board": " DNS stands for Domain Name System, and its job is to translate domain names into IP addresses.      1.  DNS (Domain Name System)  translates  domain names into IP addresses.  \n When you enter a URL in your browser, your computer asks a DNS resolver to find the corresponding IP address for that domain.    2.  When you enter a URL, your computer asks a  DNS resolver to find the IP.  \n The DNS resolver then queries a series of DNS servers starting from the root servers to find the IP.    3.  The resolver queries various DNS servers  starting from the root servers.  \n This process goes down the DNS hierarchy: root servers, then top-level domain servers, and finally authoritative servers.    4.  The process continues down the hierarchy:  root, TLD, authoritative servers.  \n Finally, the IP address is returned to your computer, letting it connect to the website you requested.    5.  The IP address is returned to your computer,  allowing it to connect to the website.  \n To summarize, DNS resolution works by translating domain names into IP addresses through a hierarchy of DNS servers.    •   DNS resolution works by translating domain   names into IP addresses through a hierarchy   of DNS servers  \n The client computer sends a DNS query to the DNS resolver.    DNS Resolution Process       DNS Resolver     Client Computer   \n The resolver queries the root DNS servers to find the top-level domain (TLD) servers.         Root DNS Servers   \n The root servers respond with the address of the TLD DNS servers for the domain.         TLD DNS Servers   \n The resolver queries the TLD servers for the authoritative DNS servers of the domain.         Authoritative DNS  Servers   \n The authoritative DNS servers respond with the IP address of the domain.       \n The resolver returns the IP address to the client computer, completing the resolution.       ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "If the DNS resolver already had the IP cached, it would immediately return the cached IP address to the client without querying the root, TLD, or authoritative servers, significantly reducing resolution time.",
+    "status": 200,
+    "seconds": 6.1,
+    "reply": "Right, the DNS resolver uses cached data to skip querying multiple servers, which speeds up resolution. Now, can you explain why the resolver needs to query multiple DNS servers if it doesn't have the answer cached?",
+    "board": " Right, the resolver uses cached data to skip querying multiple servers, which speeds up resolution. {\"page_id\": \"aac8ede4-cc64-4128-8344-f967905fc9d6\", \"annotation_id\": \"a1\", \"style\": \"tick\", \"target_element_id\": \"b1_s3\", \"from_element_id\": null, \"color\": \"#10b981\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/aac8ede4-cc64-4128-8344-f967905fc9d6/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/aac8ede4-cc64-4128-8344-f967905fc9d6/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Right, the resolver uses cached data to skip querying multiple servers, which speeds up resolution.\"}\n Caching means storing answers to reuse them later without new queries.    Why caching matters  •  Caching allows reuse of previous answers  without querying servers again.  \n This reduces the number of queries and speeds up the process.    •  It speeds up DNS resolution by reducing the  number of steps.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "The resolver queries multiple DNS servers because no single server has all domain information; it starts with root servers, then follows referrals to TLD and authoritative servers to progressively resolve the domain name.",
+    "status": 200,
+    "seconds": 2.4,
+    "reply": "Exactly, no single DNS server contains all domain information, so the resolver follows a chain of servers to find the answer. Let's move on to the roles of these different DNS servers. What do you think the root DNS server does in this process?",
+    "board": " This line explains why multiple servers are queried: no single server holds all information. {\"page_id\": \"aac8ede4-cc64-4128-8344-f967905fc9d6\", \"annotation_id\": \"a1\", \"style\": \"tick\", \"target_element_id\": \"b1_s3\", \"from_element_id\": null, \"color\": \"#10b981\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/aac8ede4-cc64-4128-8344-f967905fc9d6/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/aac8ede4-cc64-4128-8344-f967905fc9d6/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line explains why multiple servers are queried: no single server holds all information.\"}\n DNS resolution involves querying multiple DNS servers in sequence.    Why multiple DNS servers are queried  •  DNS resolution involves querying multiple DNS  servers in sequence.  \n Each server type has specific information: root, TLD, authoritative.    •  Each server type has specific information:  root, TLD, authoritative.  \n The resolver follows referrals from one server to the next.    •  The resolver follows referrals from one server  to the next.  \n No single server has all domain information.    •   No single server has all domain information.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "The root DNS server directs the resolver to the appropriate top-level domain (TLD) DNS server by providing the address of the TLD server responsible for the queried domain extension.",
+    "status": 200,
+    "seconds": 14.6,
+    "reply": "I have explained the distinct roles of the recursive, root, TLD, and authoritative DNS servers with a diagram and notes. What role does the recursive DNS server play in DNS resolution?",
+    "board": " Right, the root DNS server directs the resolver to the correct TLD server based on the domain extension. {\"page_id\": \"aac8ede4-cc64-4128-8344-f967905fc9d6\", \"annotation_id\": \"a1\", \"style\": \"tick\", \"target_element_id\": \"b2_root\", \"from_element_id\": null, \"color\": \"#10b981\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/aac8ede4-cc64-4128-8344-f967905fc9d6/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/aac8ede4-cc64-4128-8344-f967905fc9d6/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Right, the root DNS server directs the resolver to the correct TLD server based on the domain extension.\"}\n The recursive DNS server is the first point of contact for a client and takes on the task of resolving the domain name completely.      1.  The  recursive DNS server  receives queries  from clients and handles the full resolution  process.  \n Root servers know where to find TLD servers but do not have the final answers for domain IPs.    2.  The  root DNS servers  direct queries to the  correct TLD servers, but do not hold domain  records.  \n TLD servers handle top-level domains and guide queries toward the authoritative servers for specific domains.    3.  The  TLD DNS servers  manage domain  extensions like .com or .org and direct queries  to authoritative servers.  \n Authoritative servers store the definitive DNS records such as IP addresses and respond with the final data.    4.  The  authoritative DNS servers  hold the  actual DNS records and provide the final  answers.  \n The recursive DNS server receives the client's query and begins the resolution process by querying other servers as needed.    Roles of DNS Servers in DNS Resolution    Recursive DNS Server  Handles client queries   \n If needed, the recursive server queries a root DNS server, which directs it to the appropriate TLD server.         Root DNS Server  Directs to TLD servers   \n The TLD DNS server manages domain extensions and directs the query to the authoritative server that holds the domain's records.         TLD DNS Server  Manages domain extensions   \n Finally, the authoritative DNS server provides the definitive DNS record, such as the IP address.         Authoritative DNS Server  Holds final DNS records   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "The recursive DNS server acts as an intermediary that receives a DNS query from a client and then sequentially queries other DNS servers (root, TLD, authoritative) on behalf of the client until it obtains the final IP address, which it then returns to the client.",
+    "status": 200,
+    "seconds": 7.7,
+    "reply": "I added a note clarifying that the recursive DNS server caches responses to speed up future queries and pointed to the existing mention of this. Why do you think caching at the recursive server is important for DNS resolution?",
+    "board": " This line explains that the recursive server caches responses to speed up future queries. {\"page_id\": \"f4e5fb60-51b3-4f3d-989c-49b06820df0f\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b2_s4\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/f4e5fb60-51b3-4f3d-989c-49b06820df0f/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/f4e5fb60-51b3-4f3d-989c-49b06820df0f/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line explains that the recursive server caches responses to speed up future queries.\"}\n The recursive DNS server stores answers temporarily to answer repeated client queries faster.    2. Recursive DNS Server Function (continued)  •  It caches responses to speed up future  queries.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "Caching at the recursive DNS server is important because it reduces latency for users by quickly providing previously resolved domain information and decreases the overall DNS query load on authoritative servers, improving efficiency and reliability.",
+    "status": 200,
+    "seconds": 6.3,
+    "reply": "I underlined the existing note on root DNS servers to highlight they only point to TLD servers and do not hold IP addresses. Next, let's explore the role of the TLD DNS servers. What do you think happens if the TLD server is unavailable during resolution?",
+    "board": " The root DNS server receives the query from the recursive server and directs it to the correct TLD server by providing its address.    Root DNS Server Role    Root DNS Server  Directs to TLD servers   \n It does not know the IP address of the domain itself, only where to find the TLD server for the domain extension.         TLD DNS Server  Manages domain extensions   \n This line shows that root DNS servers only direct queries to TLD servers and do not hold IP addresses for domains. {\"page_id\": \"f4e5fb60-51b3-4f3d-989c-49b06820df0f\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b1_s2\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 5648, \"audio_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/f4e5fb60-51b3-4f3d-989c-49b06820df0f/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/2cd05a15-2574-46ba-bf5f-9dab07aaa8b7/f4e5fb60-51b3-4f3d-989c-49b06820df0f/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line shows that root DNS servers only direct queries to TLD servers and do not hold IP addresses for domains.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 0,
+  "learner": "L2",
+  "topic": "How do Python for-loops work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How do Python for-loops work?",
+    "status": 200,
+    "seconds": 8.9,
+    "reply": "Now that you see the structure and a simple example, how do you think the loop would behave if the sequence was empty?",
+    "board": " A for-loop in Python repeats a set of actions for each item in a sequence like a list or a string.      1.  A  for-loop  repeats actions for each item in a  sequence.  \n Inside the loop, a variable stands for the current item being processed.    2.  The loop uses a  variable  to represent the  current item.  \n The loop runs once for each item, in the order they appear.    3.  The loop runs once per item, in the given order.  \n You use indentation to show which lines of code belong to the loop's body.    4.  Use  indentation  to mark the loop's body.  \n The syntax starts with the keyword 'for', then the variable, 'in', and the sequence.    5.  Syntax: for variable in sequence:  \n This diagram shows the flow of a Python for-loop from start to finish.    Structure of a Python for-loop    Start of loop   \n First, the loop starts and gets the next item from the sequence.         Get next item   \n Then, it uses the item inside the body of the loop.         Use item in body   \n Next, it checks if there are more items left.         More items?   \n If yes, it repeats by getting the next item again.       Yes   \n If no, the loop ends.       No     End of loop   \n Let's look at a simple example.    •  Example:  \n This for-loop will run three times, with x taking the values 1, then 2, then 3.    •  for x in [1, 2, 3]:  \n The indented print line is the loop body, which prints the current value of x.    •  print(x)  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "If the sequence is empty, the loop body will not execute at all because there are no elements to iterate over.",
+    "status": 200,
+    "seconds": 7.1,
+    "reply": "Right, if the sequence is empty, the loop body does not run at all. Now let's see how Python for-loops work internally: Python calls iter() on the iterable to get an iterator, then repeatedly calls next() to get each item until StopIteration ends the loop. What makes strings usable in for-loops, do you think?",
+    "board": " Python for-loops run once for each item in the sequence or iterable.    1.  Python for-loops run once per item in a  sequence.  \n The loop variable holds the current item from the sequence during each iteration.    2.  The loop variable holds the current item each  time.  \n If the sequence or iterable is empty, the loop body does not execute at all.    3.  If the sequence is empty, the loop body does  not run.  \n The loop stops running after all items have been processed.    4.  The loop ends after the last item is processed.  \n The key point to remember is that the loop runs zero or more times, depending on the number of items in the iterable.    •   Key point: The loop runs zero or more times   depending on the iterable's length.  \n Let's look inside the Python for-loop to understand how it works internally.    How Python for-loops work internally    Start loop   \n The loop starts and calls iter() on the iterable to get an iterator object.         Call iter() on iterable   \n Then the loop repeatedly calls next() on the iterator to get the next item.         Call next() to get item   \n If next() raises StopIteration, the loop ends.         StopIteration raised?   \n If there is an item, it is assigned to the loop variable.       No     Assign item to loop  variable   \n Then the loop body runs using that item.            Run loop body   \n After running the body, the loop goes back to get the next item.    \n This cycle repeats until StopIteration is raised, ending the loop.       Yes     End loop   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "Strings are usable in for-loops because they are iterable objects that implement the __iter__() method, returning an iterator that yields each character one by one.",
+    "status": 200,
+    "seconds": 9.3,
+    "reply": "I've underlined the part where it says the loop variable is assigned each item from next(), which you saw earlier. Now, can you explain what happens behind the scenes when a Python for-loop iterates over a string?",
+    "board": " This is the call to iter() on the iterable, which returns an iterator object. {\"page_id\": \"4da7a21a-7049-479b-a6af-938ec29c536a\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b5_e2\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/e1961923-9d3b-477d-ab03-8694e1c2fafd/4da7a21a-7049-479b-a6af-938ec29c536a/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/e1961923-9d3b-477d-ab03-8694e1c2fafd/4da7a21a-7049-479b-a6af-938ec29c536a/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This is the call to iter() on the iterable, which returns an iterator object.\"}\n This is the call to next() on the iterator to get the next item to assign to the loop variable. {\"page_id\": \"4da7a21a-7049-479b-a6af-938ec29c536a\", \"annotation_id\": \"a2\", \"style\": \"underline\", \"target_element_id\": \"b5_e3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 15562, \"audio_url\": \"/static/notebooks/e1961923-9d3b-477d-ab03-8694e1c2fafd/4da7a21a-7049-479b-a6af-938ec29c536a/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/e1961923-9d3b-477d-ab03-8694e1c2fafd/4da7a21a-7049-479b-a6af-938ec29c536a/a2_alignment.json\", \"narration\": \"[[MARK:a2]] This is the call to next() on the iterator to get the next item to assign to the loop variable.\"}\n The loop variable is assigned each item from next(), as noted here in the basics block. {\"page_id\": \"4da7a21a-7049-479b-a6af-938ec29c536a\", \"annotation_id\": \"a3\", \"style\": \"underline\", \"target_element_id\": \"b4_s2\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 38027, \"audio_url\": \"/static/notebooks/e1961923-9d3b-477d-ab03-8694e1c2fafd/4da7a21a-7049-479b-a6af-938ec29c536a/a3_audio.mp3\", \"alignment_url\": \"/static/notebooks/e1961923-9d3b-477d-ab03-8694e1c2fafd/4da7a21a-7049-479b-a6af-938ec29c536a/a3_alignment.json\", \"narration\": \"[[MARK:a3]] The loop variable is assigned each item from next(), as noted here in the basics block.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "When a Python for-loop iterates over a string, it implicitly creates an iterator from the string using iter(), then repeatedly calls next() on this iterator to retrieve each character one by one until StopIteration is raised.",
+    "status": 200,
+    "seconds": 4.7,
+    "reply": "Right, the loop variable is assigned each item in order from the iterable, and after the loop ends, it keeps the last value it was assigned. It is local to the loop block but still accessible after the loop. How do you think the loop variable behaves inside and after the loop runs?",
+    "board": " The loop variable gets assigned the current item from the iterable each time the loop runs.    1.  The loop variable is assigned each item from  the iterable in order.  \n After the loop finishes, the loop variable still holds the last item it was assigned.    2.  The loop variable exists after the loop ends,  holding the last value.  \n The loop variable is local in scope to the loop block, but it remains accessible after the loop completes.    3.  The loop variable is local to the loop block but  remains accessible after the loop.  \n First, the loop variable is assigned the next item from the iterable.    Loop Variable and Scope    Assign loop variable   \n Then, the loop body runs using this variable's value.         Run loop body   \n This cycle repeats until the iterable is exhausted, then the loop ends.            Loop ends   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "Inside the loop, the loop variable takes on each value from the iterable in sequence, and after the loop finishes, it retains the last value assigned from the iterable.",
+    "status": 200,
+    "seconds": 5.3,
+    "reply": "I've underlined the note about the loop variable's scope and accessibility. Now, what happens if the iterable in a for-loop is empty—does the loop variable get assigned any value at all?",
+    "board": " This line explains the scope and accessibility of the loop variable. {\"page_id\": \"4da7a21a-7049-479b-a6af-938ec29c536a\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b6_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 5648, \"audio_url\": \"/static/notebooks/e1961923-9d3b-477d-ab03-8694e1c2fafd/4da7a21a-7049-479b-a6af-938ec29c536a/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/e1961923-9d3b-477d-ab03-8694e1c2fafd/4da7a21a-7049-479b-a6af-938ec29c536a/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line explains the scope and accessibility of the loop variable.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "If the iterable is empty, the loop body does not execute, and the loop variable is not assigned any value within that loop.",
+    "status": 200,
+    "seconds": 1.5,
+    "reply": "Exactly, if the iterable is empty, the loop variable is never assigned because the loop body doesn't run. Now, what do you think happens if a break statement is used inside a for-loop?",
+    "board": "",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 1,
+  "learner": "L1",
+  "topic": "How does DNS resolution work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How does DNS resolution work?",
+    "status": 200,
+    "seconds": 7.2,
+    "reply": "We started with what DNS is and why your device needs it when you enter a website name. Then I showed you the main steps of DNS resolution, from your device's local DNS resolver asking servers step-by-step until it gets the IP address.\n\nWhy do you think the DNS resolver asks the root server before the authoritative server?",
+    "board": " Let's start with what DNS is: the Domain Name System, which translates website names into IP addresses.      1.  DNS  stands for Domain Name System. It  translates website names into IP addresses.  \n When you type a website address like example.com, your device needs to find the IP address to connect to it.    2.  When you type a website like example.com, your  device needs to find its IP address.  \n DNS resolution is the process of finding the IP address that corresponds to the website name.    3.  DNS resolution is the process of finding that  IP address for the website name.  \n The user starts by entering a URL in their browser.    DNS Resolution Process    User enters URL   \n The local DNS resolver on the user's device or network first checks if it knows the IP address.         Local DNS Resolver   \n If not found locally, the resolver asks the root DNS server for direction.         Root DNS Server   \n The root server points to the top-level domain (TLD) DNS server.         TLD DNS Server   \n The TLD server points to the authoritative DNS server for the exact domain.         Authoritative DNS  Server   \n The authoritative server responds with the IP address for the domain.       \n The local resolver returns the IP address to the user's device, completing the resolution.         IP Address Returned   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "I think the root server is asked first because it kind of points the resolver to the right place, maybe like a directory, before it goes to the authoritative server.",
+    "status": 200,
+    "seconds": 3.4,
+    "reply": "The recursive resolver is the first DNS server your device asks. It handles the entire lookup by asking other servers on your behalf. It may have the answer cached, but if not, it follows the chain to find it. The recursive resolver acts as your device's DNS helper.\n\nWhat do you think happens if the recursive resolver already has the answer cached?",
+    "board": " Now let's talk about the recursive resolver, which is the first DNS server your device contacts.    2.  The  recursive resolver  is the first DNS server  your device asks.  \n Its job is to handle the full DNS lookup by querying other servers for you.    •  It handles the entire lookup by asking other  servers on your behalf.  \n Sometimes it already has the answer cached, but if not, it follows the chain to find it.    •  It may have the answer cached, but if not, it  follows the chain to find it.  \n So, the recursive resolver acts like your device's DNS helper, doing the hard work of finding the IP address.    •   The recursive resolver acts as your device's   DNS helper  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "I think it just sends the answer back to your device without asking other servers again.",
+    "status": 200,
+    "seconds": 5.3,
+    "reply": "Right, if the recursive resolver already has the answer cached, it sends it back to your device immediately without asking other servers again. Now, let's look at what happens when the recursive resolver doesn't have the answer cached and needs to ask other servers. What kind of servers do you think it contacts next to find the IP address?",
+    "board": " Here is the key point: the recursive resolver can reply immediately if it has the answer cached. {\"page_id\": \"c44d2c26-5184-4c2a-be06-831c9d4dc397\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b3_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/1ba26816-0295-4d4d-bee1-723408f03f60/c44d2c26-5184-4c2a-be06-831c9d4dc397/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/1ba26816-0295-4d4d-bee1-723408f03f60/c44d2c26-5184-4c2a-be06-831c9d4dc397/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Here is the key point: the recursive resolver can reply immediately if it has the answer cached.\"}\n Added the key point about caching to the recursive resolver notes.    2.  The recursive resolver is the first DNS server  your device asks.  \n   •  It handles the entire lookup by asking other  servers on your behalf.  \n   •  It may have the answer  cached,  so it can  reply immediately without further queries.  \n  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "I think it might contact some kind of main or central servers, maybe like the root servers? But I'm not totally sure.",
+    "status": 200,
+    "seconds": 4.0,
+    "reply": "The recursive resolver first asks the root DNS servers if it doesn't have the answer cached. The root servers don't know the IP address but tell the resolver which TLD (top-level domain) servers to ask next, like the .com servers. Then the TLD servers point the resolver to the authoritative DNS servers that hold the actual IP info for the domain.\n\nWhat role do you think the authoritative DNS servers play in this process?",
+    "board": " The recursive resolver first asks the root DNS servers if it doesn't have the answer cached.    Root and TLD Servers in DNS Resolution    Root DNS Servers  Top-level servers   \n The root server does not directly know the IP but directs the resolver to the TLD servers for the domain extension, like .com or .org.       Directs to TLD server     TLD DNS Servers   \n Then, the TLD servers point the resolver to the authoritative DNS servers for the specific domain.       Points to authoritative  server     Authoritative DNS  Servers  Holds domain IP info   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "I think the authoritative DNS servers might be the ones that store some kind of backup info or maybe verify the IP addresses before sending them back.",
+    "status": 200,
+    "seconds": 2.3,
+    "reply": "Authoritative DNS servers hold the actual IP address information for the domain. They are the final source of truth in the DNS lookup process.\n\nWhat would happen if the authoritative server gave the wrong IP address for a domain?",
+    "board": " Actually, authoritative DNS servers store the real IP addresses for domain names and provide them in response to queries.    4.  The authoritative DNS servers hold the  actual IP address information for the domain.  \n They are the final source of truth in the DNS lookup process.    •  They are the final source of truth in the  DNS lookup process.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "I don't get it, can you explain it differently?",
+    "status": 200,
+    "seconds": 5.6,
+    "reply": "The key point is that if the authoritative server gives the wrong IP address, your device is sent to the wrong website, which can cause security risks like phishing or malware. This is why the authoritative server is trusted as the final source of IP information. \n\nNow, thinking about the whole DNS resolution process, how does it help you when you enter a website name in your browser?",
+    "board": " Here is the existing note about authoritative servers being the final source of the IP address. They hold the true records for the domain. {\"page_id\": \"c44d2c26-5184-4c2a-be06-831c9d4dc397\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b5_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 5648, \"audio_url\": \"/static/notebooks/1ba26816-0295-4d4d-bee1-723408f03f60/c44d2c26-5184-4c2a-be06-831c9d4dc397/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/1ba26816-0295-4d4d-bee1-723408f03f60/c44d2c26-5184-4c2a-be06-831c9d4dc397/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Here is the existing note about authoritative servers being the final source of the IP address. They hold the true records for the domain.\"}\n If the authoritative server gives a wrong IP address, your device will be sent to a wrong or malicious website.    •  If the authoritative server gives a wrong IP  address, your device is sent to the wrong  website.  \n This can lead to security risks such as phishing or malware attacks.    •  This can cause security risks, like phishing or  malware.  \n Therefore, authoritative servers must be accurate and trustworthy to keep users safe.    •  That's why authoritative servers must be  accurate and trustworthy.  \n This shows the problem when the authoritative server gives a wrong IP. {\"page_id\": \"c44d2c26-5184-4c2a-be06-831c9d4dc397\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b6_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 5648, \"audio_url\": \"/static/notebooks/1ba26816-0295-4d4d-bee1-723408f03f60/c44d2c26-5184-4c2a-be06-831c9d4dc397/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/1ba26816-0295-4d4d-bee1-723408f03f60/c44d2c26-5184-4c2a-be06-831c9d4dc397/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This shows the problem when the authoritative server gives a wrong IP.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 6,
+    "learner": "I think it helps by finding the IP address for the website so the browser knows where to go, but I'm not sure exactly how it finds it.",
+    "status": 200,
+    "seconds": 5.2,
+    "reply": "The authoritative server is the trusted final source of the domain's IP address. The notes about wrong IP addresses causing wrong websites and security risks are circled here for reference.\n\nIf you think about the whole DNS resolution process, why is it important that this process happens quickly when you try to visit a website?",
+    "board": " Here is the note about wrong IP addresses causing wrong websites and security risks. {\"page_id\": \"c44d2c26-5184-4c2a-be06-831c9d4dc397\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b6_s1\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 5648, \"audio_url\": \"/static/notebooks/1ba26816-0295-4d4d-bee1-723408f03f60/c44d2c26-5184-4c2a-be06-831c9d4dc397/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/1ba26816-0295-4d4d-bee1-723408f03f60/c44d2c26-5184-4c2a-be06-831c9d4dc397/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Here is the note about wrong IP addresses causing wrong websites and security risks.\"}\n The authoritative server is the trusted final source of the domain's IP address.    •  The authoritative server is the trusted final  source of domain IPs.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 1,
+  "learner": "L1",
+  "topic": "How do Python for-loops work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How do Python for-loops work?",
+    "status": 200,
+    "seconds": 8.5,
+    "reply": "I have shown how a Python for-loop repeats code for each item in a sequence and assigns that item to a variable each time. Can you think of a simple example sequence you could loop over in Python?",
+    "board": " A Python for-loop is a control structure that lets you repeat actions for every item in a sequence.      •  Python for-loop:  A control structure to  repeat actions for each item in a sequence.  \n The loop goes through each item in a sequence like a list, string, or range one by one.    •  It iterates over a sequence like a list, string,  or range.  \n The syntax starts with for, then a variable name, then in, then the sequence, followed by a colon and an indented block of code to run each time.    •  Syntax: for  variable  in  sequence:  then  indented block of code.  \n For each loop iteration, the next item from the sequence is assigned to the variable.    •  Each loop run assigns the next sequence item  to the variable.  \n The key point is that for-loops let you automate repetitive tasks over sequences.    •   For-loops let you automate repetitive tasks   over sequences.  \n The for-loop starts here.    How a Python for-loop works    Start for-loop   \n It gets the next item from the sequence.         Get next item   \n This item is assigned to the variable used in the loop.         Assign to variable   \n The code inside the loop runs with this item.         Run loop code   \n Then it checks if there are any items left in the sequence.         Any items left?   \n If yes, it repeats getting the next item and running the code.       Yes   \n If no, the loop ends here.       No     End loop   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "Maybe a list of numbers, like 1 to 5? Or is it something else?",
+    "status": 200,
+    "seconds": 8.2,
+    "reply": "Right, a list of numbers like 1 to 5 is a perfect example of a sequence to loop over. The loop variable will take each number from the list one at a time, and the loop body will run once for each number.\n\nWhat would the loop variable be for the sequence \"abc\"?",
+    "board": " This diagram shows the main parts of a for-loop in Python: the iterable, the loop variable, and the loop body.    Loop variable and iterable    Iterable  List, string, tuple...   \n The iterable is the sequence we loop over, like a list or string.    \n The loop variable takes each item from the iterable in order, one by one.         Loop variable  Takes each item in order   \n The loop body is the code that runs once per item, using the loop variable.         Loop body  Runs once per item   \n This is the iterable, which can be a list, string, or tuple. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b3_n1\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This is the iterable, which can be a list, string, or tuple.\"}\n The loop variable takes each item from the iterable one by one. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a2\", \"style\": \"circle\", \"target_element_id\": \"b3_n2\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 15562, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a2_alignment.json\", \"narration\": \"[[MARK:a2]] The loop variable takes each item from the iterable one by one.\"}\n The loop body is the code that runs once for each item the loop variable takes. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a3\", \"style\": \"circle\", \"target_element_id\": \"b3_n3\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 38027, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a3_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a3_alignment.json\", \"narration\": \"[[MARK:a3]] The loop body is the code that runs once for each item the loop variable takes.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "I think the loop variable would be each letter, like 'a', then 'b', then 'c', but I'm not totally sure if it includes the quotes or not.",
+    "status": 200,
+    "seconds": 7.6,
+    "reply": "Exactly, the loop variable takes each letter one by one, like 'a', then 'b', then 'c', but the quotes are not part of the value itself. They are just used in Python code or output to show that the value is a string.\n\nWhy do you think Python uses indentation after the for-loop line?",
+    "board": " Here is the iterable: a sequence like a list or string. The loop variable takes each item from it in order. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b3_n1\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Here is the iterable: a sequence like a list or string. The loop variable takes each item from it in order.\"}\n This is the loop variable, which gets assigned each item from the iterable, one at a time. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a2\", \"style\": \"circle\", \"target_element_id\": \"b3_n2\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 15562, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a2_alignment.json\", \"narration\": \"[[MARK:a2]] This is the loop variable, which gets assigned each item from the iterable, one at a time.\"}\n The loop body runs once for each item taken by the loop variable. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a3\", \"style\": \"circle\", \"target_element_id\": \"b3_n3\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 38027, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a3_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a3_alignment.json\", \"narration\": \"[[MARK:a3]] The loop body runs once for each item taken by the loop variable.\"}\n This is the iterable, which can be a list, string or tuple. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b3_n1\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This is the iterable, which can be a list, string or tuple.\"}\n These lines already say the loop variable takes each item from the iterable in order, so I will add only what is new now. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a2\", \"style\": \"underline\", \"target_element_id\": \"b3_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 15562, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a2_alignment.json\", \"narration\": \"[[MARK:a2]] These lines already say the loop variable takes each item from the iterable in order, so I will add only what is new now.\"}\n The loop variable takes each item from the iterable in order.    Loop variable and iterable  \n   \n              Iterable  List, string, tuple...     Loop variable  Takes each item in order     Loop body  Runs once per item     Element value  No quotes in value   \n  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "I think maybe the indentation is used to show which lines belong to the loop, but I'm not sure if it's required or just for readability.",
+    "status": 200,
+    "seconds": 3.6,
+    "reply": "Right, indentation is required in Python and it shows exactly which lines of code belong inside the loop body. This tells Python what code to run repeatedly for each item in the sequence.\n\nWhat do you think happens if the sequence the loop goes through is empty?",
+    "board": " The for-loop line ends with a colon, which starts the loop block.    Syntax and indentation in Python for-loops  •  The for-loop line ends with a colon (:).  \n Indented lines after the for-loop line are the loop body, running each time through the loop.    •  Indented lines form the loop body that runs  each iteration.  \n Indentation is required in Python; it is not just for readability.    •  Indentation is required, not optional, in  Python.  \n Indentation tells Python exactly which code belongs inside the loop.    •  It defines which code belongs to the loop.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "I think maybe the loop just skips everything inside and moves on, but I'm not totally sure if it might give an error or something.",
+    "status": 200,
+    "seconds": 6.1,
+    "reply": "If the loop only prints each item and the sequence is empty, then nothing would be printed at all because the loop body never runs. What would happen if you tried a loop on an empty list that adds each item to a total sum variable?",
+    "board": " If the sequence is empty, the loop body does not run.    •  If the sequence is empty, the loop body does  not run.  \n No error occurs; the loop ends immediately.    •  No error occurs; the loop ends immediately.  \n The program continues after the loop.    •  The program continues after the loop.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "I don't get it, can you explain it differently?",
+    "status": 200,
+    "seconds": 3.9,
+    "reply": "If the sequence is empty, the loop body does not run at all, so no code inside the loop is executed. This causes no error, and the program continues normally after the loop.\n\nIf you had a loop that adds each item in a sequence to a total sum variable, what would the sum be if the sequence was empty?",
+    "board": " This line explains that the loop body does not run if the sequence is empty. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b5_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line explains that the loop body does not run if the sequence is empty.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 6,
+    "learner": "I think the sum would be like zero or maybe undefined, but probably zero since nothing is added.",
+    "status": 200,
+    "seconds": 5.9,
+    "reply": "Right, if the sequence is empty, the loop body does not run and the sum remains zero if initialized that way.\n\nIf you have the sequence \"xyz\", what values would the loop variable take during the loop?",
+    "board": " Right, if the sequence is empty, the loop body does not run and the sum remains zero if initialized that way. {\"page_id\": \"be49f29f-4ec7-480c-b027-481d9f57a211\", \"annotation_id\": \"a1\", \"style\": \"tick\", \"target_element_id\": \"b5_s1\", \"from_element_id\": null, \"color\": \"#10b981\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/7301c776-e71f-4ab7-a843-3065ef6ce1fe/be49f29f-4ec7-480c-b027-481d9f57a211/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Right, if the sequence is empty, the loop body does not run and the sum remains zero if initialized that way.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 1,
+  "learner": "L2",
+  "topic": "How does DNS resolution work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How does DNS resolution work?",
+    "status": 200,
+    "seconds": 9.5,
+    "reply": "The DNS resolution process starts when a user types a domain name and ends when the IP address is returned to the browser. It goes through recursive resolver, root server, TLD server, and authoritative server in sequence. Which server does the recursive resolver ask first after receiving the domain name?",
+    "board": " DNS resolution means converting a domain name, like example.com, into its IP address.      1.  DNS resolution  is the process of translating a  domain name into an IP address.  \n This process helps your browser find the correct server to load the website you want.    2.  It helps browsers find the right server to load  a website.  \n DNS resolution is not instant; it involves several steps and different servers working together.    3.  DNS resolution involves multiple steps and  servers.  \n First, the user enters a domain name in the browser, which asks the recursive resolver to find its IP address.    Steps of DNS resolution       User enters domain     Recursive Resolver   \n The resolver queries the root DNS server to find the TLD server for the domain.         Root DNS Server   \n The root server responds with the address of the TLD DNS server, which handles the domain's extension.         TLD DNS Server   \n Next, the resolver asks the TLD DNS server for the authoritative server of the domain.         Authoritative DNS  Server   \n The authoritative DNS server replies with the IP address of the domain.       \n Finally, the recursive resolver returns the IP address to the user's browser.         IP Address returned   \n DNS resolution translates domain names into IP addresses so browsers can load websites.     Recap      DNS resolution translates domain names  into IP addresses so browsers can load  websites.  \n It involves a recursive resolver querying root, TLD, and authoritative DNS servers.        It involves a recursive resolver querying  root, TLD, and authoritative DNS  servers.  \n The process returns the IP address needed to connect to the website's server.        The process returns the IP address  needed to connect to the website's server.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "The recursive resolver first asks the root server after receiving the domain name.",
+    "status": 200,
+    "seconds": 5.4,
+    "reply": "Right, the recursive resolver receives the domain query and then performs the full DNS resolution by querying other servers, starting with the root server if it doesn't have the answer cached. What is the main reason clients use a recursive resolver instead of querying all servers themselves?",
+    "board": " The recursive resolver gets the domain name query from the client.    2. Role of Recursive Resolver  •  It receives the client's query for a domain  name.  \n It then takes on the task of finding the IP address by querying other DNS servers.    •  It performs the full DNS resolution process  on behalf of the client.  \n If the resolver doesn't already know the answer, it asks the root DNS server first.    •  It asks the root server first if it does not  have the answer cached.  \n The resolver keeps asking the next servers in the hierarchy until it obtains the IP address.    •  It continues querying down the hierarchy  until it gets the final IP address.  \n Here we highlight the key role of the recursive resolver in the DNS resolution process. {\"page_id\": \"38e94742-f517-4022-b017-d5ef12455c2a\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b1_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/2bbbd09f-697b-4d8c-9eb6-da6f4f720846/38e94742-f517-4022-b017-d5ef12455c2a/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/2bbbd09f-697b-4d8c-9eb6-da6f4f720846/38e94742-f517-4022-b017-d5ef12455c2a/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Here we highlight the key role of the recursive resolver in the DNS resolution process.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "Clients use a recursive resolver because it simplifies the DNS resolution process by handling all the necessary queries and caching results, reducing latency and complexity on the client side.",
+    "status": 200,
+    "seconds": 9.3,
+    "reply": "The recursive resolver caches DNS responses it receives to reduce network traffic and speed up future queries. This caching is key for faster DNS resolution overall. What do you think would happen if the recursive resolver did not cache DNS responses?",
+    "board": " This line shows the recursive resolver querying other DNS servers on behalf of the client. {\"page_id\": \"38e94742-f517-4022-b017-d5ef12455c2a\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b4_s2\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/2bbbd09f-697b-4d8c-9eb6-da6f4f720846/38e94742-f517-4022-b017-d5ef12455c2a/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/2bbbd09f-697b-4d8c-9eb6-da6f4f720846/38e94742-f517-4022-b017-d5ef12455c2a/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line shows the recursive resolver querying other DNS servers on behalf of the client.\"}\n The recursive resolver stores answers temporarily to avoid repeating queries.    •  It caches responses to reduce network traffic  and improve performance.  \n Caching is important for making DNS resolution faster and more efficient.    •  This caching is key for faster DNS resolution  overall.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "If the recursive resolver did not cache DNS responses, it would have to query authoritative servers for every DNS request, resulting in increased latency, higher network traffic, and slower overall DNS resolution.",
+    "status": 200,
+    "seconds": 5.1,
+    "reply": "The root name server is the first server the recursive resolver asks if it does not have the answer cached. It doesn't know the full IP address but points the resolver to the correct TLD name server based on the domain's extension, like .com or .org. Why do you think the root server doesn't directly return the IP address?",
+    "board": " The root name server receives the query from the recursive resolver when the resolver does not have the domain information cached.    Root Name Server Role    Root Name Server   \n The root server does not know the exact IP address but directs the resolver to the correct TLD name server based on the domain suffix, like .com or .org.         TLD Name Server   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "The root server doesn't directly return the IP address because it only maintains information about top-level domain (TLD) servers, not individual domain records, so it directs the resolver to the appropriate TLD server that can provide the specific IP address.",
+    "status": 200,
+    "seconds": 8.2,
+    "reply": "Exactly, the TLD server directs the query to the authoritative name server for the domain. Let's move on to the next step: What does the authoritative name server return?",
+    "board": " The recursive resolver first queries the root name server when it doesn't have the answer cached. The root server does not know the IP address but directs the resolver to the correct TLD server based on the domain's extension.    Role of Root Name Servers in DNS Resolution    Root Name Server   \n The TLD name server is then queried. It returns the authoritative name server responsible for the domain.       Points to TLD server     TLD Name Server   \n The authoritative name server provides the final IP address for the domain.       Points to authoritative  server     Authoritative Name  Server   \n Finally, the IP address is returned to the client via the recursive resolver.       Returns final IP     IP Address Returned   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "The authoritative name server returns the IP address associated with the requested domain name, allowing the resolver to complete the DNS query.",
+    "status": 200,
+    "seconds": 7.4,
+    "reply": "Let's highlight the main role of the recursive resolver: it receives queries and performs the full resolution process including caching. How does caching by the recursive resolver improve the DNS resolution process for future queries?",
+    "board": " Let's highlight the main role of the recursive resolver: it receives queries and performs the full resolution process including caching. {\"page_id\": \"38e94742-f517-4022-b017-d5ef12455c2a\", \"annotation_id\": \"review_recursive_resolver\", \"style\": \"circle\", \"target_element_id\": \"b4_s1\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 88740, \"audio_url\": \"/static/notebooks/2bbbd09f-697b-4d8c-9eb6-da6f4f720846/38e94742-f517-4022-b017-d5ef12455c2a/review_recursive_resolver_audio.mp3\", \"alignment_url\": \"/static/notebooks/2bbbd09f-697b-4d8c-9eb6-da6f4f720846/38e94742-f517-4022-b017-d5ef12455c2a/review_recursive_resolver_alignment.json\", \"narration\": \"[[MARK:review_recursive_resolver]] Let's highlight the main role of the recursive resolver: it receives queries and performs the full resolution process including caching.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 1,
+  "learner": "L2",
+  "topic": "How do Python for-loops work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How do Python for-loops work?",
+    "status": 200,
+    "seconds": 7.6,
+    "reply": "I've explained how a Python for-loop repeats for each item in a sequence, using a variable to hold the current item, and running the loop body with it. What do you think would happen if the sequence is empty?",
+    "board": " A for-loop is used to repeat actions for each item in a list or sequence.      •  A  for-loop  repeats actions for each item in a  list or sequence.  \n It runs the loop body once for each item, in the order they appear.    •  It runs the loop body once per item, in order.  \n The syntax starts with for, followed by a variable name, then in, and the sequence to loop over, ending with a colon.    •  The syntax is: for  variable  in  sequence:  \n Inside the loop, the variable represents the current item from the sequence.    •  Inside the loop, the variable holds the  current item.  \n Loops help automate repetitive tasks efficiently, without needing to write repeated code.    •  Loops help automate repetitive tasks  efficiently.  \n We start with a sequence like a list, string, or range to loop over.    How Python for-loops work    Sequence  List, string, range, etc.   \n The for-loop runs once for each item in the sequence.         For-loop  Runs once per item   \n Each time, the variable holds the current item from the sequence.         Variable  Holds current item   \n The loop body uses this variable to perform actions repeatedly.         Loop body  Code that repeats   \n After the loop body runs, control goes back to the for-loop to get the next item.       ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "If the sequence is empty, the for-loop body will not execute at all, and the loop will terminate immediately.",
+    "status": 200,
+    "seconds": 3.4,
+    "reply": "Right, the loop body does not run if the sequence is empty because the iterator immediately raises StopIteration, stopping the loop. Now, why does the loop stop when the iterator has no more items?",
+    "board": " Python starts a for-loop by calling iter() on the iterable, which returns an iterator object.    Iterator protocol under the hood  •  Python calls  iter()  on the iterable to get an  iterator.  \n The loop then repeatedly calls next() on this iterator to get each item, one by one.    •  It calls  next()  repeatedly on the iterator to  get each item.  \n The loop stops when next() raises a StopIteration exception, meaning no more items.    •  When  StopIteration  is raised, the loop ends.  \n The loop stops when next() raises StopIteration because there are no more items. {\"page_id\": \"f6726b06-ec04-4177-b306-744345bb0c0f\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b3_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a1_alignment.json\", \"narration\": \"[[MARK:a1]] The loop stops when next() raises StopIteration because there are no more items.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "The loop stops when the iterator has no more items because the iterator's __next__() method raises a StopIteration exception, signaling the for loop to terminate.",
+    "status": 200,
+    "seconds": 8.6,
+    "reply": "I've shown how the loop variable is assigned the current item automatically each iteration, and that changing it inside the loop does not affect the original iterable. What do you think would happen if you modify the loop variable inside the loop body?",
+    "board": " Python first gets an iterator from the iterable by calling iter().    Loop variable assignment in Python for-loops       Iterable     Iterator from iter()   \n Then it calls next() on the iterator to get the next item.         next() called   \n This item is assigned automatically to the loop variable.         Current item  assigned to variable   \n The loop body runs, using the variable for the current item.         Loop body executes   \n After the body, the loop checks if there is a next item.         Next item?   \n If there is, next() is called again to get the next item and repeat.       Yes   \n When no more items remain, StopIteration is raised and the loop ends.       No     StopIteration raised   \n This line about using the variable in the loop body is already on the board. {\"page_id\": \"f6726b06-ec04-4177-b306-744345bb0c0f\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b1_s4\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": \"Already covered\", \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line about using the variable in the loop body is already on the board.\"}\n Each time the loop runs, the variable is assigned the current item from the iterable automatically.    1.  The loop variable takes the current item  automatically each iteration.  \n If you change the loop variable in the loop, it only affects that iteration's value, not the original sequence.    2.  Modifying the loop variable inside the loop does  not change the original iterable.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "Modifying the loop variable inside the loop body only changes the local reference for that iteration and does not affect the original iterable or subsequent iterations.",
+    "status": 200,
+    "seconds": 9.7,
+    "reply": "The loop variable is assigned the current item automatically each iteration, as shown here, and if you modify this variable inside the loop, it only changes that local copy and does not affect the original iterable or future iterations. Can you explain why this behavior is useful when writing loops?",
+    "board": " This line shows the loop variable is assigned the current item automatically each iteration. {\"page_id\": \"f6726b06-ec04-4177-b306-744345bb0c0f\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b5_s1\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": \"Loop variable assignment\", \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 5648, \"audio_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line shows the loop variable is assigned the current item automatically each iteration.\"}\n This line shows that modifying the loop variable inside the loop does not change the original iterable. {\"page_id\": \"f6726b06-ec04-4177-b306-744345bb0c0f\", \"annotation_id\": \"a2\", \"style\": \"circle\", \"target_element_id\": \"b5_s2\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": \"Modifying loop variable\", \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 15562, \"audio_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a2_alignment.json\", \"narration\": \"[[MARK:a2]] This line shows that modifying the loop variable inside the loop does not change the original iterable.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "This behavior is useful because it prevents unintended side effects on the original iterable, ensuring data integrity and making the loop's behavior predictable and easier to debug.",
+    "status": 503,
+    "seconds": 4.3,
+    "reply": "I couldn't reach the tutor model just now. Please try asking again in a moment.",
+    "board": " Here we focus on b1_s3. {\"page_id\": \"f6726b06-ec04-4177-b306-744345bb0c0f\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b1_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Here we focus on b1_s3.\"}\n Here we focus on b5_s1. {\"page_id\": \"f6726b06-ec04-4177-b306-744345bb0c0f\", \"annotation_id\": \"a2\", \"style\": \"underline\", \"target_element_id\": \"b5_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 15562, \"audio_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/15ac1abf-e1fb-4816-90af-7cf152d677bc/f6726b06-ec04-4177-b306-744345bb0c0f/a2_alignment.json\", \"narration\": \"[[MARK:a2]] Here we focus on b5_s1.\"}\n Corrected the syntax notes to avoid repetition and focus on indentation and loop end.      2.  The loop body is indented under the for  statement.  \n   4.  The loop ends when the iterable is exhausted.  \n  \n  \n  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "I understand; please try asking your question again shortly, and I'll be here to assist you.",
+    "status": 200,
+    "seconds": 4.3,
+    "reply": "Right, that understanding helps keep your code safe and predictable. Now, what is the correct syntax to write a for-loop in Python that prints the numbers from 1 to 5?",
+    "board": "",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 2,
+  "learner": "L1",
+  "topic": "How does DNS resolution work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How does DNS resolution work?",
+    "status": 200,
+    "seconds": 8.2,
+    "reply": "Now that you see how DNS resolution works, can you think about why the process involves multiple servers instead of just one that knows all domain IPs?",
+    "board": " 1. DNS stands for Domain Name System, which translates human-friendly domain names (like example.com) into IP addresses.      1.  DNS  stands for Domain Name System, which  translates human-friendly domain names (like  example.com) into IP addresses.  \n 2. When you enter a website URL, your computer starts a process called DNS resolution to find the corresponding IP address.    2.  When you enter a website URL, your computer  starts a process called  DNS resolution  to find  the corresponding IP address.  \n 3. The process involves multiple steps and different servers, including recursive resolvers and authoritative name servers.    3.  The process involves multiple steps and  different servers, including recursive resolvers  and authoritative name servers.  \n DNS resolution is how your computer finds the IP address for a domain name.    •   DNS resolution is how your computer finds   the IP address for a domain name.  \n The process starts when the user enters a URL into their browser.    DNS Resolution Process    User enters URL   \n The computer first asks the Local DNS Resolver for the IP address.         Local DNS Resolver   \n If the Local DNS Resolver doesn't know the answer, it queries the Root Name Server.         Root Name Server   \n The Root Name Server directs the resolver to the Top-Level Domain (TLD) Name Server.         TLD Name Server  e.g., .com   \n The TLD Name Server points to the Authoritative Name Server for the domain.         Authoritative Name  Server   \n The Authoritative Name Server returns the IP address for the domain.         IP Address returned   \n Finally, the IP address is sent back to the user's computer, which can now access the website.         Website accessed   \n Recap:     Recap      Recap:  \n - DNS resolution translates domain names into IP addresses.        - DNS resolution translates domain  names into IP addresses.  \n - It involves a chain of queries starting from the Local Resolver to Root, TLD, and Authoritative servers.        - It involves a chain of queries starting  from the Local Resolver to Root, TLD,  and Authoritative servers.  \n - The final IP address allows your browser to connect to the website.        - The final IP address allows your  browser to connect to the website.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "Maybe it's because one server can't handle all the requests at once, or maybe it's about keeping the information updated somehow?",
+    "status": 200,
+    "seconds": 3.6,
+    "reply": "The recursive resolver is the DNS server your computer first asks. It doesn't know all answers but finds them by asking other servers in order. This way, it simplifies the process for your device by doing the work of querying. The key is: ==the resolver handles your query and finds the answer by asking other servers if needed.== What do you think would happen if the resolver already has the answer cached?",
+    "board": " The recursive resolver is the first DNS server your computer contacts when looking up an IP address. It acts as a middleman.    2.  The recursive resolver receives your query and  asks other servers on your behalf.  \n Since it may not have the answer cached, it asks other DNS servers in a specific order to find the IP address.    •  It does not know all answers but tries to find  them by asking other servers.  \n By doing this, it saves your device from having to contact multiple servers itself.    •  It simplifies the process for your device by  doing the work of querying other servers.  \n The key point to remember is that the resolver manages the query process for you.    •   The resolver is the DNS server that handles   your query and finds the answer by asking   other servers if needed.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "I think if the resolver has the answer cached, it might just send that back without asking other servers again, but I'm not totally sure if it always does that.",
+    "status": 200,
+    "seconds": 4.4,
+    "reply": "Right, if the resolver already has the answer cached, it sends that back immediately without asking other servers. Now, let's move on to the next step: Root and TLD servers guide the resolver to the correct authoritative server. What role do you think a root server plays in this process?",
+    "board": " This line shows the resolver returns the answer if it has it cached. {\"page_id\": \"962273af-f121-481f-98d3-4dc2501696ea\", \"annotation_id\": \"a1\", \"style\": \"highlight\", \"target_element_id\": \"b4_s4\", \"from_element_id\": null, \"color\": \"#fbbf24\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/37ff6417-e98c-4bed-8c05-e8282a7b0307/962273af-f121-481f-98d3-4dc2501696ea/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/37ff6417-e98c-4bed-8c05-e8282a7b0307/962273af-f121-481f-98d3-4dc2501696ea/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line shows the resolver returns the answer if it has it cached.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "I think the root server kind of points the resolver to the TLD servers, but I'm not exactly sure how it decides which one to send it to.",
+    "status": 200,
+    "seconds": 4.4,
+    "reply": "The root server is the first server the resolver asks, but it doesn't know the IP address itself. Instead, it directs the resolver to the correct TLD server based on the domain extension, like .com or .net. The TLD server then points to the authoritative server that has the actual IP address. What do you think would happen if the root server gave the wrong TLD server?",
+    "board": " The recursive resolver sends the query to a Root Server first. The Root Server is at the top of the DNS hierarchy.    Root and TLD Servers in DNS Resolution     Query for domain     Root Server  Top-level in DNS hierarchy     Recursive Resolver  Sends query to Root Server   \n The Root Server does not know the IP address, but it knows the correct Top-Level Domain (TLD) Server to ask next, like for .com domains.       Directs to TLD server     TLD Server  Handles domains like .com, .org   \n The Root Server points the resolver to the TLD Server responsible for the domain extension, such as .com or .net.    \n The TLD Server then directs the resolver to the Authoritative Server, which has the actual IP address for the domain.       Directs to Authoritative  Server     Authoritative Server  Has actual IP address   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "I guess the resolver might get confused and maybe end up asking the wrong server, so it wouldn't find the right IP address?",
+    "status": 200,
+    "seconds": 3.8,
+    "reply": "The authoritative server provides the final IP address answer to the resolver, which then passes it back to your computer. Now, thinking back to the whole process, what is the main purpose of DNS resolution?",
+    "board": " This line shows that the authoritative server holds the IP address and returns it to the resolver, which is the final step in DNS resolution. {\"page_id\": \"962273af-f121-481f-98d3-4dc2501696ea\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b5_s4\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 5648, \"audio_url\": \"/static/notebooks/37ff6417-e98c-4bed-8c05-e8282a7b0307/962273af-f121-481f-98d3-4dc2501696ea/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/37ff6417-e98c-4bed-8c05-e8282a7b0307/962273af-f121-481f-98d3-4dc2501696ea/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line shows that the authoritative server holds the IP address and returns it to the resolver, which is the final step in DNS resolution.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "I don't get it, can you explain it differently?",
+    "status": 200,
+    "seconds": 1.9,
+    "reply": "If your computer needs to visit a website, it needs the website's IP address to connect to it. DNS resolution is the process that finds this IP address by translating the website's domain name. Why do you think your computer can't just use the domain name directly to connect to the website?",
+    "board": "",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 6,
+    "learner": "Maybe because the computer only understands numbers, not words, so it has to change the name into some kind of code or something.",
+    "status": 200,
+    "seconds": 1.8,
+    "reply": "Not quite, but you're on the right track about needing a different kind of information. To help clarify, what type of information does the authoritative server hold that the resolver needs to get?",
+    "board": "",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 2,
+  "learner": "L1",
+  "topic": "How do Python for-loops work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How do Python for-loops work?",
+    "status": 200,
+    "seconds": 7.7,
+    "reply": "I have shown you the basic concept and the flow of a Python for-loop. How do you think the loop variable helps when processing each item in the sequence inside the loop?",
+    "board": " A for-loop runs some code repeatedly, once for each item in a sequence, like a list.      1.  A  for-loop  repeats actions for each item in a  sequence.  \n It goes through each element one by one, for example, each item in a list or character in a string.    2.  It iterates over elements like items in a list or  characters in a string.  \n The syntax is: 'for variable in sequence:', then the indented code runs for each element.    3.  The syntax is: for variable in sequence:  followed by indented code.  \n The loop variable gets assigned each element from the sequence, one at a time.    4.  The loop variable takes each value from the  sequence in turn.  \n A Python for-loop starts here and gets the first item from the sequence.    How a Python for-loop works       Start of loop     Get next item   \n This item is assigned to the loop variable for use inside the loop.         Assign to loop  variable   \n The loop runs the indented code with the current item.         Run indented code   \n Then it checks if there are more items to process.         More items in  sequence?   \n If yes, it loops back to get the next item and repeats.       Yes   \n If no, the loop ends here.       No     End of loop   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "I think the loop variable kind of keeps track of the position in the sequence, maybe like an index, but I'm not totally sure if that's exactly right.",
+    "status": 200,
+    "seconds": 1.6,
+    "reply": "That’s not quite right yet. Let me help you narrow it down: when a for-loop runs, does the loop variable hold a number that tells the position, or does it hold the actual item from the sequence itself?",
+    "board": "",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "I think the loop variable holds the actual item from the sequence, not the position number.",
+    "status": 200,
+    "seconds": 3.3,
+    "reply": "The loop variable holds the current item from the sequence during each cycle. It is not an index or position number, but the actual data element itself. This allows you to work directly with each item, without needing to manage indexes manually.\n\nWhat would happen to the loop variable if the sequence is empty?",
+    "board": " Right, the loop variable holds the current item from the sequence during each cycle.    2.  The  loop variable  holds the current item from  the sequence on each cycle.  \n It is not an index or position number, but the actual data element itself.    •  It is not an index or position, but the actual  data element.  \n This allows you to work directly with each item, without needing to manage indexes manually.    •  This allows direct work with each item  without manual indexing.  \n This box shows the loop variable being assigned the current item in the sequence. {\"page_id\": \"28eb7c62-83d6-49cc-b494-417e1e806163\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b2_assign_var\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This box shows the loop variable being assigned the current item in the sequence.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "I think the loop variable might just stay empty or maybe it gets set to something like None, but I'm not totally sure.",
+    "status": 200,
+    "seconds": 4.4,
+    "reply": "If the sequence is empty, the loop body does not run at all because there are no items to assign to the loop variable. The loop variable never gets assigned any value, and the loop ends immediately without executing the code inside. So, an empty sequence means no loop iterations.\n\nWhy do you think indentation is important in a Python for-loop?",
+    "board": " If the sequence is empty, the loop body never runs because there are no items to assign to the loop variable.    1.  If the sequence is empty, the loop body does  not run at all.  \n Since there are no items, the loop variable does not get any value at all.    2.  The loop variable never gets assigned any value  in this case.  \n The loop finishes immediately without executing the code inside it even once.    3.  The loop just ends immediately without any  output.  \n So, remember this key fact: if the sequence is empty, the loop does not run any iterations.    •   Remember: An empty sequence means no loop  iterations.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "I think indentation might be important because it shows where the loop starts and ends, but I'm not exactly sure how it affects the code running.",
+    "status": 503,
+    "seconds": 14.9,
+    "reply": "I couldn't reach the tutor model just now. Please try asking again in a moment.",
+    "board": " This line already explains that the loop variable holds the current item each cycle, not its position. {\"page_id\": \"28eb7c62-83d6-49cc-b494-417e1e806163\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b3_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 5648, \"audio_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line already explains that the loop variable holds the current item each cycle, not its position.\"}\n Indentation is important because it shows which code is part of the loop body that runs each cycle.    1.  Indentation shows which code belongs inside  the loop body.  \n If code is not indented correctly, Python will not know what to repeat, causing errors or unexpected behavior.    2.  Without indentation, Python does not know  which statements to repeat.  \n Indentation shows which code belongs inside the loop body. {\"page_id\": \"28eb7c62-83d6-49cc-b494-417e1e806163\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b5_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Indentation shows which code belongs inside the loop body.\"}\n This line also explains why indentation is important, so it is already covered. {\"page_id\": \"28eb7c62-83d6-49cc-b494-417e1e806163\", \"annotation_id\": \"a2\", \"style\": \"underline\", \"target_element_id\": \"b5_s2\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 15562, \"audio_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a2_alignment.json\", \"narration\": \"[[MARK:a2]] This line also explains why indentation is important, so it is already covered.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "I don't get it, can you explain it differently?",
+    "status": 200,
+    "seconds": 10.2,
+    "reply": "I underlined the note about indentation to highlight it and added two new notes explaining that indentation tells Python exactly which statements to repeat in the loop, and that without proper indentation, Python might give an error or run code only once outside the loop.\n\nNow, can you explain why the loop variable is useful when processing each item in the sequence inside the loop?",
+    "board": " Here is the note about indentation showing the loop body. Indentation tells Python which code to repeat inside the loop. {\"page_id\": \"28eb7c62-83d6-49cc-b494-417e1e806163\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b5_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"permanent\", \"duration_ms\": 0, \"seed\": 5648, \"audio_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Here is the note about indentation showing the loop body. Indentation tells Python which code to repeat inside the loop.\"}\n Indentation is how Python knows what code to run repeatedly inside the loop.    •  Indentation tells Python exactly which  statements to repeat for each item in the  sequence.  \n Without proper indentation, the loop won't work as expected because Python won't know what to repeat.    •  If code is not indented, Python might give a  syntax error or run code only once, outside  the loop.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 6,
+    "learner": "I think the loop variable helps to keep track of how many times the loop has run, or maybe it points to the current item so the loop knows what to do next.",
+    "status": 200,
+    "seconds": 7.5,
+    "reply": "I underlined the note that code not indented is outside the loop and runs once. I also added notes explaining that indentation defines which code runs each cycle, all code inside the loop must be indented the same amount, and missing indentation causes a syntax error.\n\nNow, can you explain why the loop variable is useful when processing each item in the sequence inside the loop?",
+    "board": " This line explains that code not indented is outside the loop and runs once. {\"page_id\": \"28eb7c62-83d6-49cc-b494-417e1e806163\", \"annotation_id\": \"ind1\", \"style\": \"underline\", \"target_element_id\": \"b6_s2\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 23289, \"audio_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/ind1_audio.mp3\", \"alignment_url\": \"/static/notebooks/a453c45f-2f40-4e0c-8331-cac79a4709dc/28eb7c62-83d6-49cc-b494-417e1e806163/ind1_alignment.json\", \"narration\": \"[[MARK:ind1]] This line explains that code not indented is outside the loop and runs once.\"}\n Indentation defines exactly which statements are inside the loop and repeated each cycle.    3. Indentation and loop body (more)  1.  Indentation defines which code runs each  cycle of the loop.  \n Each statement inside the loop needs the same indentation level to belong to the loop body.    2.  All code inside the loop must be indented the  same amount.  \n If indentation is missing or inconsistent, Python raises a syntax error.    4.  Missing indentation causes a syntax error.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 2,
+  "learner": "L2",
+  "topic": "How does DNS resolution work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How does DNS resolution work?",
+    "status": 200,
+    "seconds": 4.6,
+    "reply": "DNS resolution translates a domain name to its IP address by involving multiple servers in a hierarchy. Your computer starts by asking a recursive resolver, which then queries root servers, followed by TLD servers, and finally authoritative servers to get the IP. The IP address is then returned to your computer to complete the process.\n\nWhy do you think your computer can't just find the IP address itself without asking these servers?",
+    "board": " DNS resolution is the process of translating a human-readable domain name into a machine-readable IP address.      1.  DNS resolution  translates a domain name to  an IP address.  \n This process does not happen on one server but involves several servers arranged in a hierarchy.    2.  It involves multiple servers working  hierarchically.  \n Your computer sends the request to a recursive resolver, which handles finding the IP address for you.    3.  Your computer asks a  recursive resolver  to  find the IP.  \n The recursive resolver first contacts root servers, which direct it to the appropriate top-level domain (TLD) servers based on the domain extension.    4.  The resolver queries  root servers,  then  TLD  servers.  \n After the TLD servers, the resolver queries authoritative servers that have the definitive IP address for the domain.    5.  The resolver then asks  authoritative servers  for the final IP.  \n Finally, the IP address is given back to your computer so it can connect to the domain's server.    6.  The IP address is returned to your computer,  completing the process.  \n This is where your computer begins the DNS resolution process by asking the recursive resolver to find the IP address for the domain. {\"page_id\": \"45f0f2c1-bd33-411e-b291-5cfe92a4ac84\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b1_s3\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This is where your computer begins the DNS resolution process by asking the recursive resolver to find the IP address for the domain.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "Your computer can't find the IP address itself because it doesn't have a complete, up-to-date database of all domain-to-IP mappings, so it relies on the hierarchical DNS servers to provide accurate and current information.",
+    "status": 200,
+    "seconds": 5.6,
+    "reply": "Right, your computer can't find the IP itself because it doesn't have all the domain-IP mappings and needs to ask DNS servers. Let's start with the key idea: DNS resolution translates domain names to IP addresses.\n\nWhat do you think is the role of the recursive resolver in this process?",
+    "board": " Here is the key idea: DNS resolution translates domain names to IP addresses. {\"page_id\": \"45f0f2c1-bd33-411e-b291-5cfe92a4ac84\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b1_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Here is the key idea: DNS resolution translates domain names to IP addresses.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "The recursive resolver acts as an intermediary that receives the DNS query from the client, then sequentially queries authoritative DNS servers on behalf of the client until it obtains the IP address, finally returning the resolved IP to the client.",
+    "status": 200,
+    "seconds": 3.1,
+    "reply": "These notes already describe the recursive resolver's role well. Let's move on to the next step: the function of root DNS servers in the DNS resolution process.\n\nWhat do you think root servers do when the recursive resolver asks them about a domain?",
+    "board": " Recursive resolver acts as a client’s helper in DNS.    •  Recursive resolver  acts as a client’s helper in  DNS.  \n It receives the DNS query from the client.    •  It receives the DNS query from the client.  \n It queries DNS servers on behalf of the client.    •  It queries DNS servers on behalf of the  client.  \n It returns the final IP address to the client.    •  It returns the final IP address to the client.  \n Recursive resolver simplifies DNS queries for the client.    •   Recursive resolver simplifies DNS queries for   the client.  \n These lines already describe the recursive resolver's role well. {\"page_id\": \"45f0f2c1-bd33-411e-b291-5cfe92a4ac84\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b2_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_alignment.json\", \"narration\": \"[[MARK:a1]] These lines already describe the recursive resolver's role well.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "Root DNS servers respond to the recursive resolver by directing it to the appropriate top-level domain (TLD) name servers based on the domain's extension, without providing the final IP address.",
+    "status": 200,
+    "seconds": 3.3,
+    "reply": "Let's look at the role of root DNS servers in the process. They are the starting point for DNS queries but do not provide the final IP address. Instead, they direct the recursive resolver to the correct top-level domain (TLD) servers based on the domain extension. This helps narrow down the search for the domain's IP.\n\nWhat do you think happens after the recursive resolver is directed to a TLD server?",
+    "board": " Root DNS servers are the starting point for DNS queries.    3. Role of Root DNS Servers  •  Root DNS servers  are the starting point for  DNS queries.  \n They do not provide the final IP address.    •  They do not provide the final IP address.  \n They direct the recursive resolver to the correct TLD servers based on the domain extension.    •  They direct the recursive resolver to the  correct  TLD servers  based on the domain  extension.  \n They help narrow down the search for the domain's IP address.    •  They help narrow down the search for the  domain's IP address.  \n Root servers point to TLD servers, not the final IP    •   Root servers point to TLD servers, not the   final IP  \n Here we highlight the recursive resolver querying DNS servers, including root servers. {\"page_id\": \"45f0f2c1-bd33-411e-b291-5cfe92a4ac84\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b2_s3\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Here we highlight the recursive resolver querying DNS servers, including root servers.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "After the recursive resolver is directed to a TLD server, the TLD server responds with the authoritative name server for the specific domain, allowing the resolver to query that server for the final IP address.",
+    "status": 200,
+    "seconds": 6.0,
+    "reply": "Exactly, the TLD servers point the recursive resolver to the authoritative servers for the domain, which narrows down the search for the IP.\n\nNow, why do you think the authoritative server is important in DNS resolution?",
+    "board": " This line summarizes the role of TLD DNS servers, directing the resolver to authoritative servers. {\"page_id\": \"45f0f2c1-bd33-411e-b291-5cfe92a4ac84\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b3_s1\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line summarizes the role of TLD DNS servers, directing the resolver to authoritative servers.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "The authoritative server is important because it holds the definitive DNS records for a domain, providing the final and accurate IP address or resource information needed to resolve the domain name.",
+    "status": 200,
+    "seconds": 5.9,
+    "reply": "The authoritative DNS server is indeed essential because it holds the definitive DNS records and provides the final, accurate IP address for the domain. This line on the board already captures that role clearly. \n\nNow, why can’t your computer just find the IP address itself without asking the DNS servers?",
+    "board": " This line explains the role of authoritative DNS servers as the final source of DNS answers. {\"page_id\": \"45f0f2c1-bd33-411e-b291-5cfe92a4ac84\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b1_s5\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/85fb56e4-8fa7-4e66-9596-b9512d5addd7/45f0f2c1-bd33-411e-b291-5cfe92a4ac84/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line explains the role of authoritative DNS servers as the final source of DNS answers.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ },
+ {
+  "cond": "off",
+  "rep": 2,
+  "learner": "L2",
+  "topic": "How do Python for-loops work?",
+  "turns": [
+   {
+    "i": 0,
+    "learner": "Teach me: How do Python for-loops work?",
+    "status": 200,
+    "seconds": 20.2,
+    "reply": "What would happen if the sequence given to a for-loop is empty? How would the loop behave?",
+    "board": " A for-loop in Python repeats a block of code for each item in a sequence like a list or a string.      1.  A  for-loop  repeats actions for each item in a  sequence.  \n The syntax starts with the word 'for', followed by a variable name, then 'in', then the sequence, and ends with a colon.    2.  The  syntax  starts with 'for variable in  sequence:'  \n The code indented after the for-loop line is the block that runs once for each item in the sequence.    3.  The indented block after is the loop body, run  for each item.  \n In each iteration, the current item from the sequence is assigned to the variable you named.    4.  Each loop iteration assigns the current item  to the variable.  \n The loop stops after going through all items in the sequence once.    5.  When all items are done, the loop ends.  \n Here is the starting sequence for the loop, like a list or string.    How a Python for-loop works    Sequence  list, string, etc.   \n Each item from the sequence is assigned to the loop variable in turn.         Assign item to  variable   \n Then the loop runs the body of code using that variable.         Run loop body   \n After running the body, it checks if there are more items left.         More items?   \n If there are more items, it goes back to assign the next item.       Yes   \n If no more items, the loop ends.       No     Loop ends   \n To recap, a for-loop runs code repeatedly for each item in a sequence.     Recap      A for-loop runs code repeatedly for each  item in a sequence.  \n It works by assigning each item to a variable and then running the loop body.        It assigns each item to a variable, then  runs the loop body.  \n When all items have been processed, the loop stops.        When all items are done, the loop stops.  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 1,
+    "learner": "If the sequence given to a for-loop is empty, the loop body will not execute at all, and the program will continue with the next statement after the loop.",
+    "status": 200,
+    "seconds": 5.3,
+    "reply": "Right, when the sequence is empty, the loop body does not run and the program continues after the loop. Now, let's look at what kinds of sequences or collections a for-loop can work on. Can you name some types of data structures or objects in Python that you think a for-loop can iterate over?",
+    "board": " Right, if the sequence is empty, the loop body does not run, skipping the loop entirely. {\"page_id\": \"340b63b4-fe76-4f71-85f4-1c5c770fa799\", \"annotation_id\": \"a1\", \"style\": \"tick\", \"target_element_id\": \"b1_s1\", \"from_element_id\": null, \"color\": \"#10b981\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/6ab8a4f7-04f6-4628-b50e-173925b0bb60/340b63b4-fe76-4f71-85f4-1c5c770fa799/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/6ab8a4f7-04f6-4628-b50e-173925b0bb60/340b63b4-fe76-4f71-85f4-1c5c770fa799/a1_alignment.json\", \"narration\": \"[[MARK:a1]] Right, if the sequence is empty, the loop body does not run, skipping the loop entirely.\"}\n This line already explains the loop variable updates each iteration with the next item. {\"page_id\": \"340b63b4-fe76-4f71-85f4-1c5c770fa799\", \"annotation_id\": \"a2\", \"style\": \"underline\", \"target_element_id\": \"b1_s4\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 15562, \"audio_url\": \"/static/notebooks/6ab8a4f7-04f6-4628-b50e-173925b0bb60/340b63b4-fe76-4f71-85f4-1c5c770fa799/a2_audio.mp3\", \"alignment_url\": \"/static/notebooks/6ab8a4f7-04f6-4628-b50e-173925b0bb60/340b63b4-fe76-4f71-85f4-1c5c770fa799/a2_alignment.json\", \"narration\": \"[[MARK:a2]] This line already explains the loop variable updates each iteration with the next item.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 2,
+    "learner": "A for-loop in Python can iterate over sequences like lists, tuples, and strings, as well as other iterable objects such as dictionaries, sets, and generators.",
+    "status": 200,
+    "seconds": 5.8,
+    "reply": "We saw that a Python for-loop iterates over any iterable object, such as lists, strings, and dictionaries. Each iteration gets the next item and assigns it to the loop variable, then runs the loop body with that item. The loop ends when there are no more items to get. Why do you think Python uses this approach of iterating over items directly, instead of using numeric indexes like some other languages?",
+    "board": " A for-loop works with any iterable object, not just lists.    Iterables in Python  1.  A  for-loop  can iterate over any  iterable  object.  \n Examples of iterables include lists, tuples, strings, dictionaries, sets, and generators.    2.  Examples:  lists, tuples, strings, dictionaries,  sets, generators.  \n Each loop iteration assigns the next item from the iterable to the loop variable.    3.  Each iteration gets the next item from the  iterable.  \n The loop ends when there are no more items left in the iterable.    4.  The loop stops when the iterable is exhausted.  \n The for-loop starts with an iterable object like a list, string, or dictionary.    How Python for-loops iterate over iterables    Iterable object   \n It gets the next item from the iterable.      Get next item   \n This item is assigned to the loop variable.      Assign to loop  variable   \n The loop body runs using the current item.      Run loop body   \n After running the body, the loop checks if there are more items.      More items?   \n If there are more items, it repeats the process; if not, the loop ends.                   Yes      No     Loop ends   ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 3,
+    "learner": "Python uses direct iteration over items to provide a more readable, concise, and flexible approach that works uniformly with any iterable object, avoiding errors and complexity associated with managing numeric indexes.",
+    "status": 200,
+    "seconds": 6.5,
+    "reply": "Python for-loops use the iterator protocol internally to get items one by one. First, Python calls iter() on the iterable to get an iterator object. Then it repeatedly calls next() on the iterator to get each item. When next() raises the StopIteration exception, the loop ends. The key thing to remember is that StopIteration is the signal that stops the loop.\n\nWhat would happen if the iterable did not raise StopIteration when exhausted?",
+    "board": " Python for-loops use the iterator protocol internally to get items one by one.    The iterator protocol  1.  Python internally uses the iterator protocol  for for-loops.  \n First, Python calls iter() on the iterable to get an iterator object.    2.  It calls iter() on the iterable to get an  iterator object.  \n Then it repeatedly calls next() on the iterator to get each item.    3.  Then it calls next() repeatedly to get each  item.  \n When next() raises the StopIteration exception, the loop ends.    4.  When next() raises StopIteration, the loop  ends.  \n The key thing to remember is that StopIteration is the signal that stops the loop.    •   Remember StopIteration signals the loop to   stop  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 4,
+    "learner": "If the iterable did not raise StopIteration when exhausted, the for-loop would continue calling next() indefinitely, resulting in an infinite loop or a runtime error.",
+    "status": 200,
+    "seconds": 5.0,
+    "reply": "StopIteration is the key signal that tells the for-loop when to stop. What happens to the loop variable each time the loop body runs?",
+    "board": " This is the key point: StopIteration signals the loop to end. {\"page_id\": \"340b63b4-fe76-4f71-85f4-1c5c770fa799\", \"annotation_id\": \"a1\", \"style\": \"underline\", \"target_element_id\": \"b6_s5\", \"from_element_id\": null, \"color\": \"#3b82f6\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/6ab8a4f7-04f6-4628-b50e-173925b0bb60/340b63b4-fe76-4f71-85f4-1c5c770fa799/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/6ab8a4f7-04f6-4628-b50e-173925b0bb60/340b63b4-fe76-4f71-85f4-1c5c770fa799/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This is the key point: StopIteration signals the loop to end.\"}",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   },
+   {
+    "i": 5,
+    "learner": "Each time the loop body runs, the loop variable is assigned the next value produced by the iterator's __next__() method.",
+    "status": 200,
+    "seconds": 4.8,
+    "reply": "The loop variable remains accessible even after the loop ends. What implications does this have if you want to use the value of the loop variable after the loop has finished running?",
+    "board": " This line shows that each iteration assigns the next item to the loop variable, as you said. {\"page_id\": \"340b63b4-fe76-4f71-85f4-1c5c770fa799\", \"annotation_id\": \"a1\", \"style\": \"circle\", \"target_element_id\": \"b1_s4\", \"from_element_id\": null, \"color\": \"#f59e0b\", \"note\": null, \"lifetime\": \"ephemeral\", \"duration_ms\": 3000, \"seed\": 5648, \"audio_url\": \"/static/notebooks/6ab8a4f7-04f6-4628-b50e-173925b0bb60/340b63b4-fe76-4f71-85f4-1c5c770fa799/a1_audio.mp3\", \"alignment_url\": \"/static/notebooks/6ab8a4f7-04f6-4628-b50e-173925b0bb60/340b63b4-fe76-4f71-85f4-1c5c770fa799/a1_alignment.json\", \"narration\": \"[[MARK:a1]] This line shows that each iteration assigns the next item to the loop variable, as you said.\"}\n The loop variable is not limited to the loop body; it stays accessible after the loop finishes.    2.  The loop variable remains accessible after the  loop ends.  \n This allows you to use the loop variable's last value even after the loop.    3.  This means you can use the loop variable even  after the loop.  \n The key fact is that the loop variable remains in scope even after the loop ends.    •   The loop variable remains in scope after the   loop ends  ",
+    "move_line": "",
+    "move_sent": false,
+    "picked": null,
+    "settled": true
+   }
+  ]
+ }
+]

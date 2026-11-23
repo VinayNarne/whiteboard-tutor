@@ -16,7 +16,7 @@ import { useNotebookWebSocket } from './hooks/useNotebookWebSocket';
 import type {
   Notebook, PageSummary, ChatTurn,
   WsEvent, WsElementDrawn, WsElementModified, AnnotationPayload,
-  LearnerIntent,
+  LearnerIntent, Intake,
 } from './types';
 import { debug } from './utils/debug';
 import * as api from './services/api';
@@ -34,6 +34,15 @@ const LEVELS = [
   { id: 'beginner', label: 'Beginner', hint: 'Intuition first, with minimal jargon.' },
   { id: 'intermediate', label: 'Standard', hint: 'Core concepts with clear examples.' },
   { id: 'deep-dive', label: 'Deep dive', hint: 'The internals and the details behind them.' },
+] as const;
+
+const INTAKE_QUESTIONS = [
+  { key: 'purpose', legend: 'Why are you learning this?', choices: [
+    ['curiosity', 'Curious'], ['exam', 'Exam'], ['work', 'Work / interview'], ['project', 'A project']] },
+  { key: 'time_budget', legend: 'How much time do you have?', choices: [
+    ['quick', 'Under 30 min'], ['session', 'About an hour'], ['course', 'Over several days']] },
+  { key: 'self_level', legend: 'How well do you know it?', choices: [
+    ['new', 'New to me'], ['some', 'I know some'], ['comfortable', 'Comfortable']] },
 ] as const;
 
 // Notebook topics created with a depth other than Standard are stored as "[Deep-dive] topic".
@@ -58,6 +67,7 @@ function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => 
   const [topic, setTopic] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [level, setLevel] = useState<(typeof LEVELS)[number]['id']>('intermediate');
+  const [intake, setIntake] = useState<Intake>({});
   const [isCreating, setIsCreating] = useState(false);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
 
@@ -78,7 +88,7 @@ function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => 
       : `[${level.charAt(0).toUpperCase() + level.slice(1)}] ${rawTopic}`;
 
     try {
-      const res = await api.createNotebook(formattedTopic);
+      const res = await api.createNotebook(formattedTopic, intake);
       if (res.ok) {
         const nb = await res.json();
         onCreate(nb);
@@ -196,6 +206,35 @@ function NewNotebookScreen({ onCreate }: Readonly<{ onCreate: (nb: Notebook) => 
             ))}
           </div>
           <span style={{ color: 'var(--ink-2)', fontSize: '13px' }}>{hint}</span>
+        </div>
+
+        {/* Optional intake: each chip toggles; none preselected */}
+        <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div id="intake-caption" style={{ color: 'var(--ink-2)', fontSize: '12px' }}>Optional — helps the tutor choose how to teach you</div>
+          {INTAKE_QUESTIONS.map(q => (
+            <fieldset key={q.key} aria-describedby="intake-caption" style={{ border: 'none', margin: 0, padding: 0, minWidth: 0 }}>
+              <legend style={{ color: 'var(--ink)', fontSize: '13px', fontWeight: 600, padding: 0, marginBottom: '6px' }}>{q.legend}</legend>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {q.choices.map(([value, label]) => {
+                  const on = intake[q.key] === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      className="intake-chip"
+                      aria-pressed={on}
+                      onClick={() => setIntake(prev => {
+                        const { [q.key]: _drop, ...rest } = prev;
+                        return on ? rest : { ...prev, [q.key]: value };
+                      })}
+                    >
+                      {on ? '✓ ' : ''}{label}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ))}
         </div>
 
         {/* Starters: plain chips across a range of subjects */}

@@ -139,6 +139,8 @@ def _store_record(db_engine, cid: str, event: str, g, n: int, answer: str, user_
                 c.level = "taught"
         else:
             apply_grade(c, g["grade"], g["misconception"], answer, user_turn_id, plan)
+            from backend.playbook_store import set_outcome      # here: playbook_store imports this module
+            set_outcome(db, cid, g["grade"])
         c.updated_at = utc_now()                               # the beliefs ranking (relevant_concepts) sorts by it
         db.add(c)
         db.commit()

@@ -1,13 +1,14 @@
 // All HTTP calls to our backend. Each function returns the raw Response so callers keep their own
 // status/error handling. Base URL is relative ("/api"), proxied to the backend by Vite in dev.
+import type { Intake } from '../types';
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 const nb = (notebookId: string) => `/api/notebooks/${notebookId}`;
 const page = (notebookId: string, pageId: string) => `${nb(notebookId)}/pages/${pageId}`;
 
 export const listNotebooks = () => fetch(`/api/notebooks`);
 
-export const createNotebook = (topic: string) =>
-  fetch(`/api/notebooks`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ topic }) });
+export const createNotebook = (topic: string, intake: Intake = {}) =>
+  fetch(`/api/notebooks`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ topic, ...intake }) });
 
 export const getNotebook = (notebookId: string) => fetch(nb(notebookId));
 

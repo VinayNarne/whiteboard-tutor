@@ -115,6 +115,12 @@ textarea:focus-visible {
   border-radius: 14px; padding: 4px 12px; font-size: 13px; font-weight: 500;
 }
 .quick-chip:not(:disabled):hover { color: var(--ink); border-color: var(--ink-2); }
+.intake-chip {
+  min-height: 32px; background: transparent; border: 1px solid var(--border-strong); color: var(--ink-2);
+  border-radius: 16px; padding: 4px 12px; font-size: 13px; font-weight: 500; cursor: pointer;
+}
+.intake-chip:hover { color: var(--ink); border-color: var(--ink-2); }
+.intake-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 600; }
 .chat-turn-container .msg-actions { opacity: 0; transition: opacity 0.12s; }
 .chat-turn-container:hover .msg-actions,
 .chat-turn-container:focus-within .msg-actions { opacity: 1; }

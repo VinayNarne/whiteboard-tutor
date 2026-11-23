@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from backend.database import engine, init_db
 from backend.main import app
-from backend.models import DEFAULT_LEARNER_ID, Concept, Learner, Notebook, Page
+from backend.models import DEFAULT_LEARNER_ID, Concept, Learner, Notebook, Page, TeachingLog
 from engine.mindprint import learner_note
 
 init_db()
@@ -97,9 +97,13 @@ def test_forget_everything_clears_concepts_prefs_and_step_concepts():
             row.step_concepts = [cid]
             db.add(row)
         db.commit()
+    with Session(engine) as db:
+        db.add(TeachingLog(learner_id=DEFAULT_LEARNER_ID, concept_id=cid, notebook_id=nb, page_id=pid, step=1, move="analogy", turn_id="forget-t"))
+        db.commit()
     card = client.delete("/api/learner").json()
     assert card["known"] == [] and card["preferences"] == []
     with Session(engine) as db:
+        assert db.exec(select(TeachingLog).where(TeachingLog.turn_id == "forget-t")).all() == []
         assert db.exec(select(Concept).where(Concept.learner_id == DEFAULT_LEARNER_ID)).all() == []
         assert db.get(Notebook, nb).step_concepts is None and db.get(Page, pid).step_concepts is None
 
@@ -113,3 +117,13 @@ def test_note_includes_preferences_and_stays_empty_with_nothing():
     turn, plan = learner_note([c], ["examples"])
     stated = "Stated preferences (the learner chose these): give a concrete example before any definition."
     assert turn.endswith(stated) and plan.endswith(stated)
+
+
+def test_deleting_a_notebook_deletes_its_teaching_log():
+    nb = client.post("/api/notebooks", json={"topic": "Gone"}).json()["id"]
+    with Session(engine) as db:
+        db.add(TeachingLog(learner_id=DEFAULT_LEARNER_ID, notebook_id=nb, page_id="p", step=1, move="analogy", turn_id="nbdel-t"))
+        db.commit()
+    assert client.delete(f"/api/notebooks/{nb}").status_code == 200
+    with Session(engine) as db:
+        assert db.exec(select(TeachingLog).where(TeachingLog.turn_id == "nbdel-t")).all() == []

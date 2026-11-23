@@ -6,7 +6,15 @@ export interface Notebook {
   topic: string;
   title: string;
   created_at: string;
+  purpose?: Purpose | null;
+  time_budget?: TimeBudget | null;
+  self_level?: SelfLevel | null;
 }
+
+export type Purpose = 'curiosity' | 'exam' | 'work' | 'project';
+export type TimeBudget = 'quick' | 'session' | 'course';
+export type SelfLevel = 'new' | 'some' | 'comfortable';
+export interface Intake { purpose?: Purpose; time_budget?: TimeBudget; self_level?: SelfLevel }
 
 export interface PageSummary {
   id: string;

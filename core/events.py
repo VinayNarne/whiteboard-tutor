@@ -54,6 +54,7 @@ class BackendEvent:
     MINDPRINT_MAPPED = "mindprint_mapped"     # a lesson plan's steps were mapped onto the learner's concepts (new and reused counts)
     MINDPRINT_FAILED = "mindprint_failed"     # mapping failed (embeddings, model, database): the plan stays unmapped, the lesson is unaffected
     MINDPRINT_GRADED = "mindprint_graded"     # the separate grader graded a learner's answer to a check (grade, step, concept, the tutor's own event)
+    PLAYBOOK_CHOSEN = "playbook_chosen"       # the teaching move chosen for this turn (move, reason, vetoed ids, step, seconds the selector took)
     DB_CONNECTED ="db_connected"
     DB_DISCONNECTED = "db_disconnected"
     CHAT_RECEIVED = "chat_received"

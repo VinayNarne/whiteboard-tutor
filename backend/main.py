@@ -30,7 +30,7 @@ if sys.platform == "win32":
         pass
 
 from pathlib import Path
-from typing import Optional, List, Annotated
+from typing import Optional, List, Annotated, Literal
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 import requests
@@ -50,12 +50,13 @@ from sqlmodel import Session, select
 from core.log import get_logger, log_context, init_logging
 from core.events import BackendEvent, SessionEvent
 from backend.database import init_db, get_session, engine
-from backend.models import Notebook, Page, PageEvent, ChatTurn
+from backend.models import Notebook, Page, PageEvent, ChatTurn, TeachingLog
 from backend.ws import manager, emit_notebook_event
 from engine.markers import strip_markers
 from backend.event_store import append_event
 from engine.validator import compute_coverage
 from backend.mindprint_store import known_steps, memory_for_turn, schedule_grading, schedule_mapping, warm_up
+from backend.playbook_store import playbook_for_turn
 from backend.page_summary import summarise_saved_page
 from backend.page_state import is_drawing, rebuild_page_svg, annotation_target_ids, prior_pages_summary, summaries_in_context
 from backend.limits import no_control_chars
@@ -177,6 +178,10 @@ def on_startup():
 class CreateNotebookRequest(BaseModel):
     topic: Topic
     title: Optional[Title] = None
+    # Playbook intake (labels in engine/playbook.INTAKE); anything else is a 422
+    purpose: Optional[Literal["curiosity", "exam", "work", "project"]] = None
+    time_budget: Optional[Literal["quick", "session", "course"]] = None
+    self_level: Optional[Literal["new", "some", "comfortable"]] = None
 
 class UpdateNotebookRequest(BaseModel):
     topic: Optional[Topic] = None
@@ -234,6 +239,7 @@ def create_notebook(req: CreateNotebookRequest, session: SessionDep):
     nb = Notebook(
         topic=req.topic,
         title=req.title or req.topic,
+        purpose=req.purpose, time_budget=req.time_budget, self_level=req.self_level,
     )
     session.add(nb)
     session.commit()
@@ -250,7 +256,8 @@ def create_notebook(req: CreateNotebookRequest, session: SessionDep):
 
     logger.info(BackendEvent.NOTEBOOK_CREATED, f"Notebook created: {nb.id}",
                 data={"topic": nb.topic})
-    return {"id": nb.id, "topic": nb.topic, "title": nb.title, "created_at": nb.created_at.isoformat()}
+    return {"id": nb.id, "topic": nb.topic, "title": nb.title, "created_at": nb.created_at.isoformat(),
+            "purpose": nb.purpose, "time_budget": nb.time_budget, "self_level": nb.self_level}
 
 
 @app.get("/api/notebooks")
@@ -274,6 +281,7 @@ def get_notebook(notebook_id: str, session: SessionDep):
     return {
         "id": nb.id, "topic": nb.topic, "title": nb.title,
         "created_at": nb.created_at.isoformat(),
+        "purpose": nb.purpose, "time_budget": nb.time_budget, "self_level": nb.self_level,
         "pages": [
             {
                 "id": p.id, "page_number": p.page_number,
@@ -421,6 +429,8 @@ def delete_notebook(notebook_id: str, session: SessionDep):
     turns = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id)).all()
     for t in turns:
         session.delete(t)
+    for row in session.exec(select(TeachingLog).where(TeachingLog.notebook_id == notebook_id)).all():
+        session.delete(row)
     session.delete(nb)
     session.commit()
     shutil.rmtree(OUTPUT_DIR / notebook_id, ignore_errors=True)  # id matched a DB row, so it is a UUID
@@ -1142,6 +1152,9 @@ async def chat(notebook_id: str, req: ChatRequest, session: SessionDep):
     past = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id)).all() if planned else []
     plan_now, records = current_lesson(nb, session.exec(select(Page).where(Page.notebook_id == notebook_id)).all(), past) if planned else ("", [])
     turn_note, turn.plan_note, known = await asyncio.to_thread(memory_for_turn, engine, notebook_id, plan_now, message_text, nb.topic)
+    # Playbook: the teaching move for this turn and the intake sentence for the plan writer, appended to the Mindprint notes.
+    move_line, intake = await asyncio.to_thread(playbook_for_turn, engine, notebook_id, plan_now, records, known, message_text, nb.topic, page.id, turn.user_turn_id)
+    turn_note, turn.plan_note = f"{turn_note} {move_line}".strip(), f"{turn.plan_note} {intake}".strip()
 
     plan_task = asyncio.create_task(write_plan(nb.topic, message_text, turn.plan_note)) if not nb.lesson_plan else None
 

@@ -49,6 +49,10 @@ class Notebook(SQLModel, table=True):
     course: Optional[str] = Field(default=None, sa_column=Column(Text))
     # Mindprint: the concept id of each step of lesson_plan (engine/mindprint.py), null entries for recap steps; null until mapped.
     step_concepts: Optional[List[Optional[str]]] = Field(default=None, sa_column=Column(JSON))
+    # Playbook intake, optional (engine/playbook.INTAKE holds the allowed values): why they learn, how much time, how well they know it.
+    purpose: Optional[str] = Field(default=None)
+    time_budget: Optional[str] = Field(default=None)
+    self_level: Optional[str] = Field(default=None)
 
     pages: List["Page"] = Relationship(back_populates="notebook")
     chat_turns: List["ChatTurn"] = Relationship(back_populates="notebook")
@@ -190,4 +194,21 @@ class LearnerPref(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     learner_id: str = Field(foreign_key=LEARNERS_ID, index=True)
     kind: str
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class TeachingLog(SQLModel, table=True):
+    """Playbook: one teaching move chosen for a learner's turn. outcome: pending until the separate grader grades an answer on the concept
+    (then right | partial | wrong)."""
+    __tablename__ = "teaching_log"
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    learner_id: str = Field(foreign_key=LEARNERS_ID, index=True)
+    concept_id: Optional[str] = Field(default=None, index=True)
+    notebook_id: str = Field(index=True)
+    page_id: str
+    step: int
+    move: str
+    turn_id: str
+    outcome: str = Field(default="pending")
     created_at: datetime = Field(default_factory=utc_now)

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from backend.database import get_session
-from backend.models import DEFAULT_LEARNER_ID, Concept, LearnerPref, Notebook, Page, utc_now
+from backend.models import DEFAULT_LEARNER_ID, Concept, LearnerPref, Notebook, Page, TeachingLog, utc_now
 from engine.mindprint import EXCLUSIVE_PREFERENCES, PREFERENCES
 
 router = APIRouter(prefix="/api/learner")
@@ -97,6 +97,8 @@ def forget_everything(db: SessionDep):
     for row in db.exec(select(Concept).where(Concept.learner_id == DEFAULT_LEARNER_ID)).all():
         db.delete(row)
     for row in db.exec(select(LearnerPref).where(LearnerPref.learner_id == DEFAULT_LEARNER_ID)).all():
+        db.delete(row)
+    for row in db.exec(select(TeachingLog).where(TeachingLog.learner_id == DEFAULT_LEARNER_ID)).all():     # the log is learner memory too
         db.delete(row)
     notebooks = db.exec(select(Notebook).where(Notebook.learner_id == DEFAULT_LEARNER_ID)).all()
     ids = [n.id for n in notebooks]
