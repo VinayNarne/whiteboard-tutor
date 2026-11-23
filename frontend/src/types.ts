@@ -219,3 +219,11 @@ export interface LearnerCard {
   preferences: { kind: string; label: string }[];
   available_preferences: { kind: string; label: string }[];
 }
+
+// Course roadmap (GET /api/notebooks/{id} -> roadmap) and the learner map (GET /api/learner/map)
+export interface RoadmapItem { n: number; title: string; status: 'done' | 'current' | 'upcoming' }
+export type MapLevel = 'new' | 'taught' | 'understood' | 'remembered';
+export interface MapStep { title: string; concept_id: string | null; concept: string | null; level: MapLevel | null; shared: number }
+export interface LearnerMap {
+  notebooks: { id: string; topic: string; goal: string | null; lessons: { title: string; page_id: string; steps: MapStep[] }[] }[];
+}

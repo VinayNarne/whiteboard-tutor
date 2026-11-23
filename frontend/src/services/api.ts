@@ -60,3 +60,5 @@ export const forgetMisconception = (conceptId: string) =>
   fetch(`/api/learner/concepts/${encodeURIComponent(conceptId)}/misconception`, { method: 'DELETE' });
 
 export const forgetLearner = () => fetch('/api/learner', { method: 'DELETE' });
+
+export const getLearnerMap = () => fetch('/api/learner/map');

@@ -5,7 +5,7 @@
 // Markdown formatting, message timestamps, and turn counter.
 
 import { useState, useRef, useEffect } from 'react';
-import type { ChatTurn, LearnerIntent } from '../types';
+import type { ChatTurn, LearnerIntent, RoadmapItem } from '../types';
 import { useVoiceInput } from '../hooks/useVoiceInput';
 import { Menu } from './Menu';
 import { debug } from '../utils/debug';
@@ -28,6 +28,7 @@ interface Props {
   onClearLearnerIntent?: () => void;
   layout?: 'wide' | 'compact' | 'phone';
   onOpenLearnerPanel?: () => void;
+  onOpenMap?: () => void;
 }
 
 const MAX_MESSAGE_CHARS = 4000;   // same limit the server enforces
@@ -57,6 +58,7 @@ export function ChatPanel({
   onClearLearnerIntent,
   layout = 'wide',
   onOpenLearnerPanel,
+  onOpenMap,
 }: Readonly<Props>) {
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -149,10 +151,11 @@ export function ChatPanel({
   // the end-of-lesson check: one question per step, then a problem that needs them together; weak = steps to review
   const [final, setFinal] = useState<{ active: boolean; next: number | 'problem' | null; checked: number; of: number; weak: number[]; passed: boolean } | null>(null);
   const [goal, setGoal] = useState<string | null>(null);   // the learner's overall goal (the course), shown above the current lesson's path
+  const [roadmap, setRoadmap] = useState<RoadmapItem[]>([]);
   const tutorReplies = chatHistory.filter(t => t.role === 'assistant').length;
   useEffect(() => {
     let live = true;
-    api.getNotebook(notebookId).then(r => (r.ok ? r.json() : null)).then(d => { if (live && d) { setPath(d.lesson_path ?? []); setFinal(d.lesson_final ?? null); setGoal(d.goal ?? null); } }).catch(() => {});
+    api.getNotebook(notebookId).then(r => (r.ok ? r.json() : null)).then(d => { if (live && d) { setPath(d.lesson_path ?? []); setFinal(d.lesson_final ?? null); setGoal(d.goal ?? null); setRoadmap(d.roadmap ?? []); } }).catch(() => {});
     return () => { live = false; };
   }, [notebookId, tutorReplies]);
 
@@ -330,6 +333,23 @@ export function ChatPanel({
           <summary>Today's path · {path.filter(s => s.level === 'understood' || s.level === 'remembered').length} of {path.length} understood
             {path.some(s => s.level === 'remembered') && <>, {path.filter(s => s.level === 'remembered').length} remembered</>}</summary>
           {goal && <p className="lesson-path-goal">Your goal: {goal}</p>}
+          {roadmap.length > 0 && (() => {
+            const cur = Math.max(0, roadmap.findIndex(r => r.status === 'current'));
+            const list = (
+              <ol>
+                {roadmap.map(r => (
+                  <li key={r.n} className={r.status === 'current' ? 'rm-current' : undefined} aria-current={r.status === 'current' ? 'step' : undefined}>
+                    <span className="roadmap-mark" aria-hidden="true">{r.status === 'done' ? '✓' : r.status === 'current' ? '●' : '○'}</span>
+                    <span>{r.n}. {r.title}</span>
+                    <span className="roadmap-status">{r.status === 'done' ? 'done' : r.status === 'current' ? 'now' : 'upcoming'}</span>
+                  </li>
+                ))}
+              </ol>);
+            return roadmap.length > 5
+              ? <details className="roadmap" open><summary>Course roadmap · lesson {cur + 1} of {roadmap.length}</summary>{list}</details>
+              : <div className="roadmap"><p className="roadmap-title">Course roadmap</p>{list}</div>;
+          })()}
+          {onOpenMap && <button type="button" className="map-link" aria-haspopup="dialog" onClick={onOpenMap}>See your map</button>}
           <ol>
             {path.map((s, i) => (
               <li key={i} className={s.level ? `lvl-${s.level}` : undefined}>

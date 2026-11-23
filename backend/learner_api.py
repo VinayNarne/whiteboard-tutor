@@ -11,6 +11,7 @@ from sqlmodel import Session, select
 
 from backend.database import get_session
 from backend.models import DEFAULT_LEARNER_ID, Concept, LearnerPref, Notebook, Page, TeachingLog, utc_now
+from engine.lesson_plan import lesson_line, path_titles, roadmap
 from engine.mindprint import EXCLUSIVE_PREFERENCES, PREFERENCES
 
 router = APIRouter(prefix="/api/learner")
@@ -44,6 +45,58 @@ def _concept(db: Session, concept_id: str) -> Concept:
     if c is None or c.learner_id != DEFAULT_LEARNER_ID:
         raise HTTPException(status_code=404, detail=CONCEPT_NOT_FOUND)
     return c
+
+
+def _lessons(nb, pages) -> list:
+    """(title, page_id, plan, step_concepts) for each place a plan is stored. The first plan sits on the notebook and, with a course, on the
+    first page too: that is one lesson. Older notebooks keep it only on the notebook."""
+    out = []
+    first = pages[0].id if pages else None
+    if nb.lesson_plan and not any(p.lesson_plan == nb.lesson_plan for p in pages):
+        title = (roadmap(nb.course, 1) or [{"title": nb.topic}])[0]["title"]
+        out.append((title, first, nb.lesson_plan, nb.step_concepts or []))
+    for p in pages:
+        if not p.lesson_plan:
+            continue
+        line = lesson_line(p.lesson_plan)
+        if line is None:         # the first plan: lesson 1 of the roadmap
+            title, steps = (roadmap(nb.course, 1) or [{"title": nb.topic}])[0]["title"], p.step_concepts or nb.step_concepts or []
+        else:
+            title, steps = line[1] or p.title or nb.topic, p.step_concepts or []
+        out.append((title, p.id, p.lesson_plan, steps))
+    return out
+
+
+@router.get("/map")
+def learner_map(db: SessionDep):
+    """Your map: each notebook's lessons and their steps, with the concept each step teaches and how many other lessons share it."""
+    names = {c.id: c for c in db.exec(select(Concept).where(Concept.learner_id == DEFAULT_LEARNER_ID)).all()}
+    nbs = db.exec(select(Notebook).where(Notebook.learner_id == DEFAULT_LEARNER_ID).order_by(Notebook.created_at.desc())).all()
+    built = []
+    for nb in nbs:
+        pages = db.exec(select(Page).where(Page.notebook_id == nb.id).order_by(Page.page_number)).all()
+        lessons = _lessons(nb, pages)
+        if lessons:
+            built.append((nb, lessons))
+    uses = {}                   # concept id -> number of lessons (any notebook) that include it
+    for _, lessons in built:
+        for *_, steps in lessons:
+            for cid in {c for c in steps if c}:
+                uses[cid] = uses.get(cid, 0) + 1
+    out = []
+    for nb, lessons in built:
+        goal = next((ln.split(":", 1)[1].strip() for ln in (nb.course or "").splitlines() if ln.startswith("COURSE GOAL:")), None)
+        rows = []
+        for title, page_id, plan, concepts in lessons:
+            steps = []
+            for i, step in enumerate(path_titles(plan)):
+                cid = concepts[i] if i < len(concepts) else None
+                c = names.get(cid) if cid else None
+                steps.append({"title": step, "concept_id": c.id if c else None, "concept": c.name if c else None,
+                              "level": c.level if c else None, "shared": uses.get(c.id, 1) - 1 if c else 0})
+            rows.append({"title": title, "page_id": page_id, "steps": steps})
+        out.append({"id": nb.id, "topic": nb.topic, "goal": goal or None, "lessons": rows})
+    return {"notebooks": out}
 
 
 @router.get("")

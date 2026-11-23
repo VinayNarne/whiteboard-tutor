@@ -242,3 +242,34 @@ textarea:focus-visible {
 /* Texture proof (LP_PAINT=svg): watercolour on shapes marked wash (filter in WhiteboardCanvas <defs>); hatching is drawn by Rough.js */
 #whiteboard-elements .wash { filter: url(#wb-watercolour); }
 .wb-board-blackboard #whiteboard-elements .wash { filter: none; }   /* on the dark board the uneven paint showed the board through: grey clouds, unreadable text */
+
+/* Course roadmap (ChatPanel "Today's path") */
+.roadmap { margin: 8px 0 0; }
+.roadmap summary { cursor: pointer; color: var(--ink); font-weight: 600; min-height: 24px; }
+.roadmap-title { margin: 8px 0 0; font-weight: 600; color: var(--ink); }
+.roadmap ol { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+.roadmap li { display: flex; gap: 8px; align-items: baseline; color: var(--ink-2); line-height: 1.4; }
+.roadmap li.rm-current { color: var(--ink); font-weight: 700; }
+.roadmap-mark { flex: none; width: 1.2em; text-align: center; }
+.roadmap-status { flex: none; font-size: 11px; font-weight: 500; }
+.map-link { background: transparent; border: none; color: var(--accent); text-decoration: underline; cursor: pointer; font-size: 12px; min-height: 24px; padding: 0 2px; margin-top: 6px; }
+
+/* "Your map" dialog (LearnerMapDialog) */
+.map-dialog { color: inherit; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; width: 520px; max-width: calc(100% - 24px); max-height: 90vh; overflow-y: auto; scrollbar-gutter: stable; box-shadow: var(--shadow); font-size: 13px; }
+.map-head { display: flex; justify-content: space-between; align-items: center; }
+.map-head h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.map-close { background: transparent; border: none; color: var(--ink); font-size: 16px; min-width: 32px; min-height: 32px; cursor: pointer; border-radius: 6px; }
+.map-legend, .map-note, .map-goal { color: var(--ink-2); line-height: 1.4; margin: 8px 0; }
+.map-error { color: var(--danger); margin: 8px 0; }
+.map-notebook { border-top: 1px solid var(--border); padding: 8px 0; }
+.map-notebook summary { cursor: pointer; font-weight: 600; color: var(--ink); min-height: 24px; }
+.map-here { font-weight: 400; color: var(--ink-2); }
+.map-lesson { margin: 8px 0 0 12px; }
+.map-lesson h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.map-lesson ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.map-lesson li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; color: var(--ink); line-height: 1.4; }
+.map-level { font-size: 11px; font-weight: 600; padding: 0 8px; border-radius: 8px; border: 1px solid var(--border-strong); color: var(--ink-2); }
+.map-level.lvl-taught { border-style: dashed; border-color: var(--accent); color: var(--accent-hover); }
+.map-level.lvl-understood { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-hover); }
+.map-level.lvl-remembered { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.map-shared { font-size: 11px; color: var(--ink-2); }

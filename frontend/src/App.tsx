@@ -9,6 +9,7 @@ import { ChatPanel } from './components/ChatPanel';
 import { PageSidebar } from './components/PageSidebar';
 import { Menu } from './components/Menu';
 import { LearnerPanel } from './components/LearnerPanel';
+import { LearnerMapDialog } from './components/LearnerMapDialog';
 import { useLearner } from './hooks/useLearner';
 import { THEME_CHOICES, useThemePref } from './utils/theme';
 import { useMediaQuery } from './utils/useMediaQuery';
@@ -430,6 +431,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
   // Pass 3 Modals & Inline edits
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showLearner, setShowLearner] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const learner = useLearner();
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const summaryDialogRef = useDialogFocus(showSummaryModal);
@@ -786,6 +788,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
           <Menu label="Notebook" items={[
             { label: 'Overview and export', onSelect: () => setShowSummaryModal(true) },
             { label: 'Rename notebook', onSelect: () => setIsEditingNotebook(true) },
+            { label: 'Your map', onSelect: () => setShowMap(true) },
             { label: 'What I know about you', onSelect: () => setShowLearner(true) },
             { label: 'Keyboard shortcuts', onSelect: () => setShowShortcuts(true) },
             { heading: 'Appearance' },
@@ -850,6 +853,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
         <Pane id="chat" active={tab === 'chat'} phone={phone}>
         <ChatPanel
           onOpenLearnerPanel={() => setShowLearner(true)}
+          onOpenMap={() => setShowMap(true)}
           layout={layout}
           notebookId={notebook.id}
           pageId={activePageId}
@@ -971,6 +975,7 @@ function TutorApp({ notebook, onExit }: Readonly<{ notebook: Notebook; onExit: (
         </>
       )}
 
+      {showMap && <LearnerMapDialog currentNotebookId={notebook.id} onClose={() => setShowMap(false)} />}
       {showLearner && <LearnerPanel learner={learner} onClose={() => setShowLearner(false)} />}
 
       {/* Keyboard Shortcuts Modal */}

@@ -66,7 +66,7 @@ from backend.limits import (
 )
 
 from engine.scene import ID_RE as SCENE_ID_RE, board_blocks, board_font_css, missing_parts
-from engine.lesson_plan import final_check, path_titles, split_course, step_levels, write_next_plan, write_plan
+from engine.lesson_plan import final_check, lesson_line, path_titles, roadmap, split_course, step_levels, write_next_plan, write_plan
 from engine.author import run_whiteboard_author, OUTPUT_DIR, ModelUnreachable, MODEL_UNREACHABLE_MESSAGE, EmptyReply, EMPTY_REPLY_MESSAGE, MODEL_NOT_CONFIGURED_MESSAGE, model_configured, last_question
 
 logger = get_logger("backend")
@@ -301,7 +301,11 @@ def _lesson_state(nb, pages, turns) -> dict:
     plan, records = current_lesson(nb, pages, turns)
     known = known_steps(engine, nb.id, plan)
     goal = next((line.split(":", 1)[1].strip() for line in (nb.course or "").splitlines() if line.startswith("COURSE GOAL:")), None)
-    return {"lesson_path": lesson_path(plan, records, known=known), "lesson_final": lesson_final(plan, records, known), "goal": goal or None}
+    lines = [lesson_line(p.lesson_plan) for p in pages if p.lesson_plan]
+    reached = max([(ln[0] if ln else 1) for ln in lines] + [1])   # highest roadmap number planned so far; a first plan is lesson 1
+    line = lesson_line(plan)       # a first plan has no LESSON line: it is roadmap lesson 1
+    return {"lesson_path": lesson_path(plan, records, known=known), "lesson_final": lesson_final(plan, records, known), "goal": goal or None,
+            "roadmap": roadmap(nb.course, line[0] if line else 1, reached) if plan else []}
 
 
 def time_away(last, now=None) -> str:

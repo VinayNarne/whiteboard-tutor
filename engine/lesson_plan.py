@@ -194,6 +194,30 @@ def path_titles(plan: str) -> list:
     return titles[:6]
 
 
+def lesson_line(plan: str):
+    """(roadmap number, title) of a next-lesson plan's "LESSON: n Title" line; number 0 = off the roadmap. None for a first plan (no such line)."""
+    m = re.match(r"\s*LESSON:\s*(?:Lesson\s+)?(?:(\d+)\s*[.):\-–—]?\s*)?(.*)", plan or "", re.I)
+    return (int(m.group(1) or 0), m.group(2).strip()) if m else None
+
+
+def roadmap(course: str, current_n: int, reached: int = 0) -> list:
+    """The course's numbered ROADMAP lines -> [{"n", "title", "status"}]; [] without a course. Status is by number alone: current_n is
+    "current", smaller numbers "done", larger "upcoming" (simpler than tracking which page planned what, and a skipped lesson is rare).
+    current_n 0 (off the roadmap) marks nothing current; there "done" means n <= reached, the highest roadmap number planned so far."""
+    body = (course or "").partition("ROADMAP:")[2]
+    out = []
+    for line in body.splitlines():
+        m = re.match(r"^[ \t]*(?:Lesson\s+)?(\d+)\s*[.):]\s*(.+)$", line, re.I)
+        if not m:
+            if out and re.match(r"^[A-Z][A-Z ]+:", line):    # the next heading ends the roadmap
+                break
+            continue
+        title = re.split(r"\s[-–—]\s", m.group(2), maxsplit=1)[0].strip()   # a trailing note, as path_titles drops it
+        n = int(m.group(1))
+        out.append({"n": n, "title": title[:80], "status": "current" if n == current_n else "done" if 0 < n < current_n or (current_n == 0 and n <= reached) else "upcoming"})
+    return out
+
+
 def with_note(user: str, note: str) -> str:
     """Mindprint: what earlier lessons showed about the learner, appended to the request (where the phase-0 evaluation measured it)."""
     return f"{user}\n\nLEARNER NOTES (from earlier lessons; plan around them): {note}" if note else user
