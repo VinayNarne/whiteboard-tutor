@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { ChatTurn, LearnerIntent, RoadmapItem } from '../types';
 import { useVoiceInput } from '../hooks/useVoiceInput';
 import { Menu } from './Menu';
+import { RecapView } from './RecapView';
 import { debug } from '../utils/debug';
 import * as api from '../services/api';
 
@@ -70,6 +71,7 @@ export function ChatPanel({
   const dictationBase = useRef('');   // what was already in the box when dictation started
   const [bargeInNotice, setBargeInNotice] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [view, setView] = useState<'chat' | 'recap'>('chat');   // state only: resets on reload
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Fit the box to its text on every change: typing, dictation, and clearing after Send (which fires no input event).
@@ -345,9 +347,7 @@ export function ChatPanel({
                   </li>
                 ))}
               </ol>);
-            return roadmap.length > 5
-              ? <details className="roadmap" open><summary>Course roadmap · lesson {cur + 1} of {roadmap.length}</summary>{list}</details>
-              : <div className="roadmap"><p className="roadmap-title">Course roadmap</p>{list}</div>;
+            return <details className="roadmap"><summary>Course roadmap · lesson {cur + 1} of {roadmap.length}</summary>{list}</details>;
           })()}
           {onOpenMap && <button type="button" className="map-link" aria-haspopup="dialog" onClick={onOpenMap}>See your map</button>}
           <ol>
@@ -372,9 +372,20 @@ export function ChatPanel({
         </details>
       )}
 
+      <div style={{ display: 'flex', gap: '6px', padding: '6px 16px', borderBottom: '1px solid var(--border)' }}>
+        {([['chat', 'Conversation'], ['recap', 'Recap']] as const).map(([v, label]) => (
+          <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} style={{
+            minHeight: '28px', minWidth: '24px', padding: '2px 12px', borderRadius: '14px', fontSize: '13px', cursor: 'pointer',
+            border: '1px solid var(--border-strong)', fontWeight: view === v ? 600 : 400,
+            background: view === v ? 'var(--accent)' : 'transparent', color: view === v ? 'var(--on-accent)' : 'var(--ink)',
+          }}>{label}</button>
+        ))}
+      </div>
+      {view === 'recap' && <RecapView notebookId={notebookId} pageId={pageId} refreshKey={tutorReplies} />}
+
       {/* Conversation — a polite live log so screen readers hear the tutor's replies */}
-      <div role="log" aria-live="polite" aria-label="Conversation with the AI tutor" style={{
-        flex: 1, overflowY: 'auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '18px',
+      <div role="log" aria-live="polite" aria-label="Conversation with the AI tutor" hidden={view !== 'chat'} style={{
+        flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 16px', display: view === 'chat' ? 'flex' : 'none', flexDirection: 'column', gap: '18px',
         position: 'relative',   // holds the screen-reader-only "You:"/"Tutor:" labels: unheld, they sat below the window and made the page scroll
       }}>
         {chatHistory.length === 0 && (

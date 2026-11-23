@@ -159,6 +159,9 @@ class ChatTurn(SQLModel, table=True):
     about_element_ids: Optional[List[str]] = Field(default=None, sa_column=Column(JSON))
     # Tutor turns: what the tutor did in this turn, one record per tool call {tool, element_id, status, iteration}; [] for a text-only reply.
     tool_calls_made: Optional[List[Dict[str, Any]]] = Field(default=None, sa_column=Column(JSON))
+    # Learner turns the separate grader graded: its verdict (right|partial|wrong) and the quote-checked wrong belief it found. Null otherwise.
+    grade: Optional[str] = Field(default=None, sa_column=Column(String, nullable=True))
+    belief: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
     timestamp: datetime = Field(default_factory=utc_now)
 
     notebook: Optional[Notebook] = Relationship(back_populates="chat_turns")

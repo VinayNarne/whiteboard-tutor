@@ -12,7 +12,7 @@ import threading
 
 from sqlmodel import Session, select
 
-from backend.models import Concept, LearnerPref, Notebook, Page, utc_now
+from backend.models import ChatTurn, Concept, LearnerPref, Notebook, Page, utc_now
 from core.events import BackendEvent
 from core.log import get_logger
 from engine.author import is_skip
@@ -141,6 +141,10 @@ def _store_record(db_engine, cid: str, event: str, g, n: int, answer: str, user_
             apply_grade(c, g["grade"], g["misconception"], answer, user_turn_id, plan)
             from backend.playbook_store import set_outcome      # here: playbook_store imports this module
             set_outcome(db, cid, g["grade"])
+            turn = db.get(ChatTurn, user_turn_id)             # the verdict is kept on the answer itself (lesson recap); same commit as the concept
+            if turn is not None and g["grade"]:
+                turn.grade, turn.belief = g["grade"], g["misconception"]
+                db.add(turn)
         c.updated_at = utc_now()                               # the beliefs ranking (relevant_concepts) sorts by it
         db.add(c)
         db.commit()

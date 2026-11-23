@@ -204,7 +204,7 @@ textarea:focus-visible {
 .wb-follow:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 /* "Today's path": the lesson plan's steps, ticked as the tutor teaches them (ChatPanel) */
-.lesson-path { margin: 8px 12px 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2); font-size: 13px; }
+.lesson-path { margin: 8px 12px 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2); font-size: 13px; flex: none; max-height: 30vh; overflow-y: auto; }   /* the checklist scrolls inside; the conversation/recap below keep most of the panel (live check: 40vh left the recap 182px of a 768px window) */
 .lesson-path summary { cursor: pointer; font-weight: 600; color: var(--ink); min-height: 24px; }
 .lesson-path summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .lesson-path ol { list-style: none; margin: 8px 0 2px; padding: 0; display: grid; gap: 6px; }

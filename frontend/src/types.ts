@@ -227,3 +227,13 @@ export interface MapStep { title: string; concept_id: string | null; concept: st
 export interface LearnerMap {
   notebooks: { id: string; topic: string; goal: string | null; lessons: { title: string; page_id: string; steps: MapStep[] }[] }[];
 }
+
+// Clean lesson recap (GET /api/notebooks/{id}/pages/{pageId}/recap)
+export interface LessonRecap {
+  title: string;
+  goal: string | null;
+  steps: { title: string; level: string }[];
+  board: { kind: 'notes' | 'recap' | 'code' | 'diagram' | 'graph' | 'table' | 'chart' | 'venn'; title: string | null; lines: string[] }[];
+  answers: { question: string | null; answer: string; result: 'right' | 'partial' | 'wrong' | null; source: 'grader' | 'tutor' }[];
+  corrected: { belief: string; cleared: boolean }[];
+}

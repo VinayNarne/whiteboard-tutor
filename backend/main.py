@@ -390,6 +390,21 @@ def _chat_turns_json(turns) -> list:
     return out
 
 
+def page_recap(session, nb, pages, all_turns, page) -> dict:
+    """The clean recap of one page, from stored records only (engine/recap.py). The plan is the one in force for that page: the latest plan
+    at or before it, its checklist counting the records from that plan's first page to this one."""
+    from engine.recap import build_recap
+    planned = [p for p in pages if p.lesson_plan and p.page_number <= page.page_number]
+    if planned:
+        start = max(planned, key=lambda p: p.page_number)
+        plan, scope = start.lesson_plan, {p.id for p in pages if start.page_number <= p.page_number <= page.page_number}
+    else:
+        plan, scope = nb.lesson_plan or "", None
+    path = lesson_path(plan, _tutor_records(all_turns, scope), known=known_steps(engine, nb.id, plan))
+    blocks = [e.block for e in session.exec(select(PageEvent).where(PageEvent.page_id == page.id).order_by(PageEvent.seq)).all() if e.block]
+    return build_recap(plan, page.title, path, blocks, [t for t in all_turns if t.page_id == page.id])
+
+
 @app.get("/api/notebooks/{notebook_id}/export", responses=_responses({404: NOTEBOOK_NOT_FOUND}))
 def export_notebook(notebook_id: str, session: SessionDep, download: bool = False,
                     print_view: Annotated[bool, Query(alias="print")] = False):
@@ -399,17 +414,18 @@ def export_notebook(notebook_id: str, session: SessionDep, download: bool = Fals
     nb = session.get(Notebook, notebook_id)
     if not nb:
         raise HTTPException(status_code=404, detail=NOTEBOOK_NOT_FOUND)
+    page_rows = session.exec(select(Page).where(Page.notebook_id == notebook_id).order_by(Page.page_number)).all()
+    all_turns = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id).order_by(ChatTurn.seq)).all()
     pages = []
-    for p in session.exec(select(Page).where(Page.notebook_id == notebook_id).order_by(Page.page_number)).all():
+    for p in page_rows:
         events = session.exec(select(PageEvent).where(PageEvent.page_id == p.id).order_by(PageEvent.seq)).all()
         pages.append({
-            "page_number": p.page_number, "title": p.title, "summary": p.summary, "current_svg": p.current_svg,
+            "page_number": p.page_number, "title": p.title, "summary": p.summary, "current_svg": p.current_svg, "recap": page_recap(session, nb, page_rows, all_turns, p),
             # annotation events store JSON, not SVG: only real drawings carry narration worth listing
             "narrations": [(e.element_id, e.narration) for e in events
                            if e.kind == "draw" and e.narration and e.svg_fragment.lstrip().startswith("<")],
         })
-    turns = [{"role": t.role, "content": t.content} for t in session.exec(
-        select(ChatTurn).where(ChatTurn.notebook_id == notebook_id).order_by(ChatTurn.seq)).all()
+    turns = [{"role": t.role, "content": t.content} for t in all_turns
         if t.role in ("user", "assistant") and t.status == "ok" and t.content.strip()]
     html = build_notebook_html(nb, pages, turns, print_on_load=print_view)
     headers = {}
@@ -619,6 +635,17 @@ def get_page_events(notebook_id: str, page_id: str, session: SessionDep):
             } for e in events
         ]
     }
+
+
+@app.get("/api/notebooks/{notebook_id}/pages/{page_id}/recap", responses=_responses({404: PAGE_NOT_FOUND}))
+def get_page_recap(notebook_id: str, page_id: str, session: SessionDep):
+    """The clean lesson recap of a page: goal, checklist levels, board text, the learner's answers and corrected beliefs. No model call."""
+    page, nb = session.get(Page, page_id), session.get(Notebook, notebook_id)
+    if not page or not nb or page.notebook_id != notebook_id:
+        raise HTTPException(status_code=404, detail=PAGE_NOT_FOUND)
+    pages = session.exec(select(Page).where(Page.notebook_id == notebook_id)).all()
+    turns = session.exec(select(ChatTurn).where(ChatTurn.notebook_id == notebook_id).order_by(ChatTurn.seq)).all()
+    return page_recap(session, nb, pages, turns, page)
 
 
 @app.post("/api/notebooks/{notebook_id}/pages/{page_id}/undo", responses=_responses({400: "Page is saved and locked, or there is nothing to undo", 404: PAGE_NOT_FOUND, 409: "The tutor is still drawing"}))

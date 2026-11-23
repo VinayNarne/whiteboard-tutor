@@ -62,3 +62,5 @@ export const forgetMisconception = (conceptId: string) =>
 export const forgetLearner = () => fetch('/api/learner', { method: 'DELETE' });
 
 export const getLearnerMap = () => fetch('/api/learner/map');
+
+export const getRecap = (notebookId: string, pageId: string) => fetch(`${page(notebookId, pageId)}/recap`);

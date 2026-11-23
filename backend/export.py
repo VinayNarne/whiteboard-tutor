@@ -24,6 +24,7 @@ section.page { margin-bottom: 40px; }
 ol.said { padding-left: 20px; } ol.said li { margin-bottom: 10px; }
 .el { font-size: 12px; color: var(--ink-2); display: block; }
 .turn { margin: 8px 0; } .who { font-weight: 600; font-size: 13px; color: var(--ink-2); }
+.recap h3 { font-size: 15px; margin: 14px 0 4px; } .recap ul { margin: 4px 0; padding-left: 20px; }
 .note { color: var(--ink-2); font-style: italic; }
 @media print {
   body { padding: 0; } section.page { break-before: page; } section.page:first-of-type { break-before: auto; }
@@ -43,10 +44,37 @@ def _board_svg(current_svg: str) -> str:
         return '<p class="note">This page\'s drawing could not be rendered in the export.</p>'
 
 
+_RESULT = {"right": "Right", "partial": "Partly right", "wrong": "Not yet right"}
+
+
+def _recap_html(r: dict) -> str:
+    """The lesson recap (engine/recap.py's dict) as escaped HTML; "" when there is nothing in it."""
+    if not (r["steps"] or r["board"] or r["answers"]):
+        return ""
+    out = ["<div class='recap'><h3>Lesson recap</h3>"]
+    if r["goal"]:
+        out.append(f"<p>{escape(r['goal'])}</p>")
+    if r["steps"]:
+        out.append("<ul>" + "".join(f"<li>{escape(s['title'])} <span class='el'>{escape(s['level'])}</span></li>" for s in r["steps"]) + "</ul>")
+    for b in r["board"]:
+        head = f"<strong>{escape(b['title'])}</strong>" if b["title"] else f"<strong>{escape(b['kind'].title())}</strong>"
+        out.append(f"<p>{head}</p>" + ("<ul>" + "".join(f"<li>{escape(l)}</li>" for l in b["lines"]) + "</ul>" if b["lines"] else ""))
+    if r["answers"]:
+        out.append("<h3>Your answers</h3><ul>")
+        for a in r["answers"]:
+            q = f"<span class='el'>{escape(a['question'])}</span>" if a["question"] else ""
+            out.append(f"<li>{q}{escape(a['answer'])} <span class='el'>{_RESULT.get(a['result'], '')}</span></li>")
+        out.append("</ul>")
+    if r["corrected"]:
+        out.append("<h3>Ideas corrected</h3><ul>" + "".join(
+            f"<li>{escape(c['belief'])} <span class='el'>{'cleared' if c['cleared'] else 'still open'}</span></li>" for c in r["corrected"]) + "</ul>")
+    return "".join(out) + "</div>"
+
+
 def build_notebook_html(notebook, pages: List[dict], turns: List[dict], print_on_load: bool = False) -> str:
     """
     notebook: object with .title, .topic, .created_at
-    pages: [{page_number, title, summary, status, current_svg, narrations: [(element_id, text)]}]
+    pages: [{page_number, title, summary, status, current_svg, narrations: [(element_id, text)], recap: engine/recap dict (optional)}]
     turns: [{role, content}]
     """
     out = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'>"
@@ -61,6 +89,8 @@ def build_notebook_html(notebook, pages: List[dict], turns: List[dict], print_on
         if p["summary"]:
             out.append(f"<p class='meta'>{escape(p['summary'])}</p>")
         out.append(f"<div class='board'>{_board_svg(p['current_svg'])}</div>")
+        if p.get("recap"):
+            out.append(_recap_html(p["recap"]))
         if p["narrations"]:
             out.append("<h3>What the tutor said</h3><ol class='said'>")
             for eid, text in p["narrations"]:
